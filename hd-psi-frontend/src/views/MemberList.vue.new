@@ -6,7 +6,7 @@
         添加会员
       </n-button>
     </div>
-
+    
     <div class="page-content">
       <!-- 搜索工具栏 -->
       <div class="table-toolbar">
@@ -38,7 +38,7 @@
           </n-button>
         </div>
       </div>
-
+      
       <!-- 会员表格 -->
       <n-data-table
         ref="tableRef"
@@ -57,7 +57,7 @@
 <script setup>
 import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
-import {
+import { 
   NButton, NDataTable, NInput, NSelect, NSpace, NTag
 } from 'naive-ui'
 import memberService from '../services/member'
@@ -124,9 +124,9 @@ const columns = [
         'platinum': { type: 'success', text: '铂金会员' },
         'diamond': { type: 'error', text: '钻石会员' }
       }
-
+      
       const level = levelMap[row.level] || levelMap['regular']
-
+      
       return h(NTag, { type: level.type }, { default: () => level.text })
     }
   },
@@ -193,13 +193,34 @@ const columns = [
 const loadMembers = async () => {
   loading.value = true
   try {
-    // 模拟数据，实际应该从API获取
+    // 构建查询参数
+    const params = {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      ...searchForm
+    }
+    
+    // 从后端获取会员数据
+    const response = await memberService.getMembers(params)
+    
+    // 如果后端返回的是分页数据结构
+    if (response.items && response.total !== undefined) {
+      members.value = response.items
+      pagination.itemCount = response.total
+    } else {
+      // 如果后端返回的是简单数组
+      members.value = response
+      pagination.itemCount = response.length
+    }
+  } catch (error) {
+    console.error('加载会员列表失败:', error)
+    // 如果API调用失败，使用模拟数据以便于测试
     members.value = [
       {
         id: 1,
         name: '张三',
         phone: '13800138001',
-        level: '金卡会员',
+        level: 'gold',
         points: 2500,
         totalSpent: 15000.00,
         birthday: '1990-01-15'
@@ -208,7 +229,7 @@ const loadMembers = async () => {
         id: 2,
         name: '李四',
         phone: '13800138002',
-        level: '普通会员',
+        level: 'regular',
         points: 500,
         totalSpent: 2000.00,
         birthday: '1985-05-20'
@@ -217,7 +238,7 @@ const loadMembers = async () => {
         id: 3,
         name: '王五',
         phone: '13800138003',
-        level: '银卡会员',
+        level: 'silver',
         points: 1200,
         totalSpent: 8000.00,
         birthday: '1992-11-08'
@@ -226,15 +247,13 @@ const loadMembers = async () => {
         id: 4,
         name: '赵六',
         phone: '13800138004',
-        level: '钻石会员',
+        level: 'diamond',
         points: 5000,
         totalSpent: 30000.00,
         birthday: '1988-07-30'
       }
     ]
     pagination.itemCount = members.value.length
-  } catch (error) {
-    console.error('加载会员列表失败:', error)
   } finally {
     loading.value = false
   }

@@ -6,6 +6,7 @@ import Login from '../views/Login.vue'
 import ProductList from '../views/ProductList.vue'
 import InventoryList from '../views/InventoryList.vue'
 import MemberList from '../views/MemberList.vue'
+import MemberCreate from '../views/MemberCreate.vue'
 import PurchaseList from '../views/PurchaseList.vue'
 import PurchaseDetail from '../views/PurchaseDetail.vue'
 import PurchaseCreate from '../views/PurchaseCreate.vue'
@@ -49,6 +50,12 @@ const routes = [
     path: '/members',
     name: 'MemberList',
     component: MemberList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/members/create',
+    name: 'MemberCreate',
+    component: MemberCreate,
     meta: { requiresAuth: true }
   },
   {

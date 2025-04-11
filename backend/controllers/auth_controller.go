@@ -318,10 +318,15 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	// 更新密码
-	user.Password = input.NewPassword
+	// 手动对密码进行哈希处理
+	hashedPassword, err := utils.HashPassword(input.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "密码加密失败", "details": "系统错误，请稍后再试"})
+		return
+	}
 
-	if err := ac.db.Save(&user).Error; err != nil {
+	// 直接更新已哈希的密码
+	if err := ac.db.Model(&user).Update("password", hashedPassword).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新密码失败", "details": "系统错误，请稍后再试"})
 		return
 	}
@@ -464,13 +469,38 @@ func (ac *AuthController) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	// 更新密码
-	user.Password = input.NewPassword
 	// 清除重置令牌
 	user.ClearPasswordResetToken()
 
-	// 保存用户信息
-	if err := ac.db.Save(&user).Error; err != nil {
+	// 手动对密码进行哈希处理
+	hashedPassword, err := utils.HashPassword(input.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "密码加密失败", "details": "系统错误，请稍后再试"})
+		return
+	}
+
+	// 开始事务
+	tx := ac.db.Begin()
+
+	// 直接更新已哈希的密码
+	if err := tx.Model(&user).Update("password", hashedPassword).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "重置密码失败", "details": "系统错误，请稍后再试"})
+		return
+	}
+
+	// 更新重置令牌字段
+	if err := tx.Model(&user).Updates(map[string]any{
+		"reset_password_token":   "",
+		"reset_password_expires": nil,
+	}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "重置密码失败", "details": "系统错误，请稍后再试"})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "重置密码失败", "details": "系统错误，请稍后再试"})
 		return
 	}
