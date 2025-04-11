@@ -1,0 +1,50 @@
+# HD-PSI 服装进销存系统配置文件
+
+# 服务器配置
+server:
+  port: 8080
+  mode: release  # debug, release, test
+  timeout: 30  # 请求超时时间（秒）
+
+# 数据库配置
+database:
+  host: 192.168.1.5
+  port: 3306
+  user: root
+  password: gemini4094
+  name: hd_psi_dev
+  charset: utf8mb4
+  parse_time: true
+  loc: Local
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600  # 连接最大生命周期（秒）
+
+# JWT配置
+jwt:
+  secret: hd_psi_secret_key
+  expiration:
+    standard: 86400     # 标准令牌过期时间（秒）- 24小时
+    remember_me: 604800 # 记住我令牌过期时间（秒）- 7天
+    refresh: 2592000    # 刷新令牌过期时间（秒）- 30天
+    reset: 3600         # 密码重置令牌过期时间（秒）- 1小时
+
+# 日志配置
+log:
+  level: info  # debug, info, warn, error
+  format: text # text, json
+  output: stdout  # stdout, file
+  file_path: ./logs/hd_psi.log  # 日志文件路径（当output为file时有效）
+  max_size: 100  # 单个日志文件最大大小（MB）
+  max_age: 30    # 日志文件保留天数
+  max_backups: 10  # 最大备份数量
+  compress: true   # 是否压缩
+
+# CORS配置
+cors:
+  allowed_origins: ["*"]  # 允许的来源域名，可以设置为具体的域名，如 http://localhost:3000
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+  allowed_headers: ["Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"]
+  exposed_headers: ["Content-Length"]
+  allow_credentials: true
+  max_age: 86400  # 预检请求结果缓存时间（秒）

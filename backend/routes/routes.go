@@ -33,6 +33,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTAuth())
 	{
+		// 仪表盘路由
+		dashboardController := controllers.NewDashboardController(db)
+		apiAuth.GET("/dashboard/statistics", dashboardController.GetStatistics)
 		// 用户信息路由
 		apiAuth.GET("/profile", authController.GetProfile)
 		apiAuth.PUT("/profile", authController.UpdateProfile)
@@ -174,6 +177,9 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		salesController := controllers.NewSalesController(db)
 		salesGroup := api.Group("/sales")
 		{
+			// 最近销售路由
+			salesGroup.GET("/recent", salesController.GetRecentSales)
+
 			// 销售订单路由
 			salesGroup.GET("/orders", salesController.ListOrders)
 			salesGroup.GET("/orders/:id", salesController.GetOrder)
