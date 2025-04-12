@@ -36,12 +36,6 @@
           <n-button @click="resetSearch">
             重置
           </n-button>
-          <n-button @click="handleRefresh" type="info">
-            刷新
-          </n-button>
-          <n-button @click="toggleDebug" type="warning">
-            {{ showDebug ? '隐藏调试' : '显示调试' }}
-          </n-button>
         </div>
       </div>
 
@@ -56,18 +50,6 @@
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       />
-
-      <!-- 调试信息区域 -->
-      <n-collapse v-if="showDebug">
-        <n-collapse-item title="调试信息" name="debug">
-          <n-card title="原始响应数据">
-            <pre>{{ JSON.stringify(rawResponse, null, 2) }}</pre>
-          </n-card>
-          <n-card title="处理后的数据" class="mt-4">
-            <pre>{{ JSON.stringify(products, null, 2) }}</pre>
-          </n-card>
-        </n-collapse-item>
-      </n-collapse>
     </div>
   </div>
 </template>
@@ -76,8 +58,7 @@
 import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  NButton, NDataTable, NInput, NSelect, NSpace, useMessage,
-  NCollapse, NCollapseItem, NCard
+  NButton, NDataTable, NInput, NSelect, NSpace, useMessage
 } from 'naive-ui'
 import productService from '../services/product'
 
@@ -88,9 +69,6 @@ const message = useMessage()
 // 响应式状态
 const loading = ref(false)
 const products = ref([])
-const rawResponse = ref(null) // 原始响应数据
-const showDebug = ref(false) // 默认不显示调试信息
-
 const pagination = reactive({
   page: 1,
   pageSize: 10,
@@ -129,57 +107,39 @@ const columns = [
   {
     title: 'SKU',
     key: 'sku',
-    width: 150,
-    render(row) {
-      return row.sku || '-'
-    }
+    width: 150
   },
   {
     title: '商品名称',
     key: 'name',
-    width: 200,
-    render(row) {
-      return row.name || '-'
-    }
+    width: 200
   },
   {
     title: '类别',
     key: 'category',
-    width: 100,
-    render(row) {
-      return row.category || '-'
-    }
+    width: 100
   },
   {
     title: '颜色',
     key: 'color',
-    width: 100,
-    render(row) {
-      return row.color || '-'
-    }
+    width: 100
   },
   {
     title: '尺码',
     key: 'size',
-    width: 100,
-    render(row) {
-      return row.size || '-'
-    }
+    width: 100
   },
   {
     title: '季节',
     key: 'season',
-    width: 100,
-    render(row) {
-      return row.season || '-'
-    }
+    width: 100
   },
   {
     title: '零售价',
     key: 'retailPrice',
     width: 120,
     render(row) {
-      return row.retailPrice ? `¥${row.retailPrice.toFixed(2)}` : '¥0.00'
+      return `¥${row.retailPrice?.toFixed(2) || '0.00'}`
     }
   },
   {
@@ -226,51 +186,19 @@ const loadProducts = async () => {
       sku: searchForm.sku || undefined,
       category: searchForm.category || undefined
     }
-
+    
     // 调用API获取商品数据
     const response = await productService.getProducts(params)
-
-    // 保存原始响应数据供调试使用
-    rawResponse.value = response
-
-    // 调试输出响应数据
-    console.log('API响应数据:', JSON.stringify(response, null, 2))
-
+    
     // 处理响应数据
     if (response.items && response.total !== undefined) {
       // 如果返回的是分页数据结构
-      // 将字段名称转换为小写并处理关联对象
-      products.value = response.items.map(item => ({
-        id: item.ID,
-        sku: item.SKU,
-        name: item.Name,
-        category: item.Category?.Name || '-',
-        color: item.Color?.Name || '-',
-        size: item.Size?.Name || '-',
-        season: item.Season?.Name || '-',
-        costPrice: item.CostPrice,
-        retailPrice: item.RetailPrice,
-        image: item.Image
-      }))
+      products.value = response.items
       pagination.itemCount = response.total
-      console.log('处理后的商品数据:', JSON.stringify(products.value, null, 2))
     } else {
       // 如果返回的是简单数组
-      // 将字段名称转换为小写并处理关联对象
-      products.value = Array.isArray(response) ? response.map(item => ({
-        id: item.ID,
-        sku: item.SKU,
-        name: item.Name,
-        category: item.Category?.Name || '-',
-        color: item.Color?.Name || '-',
-        size: item.Size?.Name || '-',
-        season: item.Season?.Name || '-',
-        costPrice: item.CostPrice,
-        retailPrice: item.RetailPrice,
-        image: item.Image
-      })) : []
-      pagination.itemCount = products.value.length
-      console.log('处理后的商品数据:', JSON.stringify(products.value, null, 2))
+      products.value = response
+      pagination.itemCount = response.length
     }
   } catch (error) {
     console.error('加载商品列表失败:', error)
@@ -328,15 +256,6 @@ const resetSearch = () => {
   searchForm.category = null
   pagination.page = 1
   loadProducts()
-}
-
-const handleRefresh = () => {
-  loadProducts()
-  message.success('刷新成功')
-}
-
-const toggleDebug = () => {
-  showDebug.value = !showDebug.value
 }
 
 const handlePageChange = (page) => {

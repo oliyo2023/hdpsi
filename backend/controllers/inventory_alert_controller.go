@@ -20,33 +20,33 @@ func NewInventoryAlertController(db *gorm.DB) *InventoryAlertController {
 // ListAlerts 获取所有预警
 func (iac *InventoryAlertController) ListAlerts(c *gin.Context) {
 	var alerts []models.InventoryAlert
-	
+
 	// 获取查询参数
 	status := c.Query("status")
 	storeID := c.Query("store_id")
 	alertType := c.Query("alert_type")
-	
+
 	// 构建查询
 	query := iac.db.Model(&models.InventoryAlert{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	if storeID != "" {
 		query = query.Where("store_id = ?", storeID)
 	}
-	
+
 	if alertType != "" {
 		query = query.Where("alert_type = ?", alertType)
 	}
-	
+
 	// 执行查询
 	if err := query.Find(&alerts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, alerts)
 }
 
@@ -69,31 +69,31 @@ func (iac *InventoryAlertController) UpdateAlertStatus(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Alert not found"})
 		return
 	}
-	
+
 	// 绑定请求数据
 	var input struct {
 		Status string `json:"status" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 更新状态
 	alert.Status = models.AlertStatus(input.Status)
-	
+
 	// 如果状态为已解决，设置解决时间
 	if alert.Status == models.Resolved {
 		now := time.Now()
 		alert.ResolvedAt = &now
 	}
-	
+
 	if err := iac.db.Save(&alert).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, alert)
 }
 
@@ -107,16 +107,17 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 		Category  string
 		Quantity  int
 	}
-	
+
 	// 联合查询获取库存和商品类别
 	if err := iac.db.Table("inventories").
-		Select("inventories.store_id, inventories.product_id, products.category, inventories.quantity").
-		Joins("JOIN products ON inventories.product_id = products.id").
+		Select("inventories.store_id, inventories.product_variant_id as product_id, products.category, inventories.quantity").
+		Joins("JOIN product_variants ON inventories.product_variant_id = product_variants.id").
+		Joins("JOIN products ON product_variants.product_id = products.id").
 		Scan(&inventories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 获取所有预警阈值设置
 	var thresholds []struct {
 		StoreID   uint
@@ -124,7 +125,7 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 		LowLevel  int
 		HighLevel int
 	}
-	
+
 	// 这里假设有一个阈值设置表，实际中需要创建这个表
 	// 如果没有这个表，可以使用默认值或配置文件中的设置
 	if err := iac.db.Table("inventory_thresholds").Find(&thresholds).Error; err != nil {
@@ -138,7 +139,7 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 			{StoreID: 0, Category: "", LowLevel: 10, HighLevel: 100}, // 默认阈值
 		}
 	}
-	
+
 	// 检查每个库存记录
 	var newAlerts []models.InventoryAlert
 	for _, inv := range inventories {
@@ -147,67 +148,67 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 			LowLevel  int
 			HighLevel int
 		}
-		
+
 		// 首先尝试找到特定店铺和类别的阈值
 		found := false
 		for _, t := range thresholds {
-			if (t.StoreID == inv.StoreID || t.StoreID == 0) && 
-			   (t.Category == inv.Category || t.Category == "") {
+			if (t.StoreID == inv.StoreID || t.StoreID == 0) &&
+				(t.Category == inv.Category || t.Category == "") {
 				threshold.LowLevel = t.LowLevel
 				threshold.HighLevel = t.HighLevel
 				found = true
 				break
 			}
 		}
-		
+
 		if !found {
 			// 使用默认阈值
 			threshold.LowLevel = 10
 			threshold.HighLevel = 100
 		}
-		
+
 		// 检查是否低于最低阈值
 		if inv.Quantity <= threshold.LowLevel {
 			// 检查是否已存在活跃的低库存预警
 			var existingAlert models.InventoryAlert
-			result := iac.db.Where("store_id = ? AND product_id = ? AND alert_type = ? AND status = ?", 
+			result := iac.db.Where("store_id = ? AND product_variant_id = ? AND alert_type = ? AND status = ?",
 				inv.StoreID, inv.ProductID, models.LowStock, models.Active).First(&existingAlert)
-			
+
 			if result.Error == gorm.ErrRecordNotFound {
 				// 创建新预警
 				newAlerts = append(newAlerts, models.InventoryAlert{
-					StoreID:     inv.StoreID,
-					ProductID:   inv.ProductID,
-					Category:    inv.Category,
-					AlertType:   models.LowStock,
-					Threshold:   threshold.LowLevel,
-					CurrentQty:  inv.Quantity,
-					Status:      models.Active,
-					Description: "库存低于最低阈值",
+					StoreID:          inv.StoreID,
+					ProductVariantID: inv.ProductID, // 暂时使用ProductID替代
+					Category:         inv.Category,
+					AlertType:        models.LowStock,
+					Threshold:        threshold.LowLevel,
+					CurrentQty:       inv.Quantity,
+					Status:           models.Active,
+					Description:      "库存低于最低阈值",
 				})
 			}
 		} else if inv.Quantity >= threshold.HighLevel {
 			// 检查是否已存在活跃的高库存预警
 			var existingAlert models.InventoryAlert
-			result := iac.db.Where("store_id = ? AND product_id = ? AND alert_type = ? AND status = ?", 
+			result := iac.db.Where("store_id = ? AND product_variant_id = ? AND alert_type = ? AND status = ?",
 				inv.StoreID, inv.ProductID, models.Overstock, models.Active).First(&existingAlert)
-			
+
 			if result.Error == gorm.ErrRecordNotFound {
 				// 创建新预警
 				newAlerts = append(newAlerts, models.InventoryAlert{
-					StoreID:     inv.StoreID,
-					ProductID:   inv.ProductID,
-					Category:    inv.Category,
-					AlertType:   models.Overstock,
-					Threshold:   threshold.HighLevel,
-					CurrentQty:  inv.Quantity,
-					Status:      models.Active,
-					Description: "库存超过最高阈值",
+					StoreID:          inv.StoreID,
+					ProductVariantID: inv.ProductID, // 暂时使用ProductID替代
+					Category:         inv.Category,
+					AlertType:        models.Overstock,
+					Threshold:        threshold.HighLevel,
+					CurrentQty:       inv.Quantity,
+					Status:           models.Active,
+					Description:      "库存超过最高阈值",
 				})
 			}
 		}
 	}
-	
+
 	// 批量创建新预警
 	if len(newAlerts) > 0 {
 		if err := iac.db.Create(&newAlerts).Error; err != nil {
@@ -215,9 +216,9 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "库存检查完成",
+		"message":    "库存检查完成",
 		"new_alerts": len(newAlerts),
 	})
 }

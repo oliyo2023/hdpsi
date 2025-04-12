@@ -54,15 +54,15 @@ func (itc *InventoryTransactionController) CreateTransaction(c *gin.Context) {
 
 	// 更新库存
 	var inventory models.Inventory
-	result := tx.Where("store_id = ? AND product_id = ?", transaction.StoreID, transaction.ProductID).First(&inventory)
-	
+	result := tx.Where("store_id = ? AND product_variant_id = ?", transaction.StoreID, transaction.ProductVariantID).First(&inventory)
+
 	if result.Error != nil {
 		// 如果库存记录不存在且是入库操作，则创建新的库存记录
 		if result.Error == gorm.ErrRecordNotFound && transaction.Quantity > 0 {
 			newInventory := models.Inventory{
-				StoreID:   transaction.StoreID,
-				ProductID: transaction.ProductID,
-				Quantity:  transaction.Quantity,
+				StoreID:          transaction.StoreID,
+				ProductVariantID: transaction.ProductVariantID,
+				Quantity:         transaction.Quantity,
 			}
 			if err := tx.Create(&newInventory).Error; err != nil {
 				tx.Rollback()

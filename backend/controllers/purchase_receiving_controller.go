@@ -100,6 +100,7 @@ func (prc *PurchaseReceivingController) GetPurchaseReceiving(c *gin.Context) {
 type PurchaseReceivingItemRequest struct {
 	PurchaseOrderItemID uint   `json:"purchase_order_item_id" binding:"required"`
 	ProductID           uint   `json:"product_id" binding:"required"`
+	ProductVariantID    uint   `json:"product_variant_id" binding:"required"`
 	ExpectedQuantity    int    `json:"expected_quantity" binding:"required"`
 	ActualQuantity      int    `json:"actual_quantity" binding:"required,min=0"`
 	BatchNumber         string `json:"batch_number"`
@@ -195,6 +196,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 			PurchaseReceivingID: receiving.ID,
 			PurchaseOrderItemID: item.PurchaseOrderItemID,
 			ProductID:           item.ProductID,
+			ProductVariantID:    item.ProductVariantID,
 			ExpectedQuantity:    item.ExpectedQuantity,
 			ActualQuantity:      item.ActualQuantity,
 			BatchNumber:         item.BatchNumber,
@@ -223,14 +225,14 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 		if item.ActualQuantity > 0 && item.QualityStatus != "defective" {
 			// 查找库存记录
 			var inventory models.Inventory
-			result := tx.Where("product_id = ? AND store_id = ?", item.ProductID, request.StoreID).First(&inventory)
+			result := tx.Where("product_variant_id = ? AND store_id = ?", item.ProductVariantID, request.StoreID).First(&inventory)
 
 			if result.Error != nil {
 				// 库存记录不存在，创建新记录
 				inventory = models.Inventory{
-					ProductID: item.ProductID,
-					StoreID:   request.StoreID,
-					Quantity:  item.ActualQuantity,
+					ProductVariantID: item.ProductVariantID,
+					StoreID:          request.StoreID,
+					Quantity:         item.ActualQuantity,
 				}
 				if err := tx.Create(&inventory).Error; err != nil {
 					tx.Rollback()
@@ -249,13 +251,13 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 
 			// 创建库存交易记录
 			transaction := models.InventoryTransaction{
-				ProductID:       item.ProductID,
-				StoreID:         request.StoreID,
-				TransactionType: models.PurchaseIn,
-				Quantity:        item.ActualQuantity,
-				OperatorID:      userID.(uint),
-				ReferenceType:   "purchase_receiving",
-				Note:            fmt.Sprintf("采购入库: %s", receivingNumber),
+				ProductVariantID: item.ProductVariantID,
+				StoreID:          request.StoreID,
+				TransactionType:  models.PurchaseIn,
+				Quantity:         item.ActualQuantity,
+				OperatorID:       userID.(uint),
+				ReferenceType:    "purchase_receiving",
+				Note:             fmt.Sprintf("采购入库: %s", receivingNumber),
 			}
 
 			// 设置关联ID
@@ -371,7 +373,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 		if item.ActualQuantity > 0 && item.QualityStatus != "defective" {
 			// 查找库存记录
 			var inventory models.Inventory
-			if err := tx.Where("product_id = ? AND store_id = ?", item.ProductID, receiving.StoreID).First(&inventory).Error; err != nil {
+			if err := tx.Where("product_variant_id = ? AND store_id = ?", item.ProductVariantID, receiving.StoreID).First(&inventory).Error; err != nil {
 				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "查询库存记录失败: " + err.Error()})
 				return
@@ -391,13 +393,13 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 			// 创建库存交易记录
 			transaction := models.InventoryTransaction{
-				ProductID:       item.ProductID,
-				StoreID:         receiving.StoreID,
-				TransactionType: models.PurchaseIn, // 使用采购入库类型，但数量为负
-				Quantity:        -item.ActualQuantity,
-				OperatorID:      userID.(uint),
-				ReferenceType:   "purchase_receiving_cancel",
-				Note:            fmt.Sprintf("取消采购入库: %s", receiving.ReceivingNumber),
+				ProductVariantID: item.ProductVariantID,
+				StoreID:          receiving.StoreID,
+				TransactionType:  models.PurchaseIn, // 使用采购入库类型，但数量为负
+				Quantity:         -item.ActualQuantity,
+				OperatorID:       userID.(uint),
+				ReferenceType:    "purchase_receiving_cancel",
+				Note:             fmt.Sprintf("取消采购入库: %s", receiving.ReceivingNumber),
 			}
 
 			// 设置关联ID

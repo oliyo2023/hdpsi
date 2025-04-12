@@ -57,16 +57,21 @@ type SalesOrder struct {
 
 // SalesOrderItem 销售订单明细
 type SalesOrderItem struct {
-	ID             uint    `gorm:"primaryKey"`
-	OrderID        uint    `gorm:"not null"` // 订单ID
-	ProductID      uint    `gorm:"not null"` // 商品ID
-	Quantity       int     `gorm:"not null"` // 数量
-	RetailPrice    float64 `gorm:"not null"` // 零售价
-	ActualPrice    float64 `gorm:"not null"` // 实际售价
-	DiscountAmount float64 // 折扣金额
-	QRCodeData     string  `gorm:"size:255"` // 商品二维码数据
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID               uint    `gorm:"primaryKey"`
+	OrderID          uint    `gorm:"not null"` // 订单ID
+	ProductID        uint    `gorm:"not null"` // 商品ID
+	ProductVariantID uint    `gorm:"not null"` // 商品变体ID
+	Quantity         int     `gorm:"not null"` // 数量
+	RetailPrice      float64 `gorm:"not null"` // 零售价
+	ActualPrice      float64 `gorm:"not null"` // 实际售价
+	DiscountAmount   float64 // 折扣金额
+	QRCodeData       string  `gorm:"size:255"` // 商品二维码数据
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+
+	// 关联
+	Product        Product        `gorm:"foreignKey:ProductID"`
+	ProductVariant ProductVariant `gorm:"foreignKey:ProductVariantID"`
 }
 
 // NegotiationRecord 议价记录
@@ -88,6 +93,7 @@ type FittingRecord struct {
 	ID                uint   `gorm:"primaryKey"`
 	MemberID          uint   `gorm:"not null"` // 会员ID
 	ProductID         uint   `gorm:"not null"` // 商品ID
+	ProductVariantID  uint   `gorm:"not null"` // 商品变体ID
 	FittingRoomID     uint   `gorm:"not null"` // 试衣间ID
 	StoreID           uint   `gorm:"not null"` // 店铺ID
 	SatisfactionLevel int    // 满意度评分(1-5)
@@ -100,6 +106,10 @@ type FittingRecord struct {
 	Comments          string `gorm:"size:255"` // 试穿评价
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+
+	// 关联
+	Product        Product        `gorm:"foreignKey:ProductID"`
+	ProductVariant ProductVariant `gorm:"foreignKey:ProductVariantID"`
 }
 
 // ReturnOrder 退换货单
@@ -125,6 +135,7 @@ type ReturnOrderItem struct {
 	ReturnOrderID     uint    `gorm:"not null"` // 退货单ID
 	OrderItemID       uint    `gorm:"not null"` // 原订单明细ID
 	ProductID         uint    `gorm:"not null"` // 商品ID
+	ProductVariantID  uint    `gorm:"not null"` // 商品变体ID
 	Quantity          int     `gorm:"not null"` // 数量
 	ReturnPrice       float64 `gorm:"not null"` // 退货单价
 	QRCodeData        string  `gorm:"size:255"` // 商品二维码数据
@@ -132,6 +143,10 @@ type ReturnOrderItem struct {
 	ExchangeQuantity  *int    // 换货数量，仅换货时有值
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+
+	// 关联
+	Product        Product        `gorm:"foreignKey:ProductID"`
+	ProductVariant ProductVariant `gorm:"foreignKey:ProductVariantID"`
 }
 
 // FittingRoom 试衣间

@@ -46,9 +46,14 @@ func main() {
 	sqlDB.SetConnMaxLifetime(time.Duration(config.AppConfig.Database.ConnMaxLifetime) * time.Second)
 
 	// 自动迁移数据模型
+	// 禁用外键约束检查
+	db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 	db.AutoMigrate(
 		&models.User{},
+		&models.Dictionary{},
+		&models.DictionaryItem{},
 		&models.Product{},
+		&models.ProductVariant{},
 		&models.Inventory{},
 		&models.Supplier{},
 		&models.PurchaseOrder{},
@@ -72,6 +77,8 @@ func main() {
 		&models.FittingRoom{},
 		&controllers.PointsTransaction{},
 	)
+	// 重新启用外键约束检查
+	db.Exec("SET FOREIGN_KEY_CHECKS = 1")
 
 	// 初始化Gin引擎
 	r := gin.Default()
@@ -82,6 +89,14 @@ func main() {
 
 	// 注册路由
 	routes.RegisterRoutes(r, db)
+
+	// 初始化字典数据
+	dictionaryController := controllers.NewDictionaryController(db)
+	if err := dictionaryController.InitDefaultDictionaries(); err != nil {
+		log.Printf("初始化字典数据失败: %v", err)
+	} else {
+		log.Println("字典数据初始化成功")
+	}
 
 	// 启动服务
 	serverPort := config.GetServerPort()

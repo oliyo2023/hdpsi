@@ -154,6 +154,7 @@ const activeKey = computed(() => {
   if (path.startsWith('/members')) return 'members'
   if (path.startsWith('/purchases')) return 'purchases'
   if (path.startsWith('/suppliers')) return 'suppliers'
+  if (path.startsWith('/dictionaries')) return 'dictionaries'
   return ''
 })
 
@@ -205,6 +206,18 @@ const menuOptions = [
     key: 'sales',
     icon: CartOutline,
     path: '/sales'
+  },
+  {
+    label: '系统管理',
+    key: 'system',
+    icon: SettingsOutline,
+    children: [
+      {
+        label: '字典管理',
+        key: 'dictionaries',
+        path: '/dictionaries'
+      }
+    ]
   }
 ]
 
@@ -277,7 +290,8 @@ const getPageTitle = () => {
     '/purchases': '采购管理',
     '/suppliers': '供应商管理',
     '/sales': '销售管理',
-    '/profile': '个人信息'
+    '/profile': '个人信息',
+    '/dictionaries': '字典管理'
   }
 
   // 处理子路径

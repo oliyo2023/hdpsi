@@ -283,13 +283,14 @@ func (sc *SalesController) CreateOrder(c *gin.Context) {
 
 		// 创建订单明细
 		orderItem := models.SalesOrderItem{
-			OrderID:        order.ID,
-			ProductID:      item.ProductID,
-			Quantity:       item.Quantity,
-			RetailPrice:    item.RetailPrice,
-			ActualPrice:    item.ActualPrice,
-			DiscountAmount: item.RetailPrice - item.ActualPrice,
-			QRCodeData:     item.QRCodeData,
+			OrderID:          order.ID,
+			ProductID:        item.ProductID,
+			ProductVariantID: item.ProductID, // 暂时使用ProductID替代
+			Quantity:         item.Quantity,
+			RetailPrice:      item.RetailPrice,
+			ActualPrice:      item.ActualPrice,
+			DiscountAmount:   item.RetailPrice - item.ActualPrice,
+			QRCodeData:       item.QRCodeData,
 		}
 
 		if err := tx.Create(&orderItem).Error; err != nil {
@@ -323,7 +324,7 @@ func (sc *SalesController) CreateOrder(c *gin.Context) {
 
 		// 更新库存
 		var inventory models.Inventory
-		result := tx.Where("store_id = ? AND product_id = ?", input.StoreID, item.ProductID).First(&inventory)
+		result := tx.Where("store_id = ? AND product_variant_id = ?", input.StoreID, item.ProductID).First(&inventory)
 
 		if result.Error != nil {
 			tx.Rollback()
@@ -348,13 +349,13 @@ func (sc *SalesController) CreateOrder(c *gin.Context) {
 
 		// 创建库存交易记录
 		transaction := models.InventoryTransaction{
-			TransactionType: models.SaleOut,
-			ProductID:       item.ProductID,
-			StoreID:         input.StoreID,
-			Quantity:        -item.Quantity, // 负数表示出库
-			ReferenceID:     &order.ID,
-			ReferenceType:   "sales_order",
-			OperatorID:      input.SalesPersonID,
+			TransactionType:  models.SaleOut,
+			ProductVariantID: item.ProductID, // 暂时使用ProductID替代
+			StoreID:          input.StoreID,
+			Quantity:         -item.Quantity, // 负数表示出库
+			ReferenceID:      &order.ID,
+			ReferenceType:    "sales_order",
+			OperatorID:       input.SalesPersonID,
 		}
 
 		if err := tx.Create(&transaction).Error; err != nil {
@@ -517,6 +518,7 @@ func (sc *SalesController) CreateReturnOrder(c *gin.Context) {
 			ReturnOrderID:     returnOrder.ID,
 			OrderItemID:       item.OrderItemID,
 			ProductID:         item.ProductID,
+			ProductVariantID:  item.ProductID, // 暂时使用ProductID替代
 			Quantity:          item.Quantity,
 			ReturnPrice:       item.ReturnPrice,
 			QRCodeData:        item.QRCodeData,
@@ -534,15 +536,15 @@ func (sc *SalesController) CreateReturnOrder(c *gin.Context) {
 
 		// 更新库存（退货入库）
 		var inventory models.Inventory
-		result := tx.Where("store_id = ? AND product_id = ?", input.StoreID, item.ProductID).First(&inventory)
+		result := tx.Where("store_id = ? AND product_variant_id = ?", input.StoreID, item.ProductID).First(&inventory)
 
 		if result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
 				// 如果库存记录不存在，创建新记录
 				inventory = models.Inventory{
-					StoreID:   input.StoreID,
-					ProductID: item.ProductID,
-					Quantity:  item.Quantity,
+					StoreID:          input.StoreID,
+					ProductVariantID: item.ProductID, // 暂时使用ProductID替代
+					Quantity:         item.Quantity,
 				}
 				if err := tx.Create(&inventory).Error; err != nil {
 					tx.Rollback()
@@ -566,13 +568,13 @@ func (sc *SalesController) CreateReturnOrder(c *gin.Context) {
 
 		// 创建库存交易记录（退货入库）
 		transaction := models.InventoryTransaction{
-			TransactionType: models.ReturnIn,
-			ProductID:       item.ProductID,
-			StoreID:         input.StoreID,
-			Quantity:        item.Quantity, // 正数表示入库
-			ReferenceID:     &returnOrder.ID,
-			ReferenceType:   "return_order",
-			OperatorID:      input.ProcessorID,
+			TransactionType:  models.ReturnIn,
+			ProductVariantID: item.ProductID, // 暂时使用ProductID替代
+			StoreID:          input.StoreID,
+			Quantity:         item.Quantity, // 正数表示入库
+			ReferenceID:      &returnOrder.ID,
+			ReferenceType:    "return_order",
+			OperatorID:       input.ProcessorID,
 		}
 
 		if err := tx.Create(&transaction).Error; err != nil {
@@ -585,7 +587,7 @@ func (sc *SalesController) CreateReturnOrder(c *gin.Context) {
 		if input.ReturnType == "exchange" && item.ExchangeProductID != nil && item.ExchangeQuantity != nil {
 			// 验证换货商品库存是否足够
 			var exchangeInventory models.Inventory
-			result := tx.Where("store_id = ? AND product_id = ?", input.StoreID, *item.ExchangeProductID).First(&exchangeInventory)
+			result := tx.Where("store_id = ? AND product_variant_id = ?", input.StoreID, *item.ExchangeProductID).First(&exchangeInventory)
 
 			if result.Error != nil {
 				tx.Rollback()
@@ -609,13 +611,13 @@ func (sc *SalesController) CreateReturnOrder(c *gin.Context) {
 
 			// 创建库存交易记录（换货出库）
 			exchangeTransaction := models.InventoryTransaction{
-				TransactionType: models.ExchangeOut,
-				ProductID:       *item.ExchangeProductID,
-				StoreID:         input.StoreID,
-				Quantity:        -*item.ExchangeQuantity, // 负数表示出库
-				ReferenceID:     &returnOrder.ID,
-				ReferenceType:   "exchange_order",
-				OperatorID:      input.ProcessorID,
+				TransactionType:  models.ExchangeOut,
+				ProductVariantID: *item.ExchangeProductID, // 暂时使用ExchangeProductID替代
+				StoreID:          input.StoreID,
+				Quantity:         -*item.ExchangeQuantity, // 负数表示出库
+				ReferenceID:      &returnOrder.ID,
+				ReferenceType:    "exchange_order",
+				OperatorID:       input.ProcessorID,
 			}
 
 			if err := tx.Create(&exchangeTransaction).Error; err != nil {

@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
 import ProductList from '../views/ProductList.vue'
+import ProductCreate from '../views/ProductCreate.vue'
+import ProductEdit from '../views/ProductEdit.vue'
 import InventoryList from '../views/InventoryList.vue'
 import MemberList from '../views/MemberList.vue'
 import MemberCreate from '../views/MemberCreate.vue'
@@ -13,6 +15,8 @@ import PurchaseCreate from '../views/PurchaseCreate.vue'
 import SupplierList from '../views/SupplierList.vue'
 import SupplierDetail from '../views/SupplierDetail.vue'
 import SupplierCreate from '../views/SupplierCreate.vue'
+import DictionaryList from '../views/DictionaryList.vue'
+import DictionaryItemList from '../views/DictionaryItemList.vue'
 import Profile from '../views/Profile.vue'
 import NotFound from '../views/NotFound.vue'
 
@@ -38,6 +42,18 @@ const routes = [
     path: '/products',
     name: 'ProductList',
     component: ProductList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/products/create',
+    name: 'ProductCreate',
+    component: ProductCreate,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/products/edit/:id',
+    name: 'ProductEdit',
+    component: ProductEdit,
     meta: { requiresAuth: true }
   },
   {
@@ -98,6 +114,18 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/dictionaries',
+    name: 'DictionaryList',
+    component: DictionaryList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/dictionaries/:code/items',
+    name: 'DictionaryItemList',
+    component: DictionaryItemList,
     meta: { requiresAuth: true }
   },
   {

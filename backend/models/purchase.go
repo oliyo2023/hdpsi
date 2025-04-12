@@ -81,6 +81,7 @@ type PurchaseReceivingItem struct {
 	PurchaseReceivingID uint   `gorm:"not null"`               // 入库单ID
 	PurchaseOrderItemID uint   `gorm:"not null"`               // 采购单明细ID
 	ProductID           uint   `gorm:"not null"`               // 商品ID
+	ProductVariantID    uint   `gorm:"not null"`               // 商品变体ID
 	ExpectedQuantity    int    `gorm:"not null"`               // 预期数量
 	ActualQuantity      int    `gorm:"not null"`               // 实际入库数量
 	BatchNumber         string `gorm:"size:50"`                // 批次号
@@ -90,7 +91,8 @@ type PurchaseReceivingItem struct {
 	UpdatedAt           time.Time
 
 	// 关联
-	Product Product `gorm:"foreignKey:ProductID"`
+	Product        Product        `gorm:"foreignKey:ProductID"`
+	ProductVariant ProductVariant `gorm:"foreignKey:ProductVariantID"`
 }
 
 // SupplierRating 供应商评级

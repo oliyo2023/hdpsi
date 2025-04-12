@@ -29,6 +29,25 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		authGroup.POST("/reset-password", authController.ResetPassword)
 	}
 
+	// 字典管理路由 - 不需要认证
+	dictionaryController := controllers.NewDictionaryController(db)
+	dictGroup := api.Group("/dictionaries")
+	{
+		// 字典类型路由
+		dictGroup.GET("", dictionaryController.ListDictionaries)
+		dictGroup.GET("/:code", dictionaryController.GetDictionary)
+		dictGroup.POST("", dictionaryController.CreateDictionary)
+		dictGroup.PUT("/:code", dictionaryController.UpdateDictionary)
+		dictGroup.DELETE("/:code", dictionaryController.DeleteDictionary)
+
+		// 字典项路由
+		dictGroup.GET("/:code/items", dictionaryController.ListDictionaryItems)
+		dictGroup.GET("/:code/items/:itemId", dictionaryController.GetDictionaryItem)
+		dictGroup.POST("/:code/items", dictionaryController.CreateDictionaryItem)
+		dictGroup.PUT("/:code/items/:itemId", dictionaryController.UpdateDictionaryItem)
+		dictGroup.DELETE("/:code/items/:itemId", dictionaryController.DeleteDictionaryItem)
+	}
+
 	// 需要认证的路由
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTAuth())
@@ -209,5 +228,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			fittingGroup.PUT("/records/:id", middleware.RoleAuth("admin", "manager", "staff"), fittingController.UpdateFittingRecord)
 			fittingGroup.PUT("/records/:id/complete", middleware.RoleAuth("admin", "manager", "staff"), fittingController.CompleteFitting)
 		}
+
 	}
 }
