@@ -423,7 +423,7 @@ onMounted(async () => {
 /* 主容器样式 */
 .dashboard-container {
   padding: 16px;
-  background-color: #f8fafc;
+  background-color: var(--background-color);
   min-height: calc(100vh - 64px - 48px);
   overflow-x: hidden;
 }
@@ -439,14 +439,14 @@ onMounted(async () => {
 .dashboard-title {
   font-size: 24px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-color-primary);
   margin: 0;
 }
 
 .dashboard-date {
   display: flex;
   align-items: center;
-  color: #64748b;
+  color: var(--text-color-secondary);
   font-size: 14px;
 }
 
@@ -471,14 +471,15 @@ onMounted(async () => {
   height: 140px;
   border-radius: 12px;
   padding: 20px;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--card-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: all 0.3s ease;
   overflow: hidden;
   position: relative;
+  border: 1px solid var(--border-color-light);
 }
 
 .stat-card:hover {
@@ -610,14 +611,15 @@ onMounted(async () => {
 }
 
 .data-card {
-  background-color: white;
+  background-color: var(--card-background);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 0;
   height: 400px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 1px solid var(--border-color-light);
 }
 
 .data-card-header {
@@ -625,7 +627,7 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .data-card-title {
@@ -633,12 +635,12 @@ onMounted(async () => {
   align-items: center;
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-color-primary);
 }
 
 .title-icon {
   margin-right: 8px;
-  color: #64748b;
+  color: var(--text-color-secondary);
 }
 
 .action-button {
@@ -659,13 +661,13 @@ onMounted(async () => {
 
 /* 自定义表格样式 */
 .custom-table :deep(.n-data-table-th) {
-  background-color: #f8fafc;
+  background-color: var(--table-header-background);
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-color-primary);
 }
 
 .custom-table :deep(.n-data-table-tr:hover) {
-  background-color: #f1f5f9;
+  background-color: var(--table-hover-background);
 }
 
 /* 响应式调整 */

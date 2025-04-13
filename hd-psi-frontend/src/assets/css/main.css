@@ -58,6 +58,85 @@
   --background-color-base: #1e1e1e;
   --background-color: #121212;
   --card-background: #1e1e1e;
+  --input-background: #2a2a2a;
+  --form-background: #252525;
+  --table-background: #252525;
+  --table-header-background: #2a2a2a;
+  --table-hover-background: #333333;
+  --dropdown-background: #2a2a2a;
+  --modal-background: #252525;
+  --tooltip-background: #333333;
+  --scrollbar-thumb: #444444;
+  --scrollbar-track: #2a2a2a;
+}
+
+/* 暗色主题下的全局样式覆盖 */
+.dark body {
+  background-color: var(--background-color);
+  color: var(--text-color-regular);
+}
+
+.dark .n-card {
+  background-color: var(--card-background);
+  color: var(--text-color-regular);
+}
+
+.dark .n-input {
+  background-color: var(--input-background);
+  color: var(--text-color-regular);
+  border-color: var(--border-color-base);
+}
+
+.dark .n-input:hover, .dark .n-input:focus {
+  border-color: var(--primary-color);
+}
+
+.dark .n-select {
+  background-color: var(--input-background);
+  color: var(--text-color-regular);
+  border-color: var(--border-color-base);
+}
+
+.dark .n-select:hover, .dark .n-select:focus {
+  border-color: var(--primary-color);
+}
+
+.dark .n-data-table {
+  background-color: var(--table-background);
+  color: var(--text-color-regular);
+}
+
+.dark .n-data-table-th {
+  background-color: var(--table-header-background);
+  color: var(--text-color-primary);
+}
+
+.dark .n-data-table-tr:hover {
+  background-color: var(--table-hover-background);
+}
+
+.dark .n-dropdown-menu {
+  background-color: var(--dropdown-background);
+  color: var(--text-color-regular);
+  border-color: var(--border-color-base);
+}
+
+.dark .n-modal {
+  background-color: var(--modal-background);
+  color: var(--text-color-regular);
+}
+
+.dark .n-tooltip {
+  background-color: var(--tooltip-background);
+  color: var(--text-color-regular);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-track);
 }
 
 /* 通用样式 */
@@ -75,10 +154,11 @@
 }
 
 .page-content {
-  background-color: #fff;
+  background-color: var(--card-background);
   padding: 24px;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  color: var(--text-color-regular);
 }
 
 .form-actions {

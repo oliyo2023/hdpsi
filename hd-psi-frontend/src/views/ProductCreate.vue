@@ -48,18 +48,18 @@
             </n-form-item-gi>
 
             <n-form-item-gi :span="8" label="类别" path="categoryId">
-              <n-select 
-                v-model:value="formData.categoryId" 
-                :options="categoryOptions" 
-                placeholder="请选择类别" 
+              <n-select
+                v-model:value="formData.categoryId"
+                :options="categoryOptions"
+                placeholder="请选择类别"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="8" label="品牌" path="brandId">
-              <n-select 
-                v-model:value="formData.brandId" 
-                :options="brandOptions" 
-                placeholder="请选择品牌" 
+              <n-select
+                v-model:value="formData.brandId"
+                :options="brandOptions"
+                placeholder="请选择品牌"
               />
             </n-form-item-gi>
 
@@ -76,11 +76,11 @@
             </n-form-item-gi>
 
             <n-form-item-gi :span="24" label="商品描述" path="description">
-              <n-input 
-                v-model:value="formData.description" 
-                type="textarea" 
-                placeholder="请输入商品描述" 
-                :autosize="{ minRows: 3, maxRows: 6 }" 
+              <n-input
+                v-model:value="formData.description"
+                type="textarea"
+                placeholder="请输入商品描述"
+                :autosize="{ minRows: 3, maxRows: 6 }"
               />
             </n-form-item-gi>
           </n-grid>
@@ -127,60 +127,60 @@
         >
           <n-grid :cols="24" :x-gap="24">
             <n-form-item-gi :span="12" label="颜色" path="colorId">
-              <n-select 
-                v-model:value="variantForm.colorId" 
-                :options="colorOptions" 
-                placeholder="请选择颜色" 
+              <n-select
+                v-model:value="variantForm.colorId"
+                :options="colorOptions"
+                placeholder="请选择颜色"
                 :render-label="renderColorLabel"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="12" label="尺码" path="sizeId">
-              <n-select 
-                v-model:value="variantForm.sizeId" 
-                :options="sizeOptions" 
-                placeholder="请选择尺码" 
+              <n-select
+                v-model:value="variantForm.sizeId"
+                :options="sizeOptions"
+                placeholder="请选择尺码"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="12" label="季节" path="seasonId">
-              <n-select 
-                v-model:value="variantForm.seasonId" 
-                :options="seasonOptions" 
-                placeholder="请选择季节" 
+              <n-select
+                v-model:value="variantForm.seasonId"
+                :options="seasonOptions"
+                placeholder="请选择季节"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="12" label="面料" path="fabricId">
-              <n-select 
-                v-model:value="variantForm.fabricId" 
-                :options="fabricOptions" 
-                placeholder="请选择面料" 
+              <n-select
+                v-model:value="variantForm.fabricId"
+                :options="fabricOptions"
+                placeholder="请选择面料"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="12" label="成本价" path="costPrice">
-              <n-input-number 
-                v-model:value="variantForm.costPrice" 
-                placeholder="请输入成本价" 
-                :min="0" 
-                :precision="2" 
+              <n-input-number
+                v-model:value="variantForm.costPrice"
+                placeholder="请输入成本价"
+                :min="0"
+                :precision="2"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="12" label="零售价" path="retailPrice">
-              <n-input-number 
-                v-model:value="variantForm.retailPrice" 
-                placeholder="请输入零售价" 
-                :min="0" 
-                :precision="2" 
+              <n-input-number
+                v-model:value="variantForm.retailPrice"
+                placeholder="请输入零售价"
+                :min="0"
+                :precision="2"
               />
             </n-form-item-gi>
 
             <n-form-item-gi :span="24" label="条形码" path="barcode">
-              <n-input 
-                v-model:value="variantForm.barcode" 
-                placeholder="请输入条形码" 
+              <n-input
+                v-model:value="variantForm.barcode"
+                placeholder="请输入条形码"
               />
             </n-form-item-gi>
           </n-grid>
@@ -439,7 +439,7 @@ const addVariant = () => {
   variantForm.barcode = ''
   variantForm.costPrice = formData.costPrice
   variantForm.retailPrice = formData.retailPrice
-  
+
   showVariantModal.value = true
 }
 
@@ -537,7 +537,7 @@ onMounted(async () => {
 <style scoped>
 .product-create {
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--background-color);
   min-height: calc(100vh - 64px);
 }
 
@@ -567,7 +567,7 @@ onMounted(async () => {
 .page-subtitle {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--text-color-secondary);
 }
 
 .form-card {

@@ -55,7 +55,7 @@ func (dc *DashboardController) GetStatistics(c *gin.Context) {
 		return
 	}
 
-	// 返回统计数据
+	// 打印统计数据，便于调试
 	c.JSON(http.StatusOK, gin.H{
 		"productCount":   productCount,
 		"inventoryCount": inventoryTotal,
