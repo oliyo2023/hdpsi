@@ -15,7 +15,7 @@
                   {{ getUserInitials() }}
                 </div>
                 <div class="user-info">
-                  <h2>{{ userForm.name || userForm.username }}</h2>
+                  <h2>{{ userForm.Name || userForm.Username }}</h2>
                   <div class="user-role">{{ getUserRole() }}</div>
                 </div>
               </div>
@@ -33,20 +33,20 @@
               size="medium"
             >
               <n-grid :cols="24" :x-gap="24">
-                <n-form-item-gi :span="12" label="用户名" path="username">
-                  <n-input v-model:value="userForm.username" disabled placeholder="用户名" />
+                <n-form-item-gi :span="12" label="用户名" path="Username">
+                  <n-input v-model:value="userForm.Username" disabled placeholder="用户名" />
                 </n-form-item-gi>
 
-                <n-form-item-gi :span="12" label="姓名" path="name">
-                  <n-input v-model:value="userForm.name" placeholder="请输入姓名" />
+                <n-form-item-gi :span="12" label="姓名" path="Name">
+                  <n-input v-model:value="userForm.Name" placeholder="请输入姓名" />
                 </n-form-item-gi>
 
-                <n-form-item-gi :span="12" label="电子邮箱" path="email">
-                  <n-input v-model:value="userForm.email" placeholder="请输入电子邮箱" />
+                <n-form-item-gi :span="12" label="电子邮箱" path="Email">
+                  <n-input v-model:value="userForm.Email" placeholder="请输入电子邮箱" />
                 </n-form-item-gi>
 
-                <n-form-item-gi :span="12" label="手机号码" path="phone">
-                  <n-input v-model:value="userForm.phone" placeholder="请输入手机号码" />
+                <n-form-item-gi :span="12" label="手机号码" path="Phone">
+                  <n-input v-model:value="userForm.Phone" placeholder="请输入手机号码" />
                 </n-form-item-gi>
 
                 <n-form-item-gi :span="12" label="角色">
@@ -54,7 +54,7 @@
                 </n-form-item-gi>
 
                 <n-form-item-gi :span="12" label="最后登录">
-                  <n-input :value="formatDate(userForm.lastLogin)" disabled />
+                  <n-input :value="formatDate(userForm.LastLogin)" disabled />
                 </n-form-item-gi>
               </n-grid>
 
@@ -140,12 +140,12 @@ const passwordLoading = ref(false)
 
 // 用户表单数据
 const userForm = reactive({
-  username: '',
-  name: '',
-  email: '',
-  phone: '',
-  role: '',
-  lastLogin: null
+  Username: '',
+  Name: '',
+  Email: '',
+  Phone: '',
+  Role: '',
+  LastLogin: null
 })
 
 // 密码表单数据
@@ -157,13 +157,13 @@ const passwordForm = reactive({
 
 // 表单验证规则
 const rules = {
-  name: [
+  Name: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
   ],
-  email: [
+  Email: [
     { type: 'email', message: '请输入有效的电子邮箱地址', trigger: 'blur' }
   ],
-  phone: [
+  Phone: [
     { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' }
   ]
 }
@@ -198,12 +198,12 @@ const getUserRole = () => {
     'cashier': '收银员',
     'operator': '操作员'
   }
-  return roleMap[userForm.role] || '用户'
+  return roleMap[userForm.Role] || '用户'
 }
 
 // 获取用户名首字母作为头像
 const getUserInitials = () => {
-  const name = userForm.name || userForm.username || ''
+  const name = userForm.Name || userForm.Username || ''
   if (!name) return 'U'
 
   // 如果是中文名字，取第一个字
@@ -235,12 +235,12 @@ const loadUserProfile = async () => {
   try {
     const userData = await auth.getProfile()
     if (userData) {
-      userForm.username = userData.username || ''
-      userForm.name = userData.name || ''
-      userForm.email = userData.email || ''
-      userForm.phone = userData.phone || ''
-      userForm.role = userData.role || ''
-      userForm.lastLogin = userData.lastLogin || null
+      userForm.Username = userData.Username || ''
+      userForm.Name = userData.Name || ''
+      userForm.Email = userData.Email || ''
+      userForm.Phone = userData.Phone || ''
+      userForm.Role = userData.Role || ''
+      userForm.LastLogin = userData.LastLogin || null
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
@@ -255,9 +255,9 @@ const handleUpdateProfile = () => {
       loading.value = true
       try {
         const updateData = {
-          name: userForm.name,
-          email: userForm.email,
-          phone: userForm.phone
+          Name: userForm.Name,
+          Email: userForm.Email,
+          Phone: userForm.Phone
         }
 
         await auth.updateProfile(updateData)

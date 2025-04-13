@@ -60,6 +60,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		apiAuth.PUT("/profile", authController.UpdateProfile)
 		apiAuth.PUT("/change-password", authController.ChangePassword)
 
+		// 系统设置路由
+		systemSettingController := controllers.NewSystemSettingController(db)
+		apiAuth.GET("/settings", systemSettingController.GetSettings)
+		apiAuth.PUT("/settings", middleware.RoleAuth("admin"), systemSettingController.UpdateSettings)
+		apiAuth.GET("/settings/theme", systemSettingController.GetUserTheme)
+		apiAuth.PUT("/settings/theme", systemSettingController.UpdateUserTheme)
+
 		// 商品管理路由
 		productController := controllers.NewProductController(db)
 		productGroup := apiAuth.Group("/products")

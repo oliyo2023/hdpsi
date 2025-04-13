@@ -318,11 +318,12 @@ const loadStatistics = async () => {
   try {
     // 从 API 获取统计数据
     const response = await api.get('/api/dashboard/statistics')
-    if (response && response.data) {
-      statistics.productCount = response.data.productCount || 0
-      statistics.inventoryCount = response.data.inventoryCount || 0
-      statistics.memberCount = response.data.memberCount || 0
-      statistics.orderCount = response.data.orderCount || 0
+    console.log('从后端获取的统计数据:', response)
+    if (response) {
+      statistics.productCount = response.productCount || 0
+      statistics.inventoryCount = response.inventoryCount || 0
+      statistics.memberCount = response.memberCount || 0
+      statistics.orderCount = response.orderCount || 0
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)

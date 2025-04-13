@@ -22,6 +22,7 @@ export default {
     try {
       const userData = await this.getProfile()
       if (userData) {
+        console.log('从后端获取的用户信息:', userData)
         localStorage.setItem('user', JSON.stringify(userData))
         return userData
       }
@@ -133,9 +134,11 @@ export default {
 
   // 保存登录响应
   saveLoginResponse(response) {
+    console.log('登录响应数据:', response)
     localStorage.setItem('token', response.token)
     localStorage.setItem('refreshToken', response.refresh_token)
     localStorage.setItem('tokenExpires', response.expires_at)
     localStorage.setItem('user', JSON.stringify(response.user))
+    console.log('已保存用户信息到本地存储:', response.user)
   }
 }

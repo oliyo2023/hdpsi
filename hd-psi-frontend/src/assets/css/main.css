@@ -1,21 +1,63 @@
 /* 全局样式 */
 :root {
+  /* 主色调 */
   --primary-color: #18a058;
   --primary-hover-color: #36ad6a;
   --primary-active-color: #0c7a43;
   --primary-bg-color: #f0f9eb;
+
+  /* 状态颜色 */
   --success-color: #18a058;
   --warning-color: #f0a020;
   --error-color: #d03050;
   --info-color: #2080f0;
+
+  /* 文本颜色 */
   --text-color-primary: #303133;
   --text-color-regular: #606266;
   --text-color-secondary: #909399;
+
+  /* 边框颜色 */
   --border-color-base: #dcdfe6;
   --border-color-light: #e4e7ed;
   --border-color-lighter: #ebeef5;
   --border-color-extra-light: #f2f6fc;
+
+  /* 背景颜色 */
   --background-color-base: #f5f7fa;
+  --background-color: #f5f5f5;
+  --card-background: #ffffff;
+}
+
+/* 暗色主题 */
+.dark {
+  /* 主色调 */
+  --primary-color: #36ad6a;
+  --primary-hover-color: #4cb77a;
+  --primary-active-color: #2a9057;
+  --primary-bg-color: #1a2e1f;
+
+  /* 状态颜色 */
+  --success-color: #36ad6a;
+  --warning-color: #e6a23c;
+  --error-color: #e74c3c;
+  --info-color: #409eff;
+
+  /* 文本颜色 */
+  --text-color-primary: #ffffff;
+  --text-color-regular: #e0e0e0;
+  --text-color-secondary: #aaaaaa;
+
+  /* 边框颜色 */
+  --border-color-base: #333333;
+  --border-color-light: #444444;
+  --border-color-lighter: #555555;
+  --border-color-extra-light: #666666;
+
+  /* 背景颜色 */
+  --background-color-base: #1e1e1e;
+  --background-color: #121212;
+  --card-background: #1e1e1e;
 }
 
 /* 通用样式 */
@@ -72,16 +114,16 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .page-title {
     margin-bottom: 16px;
   }
-  
+
   .table-toolbar {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .table-search {
     margin-bottom: 16px;
     width: 100%;

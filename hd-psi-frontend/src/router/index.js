@@ -18,6 +18,7 @@ import SupplierCreate from '../views/SupplierCreate.vue'
 import DictionaryList from '../views/DictionaryList.vue'
 import DictionaryItemList from '../views/DictionaryItemList.vue'
 import Profile from '../views/Profile.vue'
+import Settings from '../views/Settings.vue'
 import NotFound from '../views/NotFound.vue'
 
 // 路由配置
@@ -114,6 +115,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
     meta: { requiresAuth: true }
   },
   {

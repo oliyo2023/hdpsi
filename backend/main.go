@@ -76,6 +76,7 @@ func main() {
 		&models.ReturnOrderItem{},
 		&models.FittingRoom{},
 		&controllers.PointsTransaction{},
+		&models.SystemSetting{},
 	)
 	// 重新启用外键约束检查
 	db.Exec("SET FOREIGN_KEY_CHECKS = 1")
@@ -96,6 +97,14 @@ func main() {
 		log.Printf("初始化字典数据失败: %v", err)
 	} else {
 		log.Println("字典数据初始化成功")
+	}
+
+	// 初始化系统设置数据
+	systemSettingController := controllers.NewSystemSettingController(db)
+	if err := systemSettingController.InitDefaultSettings(); err != nil {
+		log.Printf("初始化系统设置失败: %v", err)
+	} else {
+		log.Println("系统设置初始化成功")
 	}
 
 	// 启动服务

@@ -76,6 +76,22 @@
                                 </n-icon>
                               </template>
                             </n-button>
+                            <n-button quaternary circle class="action-button" @click="toggleTheme">
+                              <template #icon>
+                                <n-icon size="18">
+                                  <template v-if="currentTheme === THEME_LIGHT">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                                      <path fill="currentColor" d="M12 21q-3.75 0-6.375-2.625T3 12t2.625-6.375T12 3q.35 0 .688.025t.662.075q-1.025.725-1.638 1.888T11.1 7.5q0 2.25 1.575 3.825T16.5 12.9q1.375 0 2.525-.613T20.9 10.65q.05.325.075.662T21 12q0 3.75-2.625 6.375T12 21" />
+                                    </svg>
+                                  </template>
+                                  <template v-else>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                                      <path fill="currentColor" d="M12 17q-2.075 0-3.538-1.463T7 12q0-2.075 1.463-3.538T12 7q2.075 0 3.538 1.463T17 12q0 2.075-1.463 3.538T12 17M2 13h2q.425 0 .713-.288T5 12q0-.425-.288-.713T4 11H2q-.425 0-.713.288T1 12q0 .425.288.713T2 13m18 0h2q.425 0 .713-.288T23 12q0-.425-.288-.713T22 11h-2q-.425 0-.713.288T19 12q0 .425.288.713T20 13m-8-8q.425 0 .713-.288T13 4V2q0-.425-.288-.713T12 1q-.425 0-.713.288T11 2v2q0 .425.288.713T12 5m0 14q.425 0 .713-.288T13 18v-2q0-.425-.288-.713T12 15q-.425 0-.713.288T11 16v2q0 .425.288.713T12 19M5.65 7.05L4.575 6q-.3-.275-.288-.7t.288-.725q.3-.3.725-.3t.7.3L7.05 5.65q.275.3.275.7t-.275.7q-.275.3-.687.288T5.65 7.05M18.35 7.05q-.275-.3-.275-.7t.275-.7l1.075-1.05q.3-.3.713-.3t.712.3q.3.3.3.725t-.3.7L19.4 7.05q-.3.275-.7.275t-.7-.275M16.95 19.425l1.05 1.075q.3.3.3.713t-.3.712q-.3.3-.725.3t-.7-.3L15.5 20.35q-.3-.3-.288-.7t.288-.7q.3-.3.7-.288t.7.288M4.575 19.425q-.3-.3-.3-.725t.3-.7l1.05-1.075q.3-.275.7-.275t.7.275q.3.3.288.7t-.288.7l-1.05 1.075q-.3.3-.712.3t-.713-.3Z" />
+                                    </svg>
+                                  </template>
+                                </n-icon>
+                              </template>
+                            </n-button>
                           </div>
                           <n-dropdown :options="userOptions" @select="handleUserAction" trigger="click">
                             <div class="user-dropdown">
@@ -83,7 +99,7 @@
                                 {{ getUserInitials() }}
                               </div>
                               <div class="user-info" v-if="!collapsed">
-                                <div class="user-name">{{ currentUser.name || currentUser.username }}</div>
+                                <div class="user-name">{{ currentUser.Name || currentUser.Username || 'User' }}</div>
                                 <div class="user-role">{{ getUserRole() }}</div>
                               </div>
                               <n-icon size="14" class="dropdown-icon">
@@ -125,9 +141,10 @@ import {
   NConfigProvider, NLayout, NLayoutSider, NLayoutHeader,
   NLayoutContent, NLayoutFooter, NMenu, NButton, NIcon,
   NDropdown, NMessageProvider, NNotificationProvider,
-  NDialogProvider, NLoadingBarProvider
+  NDialogProvider, NLoadingBarProvider, NSwitch
 } from 'naive-ui'
 import { zhCN, darkTheme } from 'naive-ui'
+import { useTheme, THEME_LIGHT, THEME_DARK } from '@/composables/useTheme'
 import {
   HomeOutline, CartOutline, PeopleOutline,
   PersonOutline, LogOutOutline, SettingsOutline,
@@ -143,7 +160,14 @@ const route = useRoute()
 const collapsed = ref(false)
 const isLoggedIn = ref(false)
 const currentUser = ref({})
-const theme = ref(null) // 默认使用亮色主题
+
+// 使用主题钩子
+const { currentTheme, toggleTheme } = useTheme()
+
+// 设置主题
+const theme = computed(() => {
+  return currentTheme.value === THEME_DARK ? darkTheme : null
+})
 
 // 计算属性
 const activeKey = computed(() => {
@@ -291,6 +315,7 @@ const getPageTitle = () => {
     '/suppliers': '供应商管理',
     '/sales': '销售管理',
     '/profile': '个人信息',
+    '/settings': '系统设置',
     '/dictionaries': '字典管理'
   }
 
@@ -316,12 +341,13 @@ const getUserRole = () => {
     'manager': '经理',
     'staff': '员工'
   }
-  return roleMap[currentUser.value?.role] || '用户'
+  return roleMap[currentUser.value?.Role] || '用户'
 }
 
 // 获取用户名首字母作为头像
 const getUserInitials = () => {
-  const name = currentUser.value?.name || currentUser.value?.username || ''
+  const name = currentUser.value?.Name || currentUser.value?.Username || ''
+  console.log('获取用户头像时的用户名:', name)
   if (!name) return 'U'
 
   // 如果是中文名字，取第一个字
@@ -345,12 +371,15 @@ const checkAuthStatus = async () => {
       const userProfile = await auth.fetchAndUpdateUserProfile()
       if (userProfile) {
         currentUser.value = userProfile
+        console.log('更新后的当前用户信息:', currentUser.value)
       } else {
         // 如果无法获取用户信息，尝试使用本地存储的信息
         currentUser.value = auth.getCurrentUser() || {}
+        console.log('从本地存储获取的用户信息:', currentUser.value)
 
         // 如果本地也没有用户信息，清除令牌并重定向到登录页
         if (!currentUser.value || !currentUser.value.username) {
+          console.log('本地没有用户信息，执行登出')
           auth.logout()
           return
         }
@@ -394,8 +423,8 @@ watch(
 
 /* 侧边栏样式 */
 .sidebar {
-  background-color: #ffffff;
-  border-right: 1px solid #f1f5f9 !important;
+  background-color: var(--card-background);
+  border-right: 1px solid var(--border-color-light) !important;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
   position: relative;
   z-index: 10;
@@ -408,9 +437,9 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color-light);
   margin-bottom: 8px;
-  background: linear-gradient(to right, #f8fafc, #ffffff);
+  background: var(--card-background);
 }
 
 .logo {
@@ -457,13 +486,13 @@ watch(
   height: 44px;
   margin-bottom: 2px;
   border-radius: 8px;
-  color: #64748b;
+  color: var(--text-color-regular);
   transition: all 0.3s;
 }
 
 .custom-menu :deep(.n-menu-item:hover) {
-  color: #0ea5e9;
-  background-color: #f1f5f9;
+  color: var(--primary-color);
+  background-color: var(--primary-bg-color);
 }
 
 .custom-menu :deep(.n-menu-item-content) {
@@ -476,8 +505,8 @@ watch(
 }
 
 .custom-menu :deep(.n-menu-item.n-menu-item--selected) {
-  background-color: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+  background-color: var(--primary-bg-color);
+  color: var(--primary-color);
   font-weight: 500;
 }
 
@@ -489,7 +518,7 @@ watch(
   transform: translateY(-50%);
   width: 4px;
   height: 20px;
-  background: #0ea5e9;
+  background: var(--primary-color);
   border-radius: 0 4px 4px 0;
 }
 

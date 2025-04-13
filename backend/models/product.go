@@ -7,11 +7,11 @@ type Product struct {
 	ID          uint    `gorm:"primaryKey"`
 	SKU         string  `gorm:"size:255;uniqueIndex"`
 	Name        string  `gorm:"size:255;not null"`
-	CategoryID  uint    // 商品类别ID
-	BrandID     uint    // 品牌ID
-	Image       string  `gorm:"size:255"`  // 主图
-	Images      string  `gorm:"type:text"` // 多张图片，JSON格式
-	Description string  `gorm:"type:text"` // 商品描述
+	CategoryID  *uint   `gorm:"default:null"` // 商品类别ID
+	BrandID     *uint   `gorm:"default:null"` // 品牌ID
+	Image       string  `gorm:"size:255"`     // 主图
+	Images      string  `gorm:"type:text"`    // 多张图片，JSON格式
+	Description string  `gorm:"type:text"`    // 商品描述
 	CostPrice   float64 // 成本价
 	RetailPrice float64 // 零售价
 	Status      bool    `gorm:"default:true"` // 状态：上架/下架
@@ -29,12 +29,12 @@ type ProductVariant struct {
 	ID          uint    `gorm:"primaryKey"`
 	ProductID   uint    `gorm:"not null;index"`       // 关联的商品ID
 	SKU         string  `gorm:"size:255;uniqueIndex"` // 变体SKU
-	ColorID     uint    // 颜色ID
-	SizeID      uint    // 尺码ID
-	SeasonID    uint    // 季节ID
-	FabricID    uint    // 面料ID
-	Barcode     string  `gorm:"size:100"` // 条形码
-	QRCode      string  `gorm:"size:255"` // 二维码数据
+	ColorID     *uint   `gorm:"default:null"`         // 颜色ID
+	SizeID      *uint   `gorm:"default:null"`         // 尺码ID
+	SeasonID    *uint   `gorm:"default:null"`         // 季节ID
+	FabricID    *uint   `gorm:"default:null"`         // 面料ID
+	Barcode     string  `gorm:"size:100"`             // 条形码
+	QRCode      string  `gorm:"size:255"`             // 二维码数据
 	CostPrice   float64 // 成本价（可能与主商品不同）
 	RetailPrice float64 // 零售价（可能与主商品不同）
 	Status      bool    `gorm:"default:true"` // 状态：启用/禁用

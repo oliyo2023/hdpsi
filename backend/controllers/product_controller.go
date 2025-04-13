@@ -118,7 +118,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 			{
 				SKU:         "MS001",
 				Name:        "男士休闲衬衫",
-				CategoryID:  categoryShirt,
+				CategoryID:  &categoryShirt,
 				CostPrice:   89.00,
 				RetailPrice: 199.00,
 				Status:      true,
@@ -126,7 +126,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 			{
 				SKU:         "WD001",
 				Name:        "女士连衣裙",
-				CategoryID:  categoryPants,
+				CategoryID:  &categoryPants,
 				CostPrice:   120.00,
 				RetailPrice: 299.00,
 				Status:      true,
@@ -134,7 +134,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 			{
 				SKU:         "MT001",
 				Name:        "男士T恤",
-				CategoryID:  categoryTshirt,
+				CategoryID:  &categoryTshirt,
 				CostPrice:   45.00,
 				RetailPrice: 99.00,
 				Status:      true,
@@ -149,36 +149,45 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 
 			// 为每个商品创建变体
 			if product.SKU == "MS001" && colorWhite > 0 && sizeL > 0 && seasonSpring > 0 {
+				colorWhitePtr := colorWhite
+				sizeLPtr := sizeL
+				seasonSpringPtr := seasonSpring
 				variant := models.ProductVariant{
 					ProductID:   product.ID,
 					SKU:         product.SKU + "-WL",
-					ColorID:     colorWhite,
-					SizeID:      sizeL,
-					SeasonID:    seasonSpring,
+					ColorID:     &colorWhitePtr,
+					SizeID:      &sizeLPtr,
+					SeasonID:    &seasonSpringPtr,
 					CostPrice:   product.CostPrice,
 					RetailPrice: product.RetailPrice,
 					Status:      true,
 				}
 				pc.db.Create(&variant)
 			} else if product.SKU == "WD001" && colorBlue > 0 && sizeM > 0 && seasonSummer > 0 {
+				colorBluePtr := colorBlue
+				sizeMPtr := sizeM
+				seasonSummerPtr := seasonSummer
 				variant := models.ProductVariant{
 					ProductID:   product.ID,
 					SKU:         product.SKU + "-BM",
-					ColorID:     colorBlue,
-					SizeID:      sizeM,
-					SeasonID:    seasonSummer,
+					ColorID:     &colorBluePtr,
+					SizeID:      &sizeMPtr,
+					SeasonID:    &seasonSummerPtr,
 					CostPrice:   product.CostPrice,
 					RetailPrice: product.RetailPrice,
 					Status:      true,
 				}
 				pc.db.Create(&variant)
 			} else if product.SKU == "MT001" && colorBlack > 0 && sizeXL > 0 && seasonSummer > 0 {
+				colorBlackPtr := colorBlack
+				sizeXLPtr := sizeXL
+				seasonSummerPtr := seasonSummer
 				variant := models.ProductVariant{
 					ProductID:   product.ID,
 					SKU:         product.SKU + "-BXL",
-					ColorID:     colorBlack,
-					SizeID:      sizeXL,
-					SeasonID:    seasonSummer,
+					ColorID:     &colorBlackPtr,
+					SizeID:      &sizeXLPtr,
+					SeasonID:    &seasonSummerPtr,
 					CostPrice:   product.CostPrice,
 					RetailPrice: product.RetailPrice,
 					Status:      true,
@@ -215,24 +224,24 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 	} else {
 		// 确保变体的关联数据已加载
 		for i := range product.Variants {
-			if product.Variants[i].ColorID > 0 && product.Variants[i].Color.ID == 0 {
+			if product.Variants[i].ColorID != nil && *product.Variants[i].ColorID > 0 && product.Variants[i].Color.ID == 0 {
 				var color models.DictionaryItem
-				pc.db.First(&color, product.Variants[i].ColorID)
+				pc.db.First(&color, *product.Variants[i].ColorID)
 				product.Variants[i].Color = color
 			}
-			if product.Variants[i].SizeID > 0 && product.Variants[i].Size.ID == 0 {
+			if product.Variants[i].SizeID != nil && *product.Variants[i].SizeID > 0 && product.Variants[i].Size.ID == 0 {
 				var size models.DictionaryItem
-				pc.db.First(&size, product.Variants[i].SizeID)
+				pc.db.First(&size, *product.Variants[i].SizeID)
 				product.Variants[i].Size = size
 			}
-			if product.Variants[i].SeasonID > 0 && product.Variants[i].Season.ID == 0 {
+			if product.Variants[i].SeasonID != nil && *product.Variants[i].SeasonID > 0 && product.Variants[i].Season.ID == 0 {
 				var season models.DictionaryItem
-				pc.db.First(&season, product.Variants[i].SeasonID)
+				pc.db.First(&season, *product.Variants[i].SeasonID)
 				product.Variants[i].Season = season
 			}
-			if product.Variants[i].FabricID > 0 && product.Variants[i].Fabric.ID == 0 {
+			if product.Variants[i].FabricID != nil && *product.Variants[i].FabricID > 0 && product.Variants[i].Fabric.ID == 0 {
 				var fabric models.DictionaryItem
-				pc.db.First(&fabric, product.Variants[i].FabricID)
+				pc.db.First(&fabric, *product.Variants[i].FabricID)
 				product.Variants[i].Fabric = fabric
 			}
 		}
@@ -258,6 +267,10 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 	// 开始事务
 	tx := pc.db.Begin()
 
+	// 处理外键字段，如果为null则保持null
+	// 注意：在GORM中，如果要将外键设置为null，需要使用指针类型
+	// 在指针类型中，如果值为nil，则会存储为SQL的NULL
+
 	// 创建商品
 	if err := tx.Create(&input.Product).Error; err != nil {
 		tx.Rollback()
@@ -268,6 +281,10 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 	// 创建商品变体
 	for i := range input.Variants {
 		input.Variants[i].ProductID = input.Product.ID
+
+		// 处理外键字段，如果为null则保持null
+		// 在指针类型中，如果值为nil，则会存储为SQL的NULL
+
 		if err := tx.Create(&input.Variants[i]).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建商品变体失败: " + err.Error()})
