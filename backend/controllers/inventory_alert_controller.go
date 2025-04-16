@@ -110,9 +110,10 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 
 	// 联合查询获取库存和商品类别
 	if err := iac.db.Table("inventories").
-		Select("inventories.store_id, inventories.product_variant_id as product_id, products.category, inventories.quantity").
+		Select("inventories.store_id, inventories.product_variant_id as product_id, dictionary_items.name as category, inventories.quantity").
 		Joins("JOIN product_variants ON inventories.product_variant_id = product_variants.id").
 		Joins("JOIN products ON product_variants.product_id = products.id").
+		Joins("LEFT JOIN dictionary_items ON products.category_id = dictionary_items.id").
 		Scan(&inventories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
