@@ -3,15 +3,15 @@ package main
 import (
 	"hd_psi/backend/config"
 	"hd_psi/backend/controllers"
-	"hd_psi/backend/embed"
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
 	"hd_psi/backend/routes"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
+
+	"./embed"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -99,11 +99,12 @@ func main() {
 	if _, err := os.Stat("./public/assets"); os.IsNotExist(err) {
 		// 如果物理目录不存在，使用嵌入的静态文件
 		log.Println("使用嵌入的静态文件")
-		r.StaticFS("/assets", embed.GetPublicFS()) // 修正函数调用
+		r.StaticFS("/", embed.GetPublicFS())
 	} else {
 		// 如果物理目录存在，使用物理文件
 		log.Println("使用物理静态文件目录")
 		r.Static("/assets", "./public/assets")
+		r.StaticFile("/", "./public/index.html")
 	}
 
 	// 所有前端路由都返回首页，由前端路由处理
@@ -115,10 +116,10 @@ func main() {
 		}
 
 		// 检查是否存在物理index.html文件
-		indexPath := filepath.Join("./public", "index.html")
+		indexPath := "./public/index.html"
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			// 如果物理文件不存在，使用嵌入的index.html
-			c.FileFromFS("index.html", embed.GetPublicFS()) // 修正函数调用
+			c.FileFromFS("public/index.html", embed.GetPublicFS())
 		} else {
 			// 如果物理文件存在，使用物理文件
 			c.File(indexPath)

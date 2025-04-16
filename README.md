@@ -156,6 +156,41 @@ npm run build
 
 ## 部署指南
 
+### 集成部署（推荐）
+
+将前端静态文件集成到后端服务中，只需要一个服务器即可运行完整系统。
+
+1. 构建前端
+```bash
+cd hd-psi-frontend
+npm run build
+```
+
+2. 将前端构建文件复制到后端
+
+Windows环境：
+```powershell
+cd backend
+.\copy_frontend.ps1
+```
+
+Linux/Mac环境：
+```bash
+cd backend
+chmod +x copy_frontend.sh
+./copy_frontend.sh
+```
+
+3. 构建并运行后端服务
+```bash
+cd backend
+go build -o hd-psi-server
+./hd-psi-server
+```
+
+4. 访问系统
+浏览器访问：`http://localhost:8080`
+
 ### Docker 部署
 
 1. 构建后端镜像
@@ -175,7 +210,7 @@ docker build -t hd-psi-frontend .
 docker-compose up -d
 ```
 
-### 传统部署
+### 分离部署
 
 1. 后端部署
 ```bash
