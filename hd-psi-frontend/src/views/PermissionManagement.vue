@@ -11,19 +11,13 @@
           <role-management />
         </n-tab-pane>
         <n-tab-pane name="policies" tab="权限策略">
-          <div class="placeholder">
-            <p>权限策略管理</p>
-          </div>
+          <policy-management />
         </n-tab-pane>
         <n-tab-pane name="user-roles" tab="用户角色分配">
-          <div class="placeholder">
-            <p>用户角色分配</p>
-          </div>
+          <user-role-management />
         </n-tab-pane>
         <n-tab-pane name="audit-logs" tab="权限审计日志">
-          <div class="placeholder">
-            <p>权限审计日志</p>
-          </div>
+          <permission-audit-logs />
         </n-tab-pane>
       </n-tabs>
     </div>
@@ -35,8 +29,20 @@ import { defineAsyncComponent } from 'vue'
 import { NTabs, NTabPane } from 'naive-ui'
 
 // 使用动态导入以避免找不到组件的问题
-const RoleManagement = defineAsyncComponent(() => 
+const RoleManagement = defineAsyncComponent(() =>
   import('@/components/permission/RoleManagement.vue')
+)
+
+const PolicyManagement = defineAsyncComponent(() =>
+  import('@/components/permission/PolicyManagement.vue')
+)
+
+const UserRoleManagement = defineAsyncComponent(() =>
+  import('@/components/permission/UserRoleManagement.vue')
+)
+
+const PermissionAuditLogs = defineAsyncComponent(() =>
+  import('@/components/permission/PermissionAuditLogs.vue')
 )
 </script>
 

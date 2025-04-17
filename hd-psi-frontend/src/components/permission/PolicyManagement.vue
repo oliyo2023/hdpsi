@@ -89,13 +89,25 @@
         </n-space>
       </template>
     </n-modal>
+    <!-- 删除策略确认对话框 -->
+    <n-modal v-model:show="showDeleteConfirm" preset="dialog" title="确认删除" positive-text="确认" negative-text="取消" @positive-click="confirmRemovePolicy" @negative-click="cancelRemovePolicy">
+      <template #icon>
+        <n-icon color="warning">
+          <WarningOutline />
+        </n-icon>
+      </template>
+      <p>确定要删除此权限策略吗？此操作不可撤销。</p>
+      <p>角色: {{ policyToDelete?.role }}</p>
+      <p>路径: {{ policyToDelete?.path }}</p>
+      <p>方法: {{ policyToDelete?.method }}</p>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { NCard, NButton, NDataTable, NModal, NForm, NFormItem, NInput, NSelect, NSpace, NIcon, useMessage } from 'naive-ui'
-import { AddOutline, TrashOutline } from '@vicons/ionicons5'
+import { AddOutline, TrashOutline, WarningOutline } from '@vicons/ionicons5'
 import { fetchPolicies, addPolicy, removePolicy, fetchRoles } from '@/api/permission'
 
 const message = useMessage()
@@ -104,6 +116,8 @@ const submitting = ref(false)
 const policies = ref([])
 const roles = ref([])
 const showAddPolicyModal = ref(false)
+const showDeleteConfirm = ref(false)
+const policyToDelete = ref(null)
 
 // 过滤条件
 const filterRole = ref(null)
@@ -127,10 +141,18 @@ const pagination = reactive({
 
 // 角色选项
 const roleOptions = computed(() => {
-  return roles.value.map(role => ({
-    label: role,
-    value: role
-  }))
+  return roles.value.map(role => {
+    if (typeof role === 'object' && role.role) {
+      return {
+        label: role.role,
+        value: role.role
+      }
+    }
+    return {
+      label: role,
+      value: role
+    }
+  })
 })
 
 // 方法选项
@@ -227,14 +249,40 @@ const loadPolicies = async () => {
   loading.value = true
   try {
     const res = await fetchPolicies()
-    policies.value = res.data.policies.map(policy => ({
-      role: policy[0],
-      path: policy[1],
-      method: policy[2]
-    }))
+    console.log('获取策略列表响应:', res)
+
+    // 处理不同的响应格式
+    if (res.policies) {
+      // 直接使用res.policies
+      policies.value = res.policies.map(policy => {
+        if (Array.isArray(policy)) {
+          return {
+            role: policy[0],
+            path: policy[1],
+            method: policy[2]
+          }
+        }
+        return policy
+      })
+    } else if (res.data && res.data.policies) {
+      // 使用res.data.policies
+      policies.value = res.data.policies.map(policy => {
+        if (Array.isArray(policy)) {
+          return {
+            role: policy[0],
+            path: policy[1],
+            method: policy[2]
+          }
+        }
+        return policy
+      })
+    } else {
+      message.error('获取策略列表数据格式不正确')
+      console.error('策略列表数据格式不正确:', res)
+    }
   } catch (error) {
     message.error('获取策略列表失败')
-    console.error(error)
+    console.error('获取策略列表错误:', error)
   } finally {
     loading.value = false
   }
@@ -244,10 +292,20 @@ const loadPolicies = async () => {
 const loadRoles = async () => {
   try {
     const res = await fetchRoles()
-    roles.value = res.data.roles
+    console.log('获取角色列表响应:', res)
+
+    // 处理不同的响应格式
+    if (res.roles) {
+      roles.value = res.roles
+    } else if (res.data && res.data.roles) {
+      roles.value = res.data.roles
+    } else {
+      message.error('获取角色列表数据格式不正确')
+      console.error('角色列表数据格式不正确:', res)
+    }
   } catch (error) {
     message.error('获取角色列表失败')
-    console.error(error)
+    console.error('获取角色列表错误:', error)
   }
 }
 
@@ -257,7 +315,8 @@ const handleAddPolicy = async () => {
     if (!errors) {
       submitting.value = true
       try {
-        await addPolicy(addPolicyForm.role, addPolicyForm.path, addPolicyForm.method)
+        const res = await addPolicy(addPolicyForm.role, addPolicyForm.path, addPolicyForm.method)
+        console.log('添加策略响应:', res)
         message.success('添加策略成功')
         showAddPolicyModal.value = false
         loadPolicies()
@@ -267,7 +326,7 @@ const handleAddPolicy = async () => {
         addPolicyForm.method = null
       } catch (error) {
         message.error('添加策略失败')
-        console.error(error)
+        console.error('添加策略错误:', error)
       } finally {
         submitting.value = false
       }
@@ -276,15 +335,34 @@ const handleAddPolicy = async () => {
 }
 
 // 删除策略
-const handleRemovePolicy = async (row) => {
+const handleRemovePolicy = (row) => {
+  policyToDelete.value = row
+  showDeleteConfirm.value = true
+}
+
+// 确认删除策略
+const confirmRemovePolicy = async () => {
+  if (!policyToDelete.value) return
+
+  submitting.value = true
   try {
-    await removePolicy(row.role, row.path, row.method)
+    const { role, path, method } = policyToDelete.value
+    const res = await removePolicy(role, path, method)
+    console.log('删除策略响应:', res)
     message.success('删除策略成功')
     loadPolicies()
   } catch (error) {
     message.error('删除策略失败')
-    console.error(error)
+    console.error('删除策略错误:', error)
+  } finally {
+    submitting.value = false
+    policyToDelete.value = null
   }
+}
+
+// 取消删除策略
+const cancelRemovePolicy = () => {
+  policyToDelete.value = null
 }
 
 // 处理过滤条件变化

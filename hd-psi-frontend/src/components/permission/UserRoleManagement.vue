@@ -190,15 +190,30 @@ const loadUsers = async () => {
   loading.value = true
   try {
     const res = await fetchUsers()
-    users.value = res.data.users
+    console.log('获取用户列表响应:', res)
 
-    // 获取每个用户的角色
-    for (const user of users.value) {
-      await loadUserRoles(user)
+    // 处理不同的响应格式
+    if (res.users) {
+      users.value = res.users
+
+      // 获取每个用户的角色
+      for (const user of users.value) {
+        await loadUserRoles(user)
+      }
+    } else if (res.data && res.data.users) {
+      users.value = res.data.users
+
+      // 获取每个用户的角色
+      for (const user of users.value) {
+        await loadUserRoles(user)
+      }
+    } else {
+      message.error('获取用户列表数据格式不正确')
+      console.error('用户列表数据格式不正确:', res)
     }
   } catch (error) {
     message.error('获取用户列表失败')
-    console.error(error)
+    console.error('获取用户列表错误:', error)
   } finally {
     loading.value = false
   }
@@ -208,10 +223,30 @@ const loadUsers = async () => {
 const loadRoles = async () => {
   try {
     const res = await fetchRoles()
-    roles.value = res.data.roles
+    console.log('获取角色列表响应:', res)
+
+    // 处理不同的响应格式
+    if (res.roles) {
+      roles.value = res.roles.map(role => {
+        if (typeof role === 'object' && role.role) {
+          return role.role
+        }
+        return role
+      })
+    } else if (res.data && res.data.roles) {
+      roles.value = res.data.roles.map(role => {
+        if (typeof role === 'object' && role.role) {
+          return role.role
+        }
+        return role
+      })
+    } else {
+      message.error('获取角色列表数据格式不正确')
+      console.error('角色列表数据格式不正确:', res)
+    }
   } catch (error) {
     message.error('获取角色列表失败')
-    console.error(error)
+    console.error('获取角色列表错误:', error)
   }
 }
 
@@ -219,7 +254,27 @@ const loadRoles = async () => {
 const loadUserRoles = async (user) => {
   try {
     const res = await getUserRoles(user.username)
-    userRoles.value[user.id] = res.data.roles
+    console.log(`获取用户 ${user.username} 的角色响应:`, res)
+
+    // 处理不同的响应格式
+    if (res.roles) {
+      userRoles.value[user.id] = res.roles.map(role => {
+        if (typeof role === 'object' && role.role) {
+          return role.role
+        }
+        return role
+      })
+    } else if (res.data && res.data.roles) {
+      userRoles.value[user.id] = res.data.roles.map(role => {
+        if (typeof role === 'object' && role.role) {
+          return role.role
+        }
+        return role
+      })
+    } else {
+      console.error(`获取用户 ${user.username} 的角色数据格式不正确:`, res)
+      userRoles.value[user.id] = []
+    }
   } catch (error) {
     console.error(`获取用户 ${user.username} 的角色失败`, error)
     userRoles.value[user.id] = []
@@ -242,20 +297,29 @@ const handleSaveUserRoles = async () => {
     const oldRoles = userRoles.value[currentUser.value.id] || []
     const newRoles = selectedRoles.value
 
+    console.log('当前用户:', currentUser.value)
+    console.log('原有角色:', oldRoles)
+    console.log('新角色:', newRoles)
+
     // 找出需要添加的角色
     const rolesToAdd = newRoles.filter(role => !oldRoles.includes(role))
 
     // 找出需要删除的角色
     const rolesToRemove = oldRoles.filter(role => !newRoles.includes(role))
 
+    console.log('需要添加的角色:', rolesToAdd)
+    console.log('需要删除的角色:', rolesToRemove)
+
     // 添加角色
     for (const role of rolesToAdd) {
-      await addRoleForUser(currentUser.value.username, role)
+      const res = await addRoleForUser(currentUser.value.username, role)
+      console.log(`为用户 ${currentUser.value.username} 添加角色 ${role} 响应:`, res)
     }
 
     // 删除角色
     for (const role of rolesToRemove) {
-      await deleteRoleForUser(currentUser.value.username, role)
+      const res = await deleteRoleForUser(currentUser.value.username, role)
+      console.log(`删除用户 ${currentUser.value.username} 的角色 ${role} 响应:`, res)
     }
 
     message.success('保存用户角色成功')
@@ -265,7 +329,7 @@ const handleSaveUserRoles = async () => {
     await loadUserRoles(currentUser.value)
   } catch (error) {
     message.error('保存用户角色失败')
-    console.error(error)
+    console.error('保存用户角色错误:', error)
   } finally {
     submitting.value = false
   }

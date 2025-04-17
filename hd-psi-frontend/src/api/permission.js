@@ -1,11 +1,11 @@
-import request from '@/utils/request'
+import api from '@/services/api'
 
 /**
  * 获取所有角色
  * @returns {Promise} 返回角色列表
  */
 export function fetchRoles() {
-  return request({
+  return api({
     url: '/api/permissions/roles',
     method: 'get'
   })
@@ -18,7 +18,7 @@ export function fetchRoles() {
  * @returns {Promise} 返回添加结果
  */
 export function addRole(role, description) {
-  return request({
+  return api({
     url: '/api/permissions/roles',
     method: 'post',
     data: {
@@ -34,10 +34,12 @@ export function addRole(role, description) {
  * @returns {Promise} 返回删除结果
  */
 export function deleteRole(role) {
-  return request({
+  // 使用特殊用户名 'role_delete' 来表示这是一个角色删除操作
+  return api({
     url: '/api/permissions/roles',
     method: 'delete',
     data: {
+      user: 'role_delete',
       role
     }
   })
@@ -48,7 +50,7 @@ export function deleteRole(role) {
  * @returns {Promise} 返回策略列表
  */
 export function fetchPolicies() {
-  return request({
+  return api({
     url: '/api/permissions/policies',
     method: 'get'
   })
@@ -62,7 +64,7 @@ export function fetchPolicies() {
  * @returns {Promise} 返回添加结果
  */
 export function addPolicy(role, path, method) {
-  return request({
+  return api({
     url: '/api/permissions/policies',
     method: 'post',
     data: {
@@ -81,7 +83,7 @@ export function addPolicy(role, path, method) {
  * @returns {Promise} 返回删除结果
  */
 export function removePolicy(role, path, method) {
-  return request({
+  return api({
     url: '/api/permissions/policies',
     method: 'delete',
     data: {
@@ -98,7 +100,7 @@ export function removePolicy(role, path, method) {
  * @returns {Promise} 返回角色权限列表
  */
 export function getRolePermissions(role) {
-  return request({
+  return api({
     url: `/api/permissions/roles/${role}`,
     method: 'get'
   })
@@ -109,7 +111,7 @@ export function getRolePermissions(role) {
  * @returns {Promise} 返回用户列表
  */
 export function fetchUsers() {
-  return request({
+  return api({
     url: '/api/users',
     method: 'get'
   })
@@ -121,7 +123,7 @@ export function fetchUsers() {
  * @returns {Promise} 返回用户角色列表
  */
 export function getUserRoles(username) {
-  return request({
+  return api({
     url: `/api/permissions/users/${username}/roles`,
     method: 'get'
   })
@@ -134,7 +136,7 @@ export function getUserRoles(username) {
  * @returns {Promise} 返回添加结果
  */
 export function addRoleForUser(username, role) {
-  return request({
+  return api({
     url: '/api/permissions/roles',
     method: 'post',
     data: {
@@ -151,7 +153,7 @@ export function addRoleForUser(username, role) {
  * @returns {Promise} 返回删除结果
  */
 export function deleteRoleForUser(username, role) {
-  return request({
+  return api({
     url: '/api/permissions/roles',
     method: 'delete',
     data: {
@@ -169,7 +171,7 @@ export function deleteRoleForUser(username, role) {
  * @returns {Promise} 返回检查结果
  */
 export function checkPermission(role, path, method) {
-  return request({
+  return api({
     url: '/api/permissions/check',
     method: 'post',
     data: {
@@ -186,7 +188,7 @@ export function checkPermission(role, path, method) {
  * @returns {Promise} 返回审计日志列表
  */
 export function fetchAuditLogs(params) {
-  return request({
+  return api({
     url: '/api/permissions/audit-logs',
     method: 'get',
     params

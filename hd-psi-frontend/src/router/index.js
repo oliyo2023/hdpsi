@@ -19,7 +19,7 @@ import DictionaryList from '../views/DictionaryList.vue'
 import DictionaryItemList from '../views/DictionaryItemList.vue'
 import Profile from '../views/Profile.vue'
 import Settings from '../views/Settings.vue'
-import PermissionManagement from '../views/PermissionManagement.vue'
+import PermissionManagement from '../views/permission/index.vue'
 import NotFound from '../views/NotFound.vue'
 
 // 路由配置

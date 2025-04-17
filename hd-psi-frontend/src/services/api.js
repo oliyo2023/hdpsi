@@ -1,11 +1,14 @@
 import axios from 'axios'
+import { createDiscreteApi } from 'naive-ui'
 
-// 引入全局axios实例，用于重试请求
-
-// 创建axios实例
+/**
+ * 全局统一的axios实例
+ * 所有API请求都应该使用这个实例
+ * 不要创建新的axios实例，以保持代码一致性
+ */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
-  timeout: 10000,
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  timeout: 15000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'
   }
@@ -18,6 +21,16 @@ api.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
+
+    // 添加调试信息
+    console.log('API请求 (services/api.js):', {
+      url: config.url,
+      method: config.method,
+      data: config.data,
+      params: config.params,
+      baseURL: config.baseURL
+    })
+
     return config
   },
   error => {
@@ -28,11 +41,27 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   response => {
+    // 添加调试信息
+    console.log('API响应 (services/api.js):', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data,
+      baseURL: response.config.baseURL
+    })
     return response.data
   },
   async error => {
     // 注意: 不要在拦截器中使用 useMessage，因为它需要在组件中使用
     console.error('API 请求错误:', error)
+
+    // 显示错误提示
+    if (error.response && error.response.data && error.response.data.message) {
+      handleError(error.response.data.message)
+    } else if (error.message) {
+      handleError(error.message)
+    } else {
+      handleError('请求失败')
+    }
 
     const originalRequest = error.config
 
@@ -102,5 +131,11 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// 错误处理函数
+function handleError(message) {
+  const { message: messageApi } = createDiscreteApi(['message'])
+  messageApi.error(message)
+}
 
 export default api

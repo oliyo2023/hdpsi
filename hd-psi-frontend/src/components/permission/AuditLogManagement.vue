@@ -1,5 +1,5 @@
 <template>
-  <div class="permission-audit-logs">
+  <div class="audit-log-management">
     <n-card title="权限审计日志" class="mb-4">
       <n-space vertical>
         <n-form inline :label-width="80">
@@ -29,14 +29,6 @@
               @update:value="handleFilterChange"
             />
           </n-form-item>
-          <n-form-item label="时间范围">
-            <n-date-picker
-              v-model:value="dateRange"
-              type="daterange"
-              clearable
-              @update:value="handleFilterChange"
-            />
-          </n-form-item>
           <n-form-item>
             <n-button type="primary" @click="loadAuditLogs">
               <template #icon>
@@ -60,33 +52,30 @@
       </n-space>
     </n-card>
 
-    <!-- 日志详情对话框 -->
-    <n-modal v-model:show="showLogDetailModal" preset="card" title="日志详情" style="width: 600px">
-      <template #header>
-        <div>日志详情 - {{ formatTime(currentLog?.created_at) }}</div>
-      </template>
-
-      <n-descriptions bordered>
-        <n-descriptions-item label="用户ID">{{ currentLog?.user_id }}</n-descriptions-item>
-        <n-descriptions-item label="用户名">{{ currentLog?.username }}</n-descriptions-item>
-        <n-descriptions-item label="操作类型">{{ getActionName(currentLog?.action) }}</n-descriptions-item>
-        <n-descriptions-item label="资源类型">{{ currentLog?.resource }}</n-descriptions-item>
-        <n-descriptions-item label="IP地址">{{ currentLog?.ip }}</n-descriptions-item>
-        <n-descriptions-item label="用户代理">{{ currentLog?.user_agent }}</n-descriptions-item>
-        <n-descriptions-item label="店铺ID">{{ currentLog?.store_id }}</n-descriptions-item>
-        <n-descriptions-item label="操作结果">
-          <n-tag :type="currentLog?.success ? 'success' : 'error'">
-            {{ currentLog?.success ? '成功' : '失败' }}
+    <!-- 查看详情对话框 -->
+    <n-modal v-model:show="showDetailsModal" preset="card" title="审计日志详情" style="width: 600px">
+      <n-descriptions bordered :column="1" label-placement="left">
+        <n-descriptions-item label="ID">{{ selectedLog?.id }}</n-descriptions-item>
+        <n-descriptions-item label="用户">{{ selectedLog?.username }}</n-descriptions-item>
+        <n-descriptions-item label="操作">{{ getActionName(selectedLog?.action) }}</n-descriptions-item>
+        <n-descriptions-item label="资源">{{ getResourceName(selectedLog?.resource) }}</n-descriptions-item>
+        <n-descriptions-item label="IP地址">{{ selectedLog?.ip }}</n-descriptions-item>
+        <n-descriptions-item label="用户代理">{{ selectedLog?.user_agent }}</n-descriptions-item>
+        <n-descriptions-item label="店铺ID">{{ selectedLog?.store_id }}</n-descriptions-item>
+        <n-descriptions-item label="状态">
+          <n-tag :type="selectedLog?.success ? 'success' : 'error'">
+            {{ selectedLog?.success ? '成功' : '失败' }}
           </n-tag>
         </n-descriptions-item>
-        <n-descriptions-item label="详细信息" span="3">
-          <n-code :code="formatDetails(currentLog?.details)" language="json" />
+        <n-descriptions-item label="时间">{{ formatDateTime(selectedLog?.created_at) }}</n-descriptions-item>
+        <n-descriptions-item label="详情">
+          <n-code :code="formatDetails(selectedLog?.details)" language="json" />
         </n-descriptions-item>
       </n-descriptions>
 
       <template #footer>
         <n-space justify="end">
-          <n-button @click="showLogDetailModal = false">关闭</n-button>
+          <n-button @click="showDetailsModal = false">关闭</n-button>
         </n-space>
       </template>
     </n-modal>
@@ -95,21 +84,20 @@
 
 <script setup>
 import { ref, reactive, onMounted, h } from 'vue'
-import { NCard, NButton, NDataTable, NModal, NForm, NFormItem, NInput, NSelect, NSpace, NIcon, NDatePicker, NDescriptions, NDescriptionsItem, NTag, NCode, useMessage } from 'naive-ui'
+import { NCard, NButton, NDataTable, NModal, NForm, NFormItem, NInput, NSelect, NSpace, NIcon, NDescriptions, NDescriptionsItem, NTag, NCode, useMessage } from 'naive-ui'
 import { SearchOutline, EyeOutline } from '@vicons/ionicons5'
 import { fetchAuditLogs } from '@/api/permission'
 
 const message = useMessage()
 const loading = ref(false)
 const auditLogs = ref([])
-const showLogDetailModal = ref(false)
-const currentLog = ref(null)
+const showDetailsModal = ref(false)
+const selectedLog = ref(null)
 
 // 过滤条件
 const filterUsername = ref('')
 const filterAction = ref(null)
 const filterResource = ref(null)
-const dateRange = ref(null)
 
 // 表格分页
 const pagination = reactive({
@@ -135,9 +123,9 @@ const actionOptions = [
   { label: '删除策略', value: 'remove_policy' },
   { label: '添加角色', value: 'add_role' },
   { label: '删除角色', value: 'remove_role' },
-  { label: '为用户添加角色', value: 'add_role_for_user' },
-  { label: '删除用户的角色', value: 'remove_role_for_user' },
-  { label: '权限检查', value: 'enforce_policy' }
+  { label: '添加用户角色', value: 'add_role_for_user' },
+  { label: '删除用户角色', value: 'remove_role_for_user' },
+  { label: '检查权限', value: 'enforce_policy' }
 ]
 
 // 资源类型选项
@@ -156,12 +144,12 @@ const columns = [
     width: 80
   },
   {
-    title: '用户名',
+    title: '用户',
     key: 'username',
     width: 120
   },
   {
-    title: '操作类型',
+    title: '操作',
     key: 'action',
     width: 150,
     render(row) {
@@ -169,14 +157,17 @@ const columns = [
     }
   },
   {
-    title: '资源类型',
+    title: '资源',
     key: 'resource',
-    width: 120
+    width: 120,
+    render(row) {
+      return getResourceName(row.resource)
+    }
   },
   {
-    title: '操作结果',
+    title: '状态',
     key: 'success',
-    width: 100,
+    width: 80,
     render(row) {
       return h(
         NTag,
@@ -189,11 +180,11 @@ const columns = [
     }
   },
   {
-    title: '操作时间',
+    title: '时间',
     key: 'created_at',
     width: 180,
     render(row) {
-      return formatTime(row.created_at)
+      return formatDateTime(row.created_at)
     }
   },
   {
@@ -207,7 +198,7 @@ const columns = [
           size: 'small',
           quaternary: true,
           type: 'info',
-          onClick: () => handleViewLogDetail(row)
+          onClick: () => handleViewDetails(row)
         },
         {
           default: () => h(NIcon, null, { default: () => h(EyeOutline) }),
@@ -238,39 +229,32 @@ const loadAuditLogs = async () => {
       params.resource = filterResource.value
     }
 
-    if (dateRange.value && dateRange.value.length === 2) {
-      params.start_date = formatDate(dateRange.value[0])
-      params.end_date = formatDate(dateRange.value[1])
-    }
-
-    console.log('查询审计日志参数:', params)
     const res = await fetchAuditLogs(params)
     console.log('获取审计日志响应:', res)
 
-    if (res.data && res.data.logs) {
+    // 处理不同的响应格式
+    if (res.logs) {
+      auditLogs.value = res.logs
+      pagination.itemCount = res.total || 0
+    } else if (res.data && res.data.logs) {
       auditLogs.value = res.data.logs
-      pagination.itemCount = res.data.total || res.data.logs.length
+      pagination.itemCount = res.data.total || 0
     } else {
       message.error('获取审计日志数据格式不正确')
       console.error('审计日志数据格式不正确:', res)
-      auditLogs.value = []
-      pagination.itemCount = 0
     }
   } catch (error) {
     message.error('获取审计日志失败')
     console.error('获取审计日志错误:', error)
-    auditLogs.value = []
-    pagination.itemCount = 0
   } finally {
     loading.value = false
   }
 }
 
-// 查看日志详情
-const handleViewLogDetail = (log) => {
-  console.log('查看日志详情:', log)
-  currentLog.value = log
-  showLogDetailModal.value = true
+// 查看详情
+const handleViewDetails = (log) => {
+  selectedLog.value = log
+  showDetailsModal.value = true
 }
 
 // 处理过滤条件变化
@@ -278,43 +262,54 @@ const handleFilterChange = () => {
   pagination.page = 1
 }
 
-// 格式化时间
-const formatTime = (timestamp) => {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  return date.toLocaleString()
-}
-
-// 格式化日期
-const formatDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-// 格式化详情
-const formatDetails = (details) => {
-  if (!details) return '{}'
-  try {
-    const obj = JSON.parse(details)
-    return JSON.stringify(obj, null, 2)
-  } catch (error) {
-    return details
-  }
-}
-
-// 获取操作类型名称
+// 获取操作名称
 const getActionName = (action) => {
   const names = {
     add_policy: '添加策略',
     remove_policy: '删除策略',
     add_role: '添加角色',
     remove_role: '删除角色',
-    add_role_for_user: '为用户添加角色',
-    remove_role_for_user: '删除用户的角色',
-    enforce_policy: '权限检查'
+    add_role_for_user: '添加用户角色',
+    remove_role_for_user: '删除用户角色',
+    enforce_policy: '检查权限'
   }
   return names[action] || action
+}
+
+// 获取资源名称
+const getResourceName = (resource) => {
+  const names = {
+    policy: '策略',
+    role: '角色',
+    user_role: '用户角色',
+    permission_check: '权限检查'
+  }
+  return names[resource] || resource
+}
+
+// 格式化日期时间
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return ''
+  const date = new Date(dateTime)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+// 格式化详情
+const formatDetails = (details) => {
+  if (!details) return '{}'
+  try {
+    const obj = typeof details === 'string' ? JSON.parse(details) : details
+    return JSON.stringify(obj, null, 2)
+  } catch (error) {
+    return details
+  }
 }
 
 onMounted(() => {

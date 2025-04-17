@@ -1,11 +1,11 @@
-import request from '@/utils/request'
+import api from '@/services/api'
 
 /**
  * 获取用户列表
  * @returns {Promise} 返回用户列表
  */
 export function fetchUsers() {
-  return request({
+  return api({
     url: '/api/users',
     method: 'get'
   })
@@ -17,7 +17,7 @@ export function fetchUsers() {
  * @returns {Promise} 返回用户详情
  */
 export function fetchUserDetail(id) {
-  return request({
+  return api({
     url: `/api/users/${id}`,
     method: 'get'
   })
@@ -30,7 +30,7 @@ export function fetchUserDetail(id) {
  * @returns {Promise} 返回更新结果
  */
 export function updateUser(id, data) {
-  return request({
+  return api({
     url: `/api/users/${id}`,
     method: 'put',
     data
@@ -43,7 +43,7 @@ export function updateUser(id, data) {
  * @returns {Promise} 返回更新结果
  */
 export function updatePassword(data) {
-  return request({
+  return api({
     url: '/api/users/password',
     method: 'put',
     data
@@ -56,7 +56,7 @@ export function updatePassword(data) {
  * @returns {Promise} 返回创建结果
  */
 export function createUser(data) {
-  return request({
+  return api({
     url: '/api/users',
     method: 'post',
     data
@@ -69,7 +69,7 @@ export function createUser(data) {
  * @returns {Promise} 返回删除结果
  */
 export function deleteUser(id) {
-  return request({
+  return api({
     url: `/api/users/${id}`,
     method: 'delete'
   })
