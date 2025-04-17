@@ -7,6 +7,7 @@ import (
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
 	"hd_psi/backend/routes"
+	"hd_psi/backend/services"
 	"log"
 	"net/http"
 	"os"
@@ -80,9 +81,14 @@ func main() {
 		&models.FittingRoom{},
 		&controllers.PointsTransaction{},
 		&models.SystemSetting{},
+		&models.PermissionAuditLog{},
 	)
 	// 重新启用外键约束检查
 	db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+
+	// 初始化Casbin服务
+	casbinService := services.NewCasbinService(db)
+	log.Println("Casbin服务初始化成功")
 
 	// 初始化Gin引擎
 	r := gin.Default()
@@ -92,7 +98,7 @@ func main() {
 	r.Use(middleware.CORSMiddleware())
 
 	// 注册路由
-	routes.RegisterRoutes(r, db)
+	routes.RegisterRoutes(r, db, casbinService)
 
 	// 静态文件服务
 	// 检查是否存在物理文件目录

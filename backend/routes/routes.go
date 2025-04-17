@@ -3,13 +3,14 @@ package routes
 import (
 	"hd_psi/backend/controllers"
 	"hd_psi/backend/middleware"
+	"hd_psi/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes 注册所有路由
-func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
+func RegisterRoutes(r *gin.Engine, db *gorm.DB, casbinService *services.CasbinService) {
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	// 认证路由
@@ -46,6 +47,24 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		dictGroup.POST("/:code/items", dictionaryController.CreateDictionaryItem)
 		dictGroup.PUT("/:code/items/:itemId", dictionaryController.UpdateDictionaryItem)
 		dictGroup.DELETE("/:code/items/:itemId", dictionaryController.DeleteDictionaryItem)
+	}
+
+	// 权限管理路由 - 仅管理员可访问
+	permissionController := controllers.NewPermissionController(db, casbinService)
+	permGroup := api.Group("/permissions")
+	permGroup.Use(middleware.JWTAuth(), middleware.RoleAuth("admin"))
+	{
+		permGroup.GET("/policies", permissionController.GetAllPolicies)
+		permGroup.GET("/roles", permissionController.GetAllRoles)
+		permGroup.GET("/roles/:role", permissionController.GetRolePermissions)
+		permGroup.POST("/policies", permissionController.AddPolicy)
+		permGroup.DELETE("/policies", permissionController.RemovePolicy)
+		permGroup.POST("/roles", permissionController.AddRoleForUser)
+		permGroup.DELETE("/roles", permissionController.DeleteRoleForUser)
+		permGroup.GET("/users/:user/roles", permissionController.GetRolesForUser)
+		permGroup.GET("/roles/:role/users", permissionController.GetUsersForRole)
+		permGroup.POST("/check", permissionController.CheckPermission)
+		permGroup.GET("/audit-logs", permissionController.GetAuditLogs)
 	}
 
 	// 需要认证的路由

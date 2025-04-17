@@ -150,7 +150,7 @@ import {
   PersonOutline, LogOutOutline, SettingsOutline,
   MenuOutline, CloseOutline, ChevronDownOutline,
   BagHandleOutline, StorefrontOutline, CubeOutline,
-  NotificationsOutline, SearchOutline
+  NotificationsOutline, SearchOutline, LockClosedOutline
 } from '@vicons/ionicons5'
 import auth from '../services/auth'
 
@@ -179,71 +179,95 @@ const activeKey = computed(() => {
   if (path.startsWith('/purchases')) return 'purchases'
   if (path.startsWith('/suppliers')) return 'suppliers'
   if (path.startsWith('/dictionaries')) return 'dictionaries'
+  if (path.startsWith('/permissions')) return 'permissions'
   return ''
 })
 
 // 菜单配置
-const menuOptions = [
-  {
-    label: '仪表盘',
-    key: 'dashboard',
-    icon: HomeOutline,
-    path: '/dashboard'
-  },
-  {
-    label: '商品管理',
-    key: 'products',
-    icon: CubeOutline,
-    path: '/products'
-  },
-  {
-    label: '库存管理',
-    key: 'inventory',
-    icon: StorefrontOutline,
-    path: '/inventory'
-  },
-  {
-    label: '采购管理',
-    key: 'purchases',
-    icon: BagHandleOutline,
-    children: [
-      {
-        label: '采购单',
-        key: 'purchase-orders',
-        path: '/purchases'
-      },
-      {
-        label: '供应商',
-        key: 'suppliers',
-        path: '/suppliers'
-      }
-    ]
-  },
-  {
-    label: '会员管理',
-    key: 'members',
-    icon: PeopleOutline,
-    path: '/members'
-  },
-  {
-    label: '销售管理',
-    key: 'sales',
-    icon: CartOutline,
-    path: '/sales'
-  },
-  {
+const menuOptions = computed(() => {
+  const isAdmin = currentUser.value?.Role === 'admin'
+  console.log('当前用户信息:', currentUser.value)
+  console.log('是否管理员:', isAdmin)
+
+  // 基础菜单项
+  const baseMenuItems = [
+    {
+      label: '仪表盘',
+      key: 'dashboard',
+      icon: HomeOutline,
+      path: '/dashboard'
+    },
+    {
+      label: '商品管理',
+      key: 'products',
+      icon: CubeOutline,
+      path: '/products'
+    },
+    {
+      label: '库存管理',
+      key: 'inventory',
+      icon: StorefrontOutline,
+      path: '/inventory'
+    },
+    {
+      label: '采购管理',
+      key: 'purchases',
+      icon: BagHandleOutline,
+      children: [
+        {
+          label: '采购单',
+          key: 'purchase-orders',
+          path: '/purchases'
+        },
+        {
+          label: '供应商',
+          key: 'suppliers',
+          path: '/suppliers'
+        }
+      ]
+    },
+    {
+      label: '会员管理',
+      key: 'members',
+      icon: PeopleOutline,
+      path: '/members'
+    },
+    {
+      label: '销售管理',
+      key: 'sales',
+      icon: CartOutline,
+      path: '/sales'
+    }
+  ]
+
+  // 系统管理子菜单项
+  const systemChildren = [
+    {
+      label: '字典管理',
+      key: 'dictionaries',
+      path: '/dictionaries'
+    }
+  ]
+
+  // 只有管理员才能看到权限管理
+  if (isAdmin) {
+    systemChildren.push({
+      label: '权限管理',
+      key: 'permissions',
+      path: '/permissions'
+    })
+  }
+
+  // 添加系统管理菜单
+  baseMenuItems.push({
     label: '系统管理',
     key: 'system',
     icon: SettingsOutline,
-    children: [
-      {
-        label: '字典管理',
-        key: 'dictionaries',
-        path: '/dictionaries'
-      }
-    ]
-  }
-]
+    children: systemChildren
+  })
+
+  return baseMenuItems
+})
 
 // 用户下拉菜单选项
 const userOptions = [
@@ -278,9 +302,14 @@ const renderMenuIcon = (option) => {
 }
 
 const handleMenuUpdate = (key) => {
+  console.log('菜单点击:', key)
+
   const findPath = (options, key) => {
     for (const option of options) {
-      if (option.key === key) return option.path
+      if (option.key === key) {
+        console.log('找到菜单项:', option)
+        return option.path
+      }
       if (option.children) {
         const path = findPath(option.children, key)
         if (path) return path
@@ -289,8 +318,15 @@ const handleMenuUpdate = (key) => {
     return null
   }
 
-  const path = findPath(menuOptions, key)
-  if (path) router.push(path)
+  const path = findPath(menuOptions.value, key)
+  console.log('菜单路径:', path)
+
+  if (path) {
+    console.log('将跳转到:', path)
+    router.push(path)
+  } else {
+    console.log('未找到对应路径')
+  }
 }
 
 const handleUserAction = (key) => {
@@ -316,7 +352,8 @@ const getPageTitle = () => {
     '/sales': '销售管理',
     '/profile': '个人信息',
     '/settings': '系统设置',
-    '/dictionaries': '字典管理'
+    '/dictionaries': '字典管理',
+    '/permissions': '权限管理'
   }
 
   // 处理子路径
