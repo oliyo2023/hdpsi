@@ -568,14 +568,14 @@ onMounted(async () => {
 
 .stat-title {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-color-primary);
   line-height: 1.2;
 }
 
@@ -594,15 +594,15 @@ onMounted(async () => {
 }
 
 .stat-trend.positive {
-  color: #10b981;
+  color: var(--success-color);
 }
 
 .stat-trend.negative {
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 .stat-period {
-  color: #94a3b8;
+  color: var(--text-color-secondary);
 }
 
 /* 数据卡片区域 */
@@ -668,6 +668,23 @@ onMounted(async () => {
 
 .custom-table :deep(.n-data-table-tr:hover) {
   background-color: var(--table-hover-background);
+}
+
+/* 暗色模式下的图标容器背景调整 */
+.dark .product-card .stat-icon-container {
+  background-color: rgba(79, 70, 229, 0.2);
+}
+
+.dark .inventory-card .stat-icon-container {
+  background-color: rgba(14, 165, 233, 0.2);
+}
+
+.dark .member-card .stat-icon-container {
+  background-color: rgba(249, 115, 22, 0.2);
+}
+
+.dark .order-card .stat-icon-container {
+  background-color: rgba(16, 185, 129, 0.2);
 }
 
 /* 响应式调整 */

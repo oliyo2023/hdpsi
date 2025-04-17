@@ -432,7 +432,7 @@ onMounted(() => {
 
 .page-subtitle {
   margin-top: 4px;
-  color: #909399;
+  color: var(--text-color-secondary);
 }
 
 .mt-4 {
@@ -444,23 +444,26 @@ onMounted(() => {
 }
 
 .info-label {
-  color: #606266;
+  color: var(--text-color-secondary);
   margin-right: 8px;
 }
 
 .info-value {
-  color: #303133;
+  color: var(--text-color-primary);
 }
 
 .total-amount {
   margin-top: 16px;
   text-align: right;
   font-size: 16px;
+  color: var(--text-color-primary);
 }
 
 .amount {
   font-weight: bold;
-  color: #f56c6c;
+  color: var(--error-color);
   font-size: 18px;
 }
+
+/* 注意：暗色模式的样式已移至 dark-theme.css */
 </style>

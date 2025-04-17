@@ -548,7 +548,7 @@ watch(
 .header {
   height: 64px;
   padding: 0 24px;
-  background-color: #fff;
+  background-color: var(--card-background);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -566,13 +566,13 @@ watch(
 
 .toggle-button {
   margin-right: 16px;
-  color: #64748b;
+  color: var(--text-color-secondary);
 }
 
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-color-primary);
 }
 
 .right {
@@ -587,7 +587,7 @@ watch(
 
 .action-button {
   margin-right: 8px;
-  color: #64748b;
+  color: var(--text-color-secondary);
 }
 
 .user-dropdown {
@@ -600,7 +600,7 @@ watch(
 }
 
 .user-dropdown:hover {
-  background-color: #f1f5f9;
+  background-color: var(--table-hover-background);
 }
 
 .user-avatar {
@@ -625,24 +625,24 @@ watch(
 .user-name {
   font-size: 14px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-color-primary);
   line-height: 1.2;
 }
 
 .user-role {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-color-secondary);
 }
 
 .dropdown-icon {
-  color: #64748b;
+  color: var(--text-color-secondary);
 }
 
 /* 内容区域 */
 .content {
   padding: 16px;
   min-height: calc(100vh - 64px - 48px);
-  background-color: #f8fafc;
+  background-color: var(--background-color);
   overflow-x: hidden;
 }
 
@@ -653,8 +653,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
-  background-color: #fff;
-  border-top: 1px solid #f1f5f9;
+  color: var(--text-color-secondary);
+  background-color: var(--card-background);
+  border-top: 1px solid var(--border-color-light);
 }
 </style>

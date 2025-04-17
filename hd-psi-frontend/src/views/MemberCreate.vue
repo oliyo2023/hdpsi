@@ -158,11 +158,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  NButton, NCard, NForm, NFormItem, NFormItemGi, NGrid, NInput, 
+import {
+  NButton, NCard, NForm, NFormItem, NFormItemGi, NGrid, NInput,
   NInputNumber, NSelect, NSpace, NIcon, NDatePicker, useMessage
 } from 'naive-ui'
-import { 
+import {
   PersonAddOutline, ArrowBackOutline, SaveOutline
 } from '@vicons/ionicons5'
 import memberService from '../services/member'
@@ -186,7 +186,7 @@ const formData = reactive({
   email: '',
   address: '',
   level: 'regular',
-  
+
   // 体型数据
   bodyHeight: null,
   bodyWeight: null,
@@ -195,13 +195,13 @@ const formData = reactive({
   waistSize: null,
   hipSize: null,
   inseam: null,
-  
+
   // 偏好数据
   stylePreference: null,
   favoriteColors: [],
   favoriteCategories: [],
   consumptionLevel: null,
-  
+
   // 备注
   note: ''
 })
@@ -300,26 +300,26 @@ const handleSave = () => {
     try {
       // 处理数据格式
       const memberData = { ...formData }
-      
+
       // 处理日期格式
       if (memberData.birthday) {
         memberData.birthday = new Date(memberData.birthday).toISOString()
       }
-      
+
       // 处理数组字段
       if (Array.isArray(memberData.favoriteColors)) {
         memberData.favoriteColors = memberData.favoriteColors.join(',')
       }
-      
+
       if (Array.isArray(memberData.favoriteCategories)) {
         memberData.favoriteCategories = memberData.favoriteCategories.join(',')
       }
-      
+
       // 调用API保存会员数据
       await memberService.createMember(memberData)
-      
+
       message.success('会员添加成功')
-      
+
       // 显示成功消息后返回列表页面
       setTimeout(() => {
         router.push('/members')
@@ -337,8 +337,12 @@ const handleSave = () => {
 <style scoped>
 .member-create {
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--background-color-base);
   min-height: calc(100vh - 64px);
+}
+
+.dark .member-create {
+  background-color: var(--background-color);
 }
 
 .page-header {
@@ -355,7 +359,7 @@ const handleSave = () => {
 
 .header-icon {
   margin-right: 12px;
-  color: #2080f0;
+  color: var(--info-color);
 }
 
 .page-title {
@@ -367,7 +371,7 @@ const handleSave = () => {
 .page-subtitle {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--text-color-secondary);
 }
 
 .form-card {

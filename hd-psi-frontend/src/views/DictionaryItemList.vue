@@ -240,7 +240,7 @@ const columns = computed(() => {
             width: '20px',
             height: '20px',
             backgroundColor: row.Color || '#fff',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-color-base)',
             borderRadius: '4px'
           }
         })
@@ -358,8 +358,12 @@ onMounted(() => {
 <style scoped>
 .dictionary-item-list {
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--background-color-base);
   min-height: calc(100vh - 64px);
+}
+
+.dark .dictionary-item-list {
+  background-color: var(--background-color);
 }
 
 .page-header {
@@ -385,9 +389,13 @@ onMounted(() => {
 }
 
 .page-content {
-  background-color: #fff;
+  background-color: var(--card-background);
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   padding: 16px;
+}
+
+.dark .page-content {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 </style>
