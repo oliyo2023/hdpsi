@@ -57,14 +57,15 @@ type JWTExpirationConfig struct {
 
 // LogConfig 日志配置
 type LogConfig struct {
-	Level      string
-	Format     string
-	Output     string
-	FilePath   string
-	MaxSize    int
-	MaxAge     int
-	MaxBackups int
-	Compress   bool
+	Level      string // 日志级别：debug, info, warn, error
+	Format     string // 日志格式：text, json
+	Output     string // 日志输出：stdout, file, both
+	Directory  string // 日志目录
+	Filename   string // 日志文件名
+	MaxSize    int    // 单个日志文件最大大小（MB）
+	MaxAge     int    // 日志文件保留天数
+	MaxBackups int    // 最大备份数量
+	Compress   bool   // 是否压缩
 }
 
 // CORSConfig CORS配置
@@ -158,8 +159,9 @@ func setDefaultConfig() {
 	// 日志配置
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "text")
-	viper.SetDefault("log.output", "stdout")
-	viper.SetDefault("log.file_path", "./logs/hd_psi.log")
+	viper.SetDefault("log.output", "both")
+	viper.SetDefault("log.directory", "./logs")
+	viper.SetDefault("log.filename", "hd_psi.log")
 	viper.SetDefault("log.max_size", 100)
 	viper.SetDefault("log.max_age", 30)
 	viper.SetDefault("log.max_backups", 10)
