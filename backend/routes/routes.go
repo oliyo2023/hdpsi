@@ -4,14 +4,12 @@ import (
 	"hd_psi/backend/controllers"
 	"hd_psi/backend/middleware"
 
-	// "hd_psi/backend/services"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes 注册所有路由
-func RegisterRoutes(r *gin.Engine, db *gorm.DB, casbinService interface{}) {
+func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	// 认证路由
@@ -27,8 +25,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, casbinService interface{}) {
 		authGroup.POST("/login", authController.Login)
 		authGroup.POST("/register", authController.Register)
 		authGroup.POST("/refresh-token", authController.RefreshToken)
-		authGroup.POST("/forgot-password", authController.ForgotPassword)
-		authGroup.POST("/reset-password", authController.ResetPassword)
 	}
 
 	// 字典管理路由 - 不需要认证

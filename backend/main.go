@@ -7,7 +7,6 @@ import (
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
 	"hd_psi/backend/routes"
-	"hd_psi/backend/services"
 	"hd_psi/backend/utils/logger"
 	"net/http"
 	"os"
@@ -66,7 +65,7 @@ func main() {
 	sqlDB.SetMaxIdleConns(config.AppConfig.Database.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(config.AppConfig.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(time.Duration(config.AppConfig.Database.ConnMaxLifetime) * time.Second)
-	logger.Info("数据库连接池配置完成", 
+	logger.Info("数据库连接池配置完成",
 		logger.F("max_idle_conns", config.AppConfig.Database.MaxIdleConns),
 		logger.F("max_open_conns", config.AppConfig.Database.MaxOpenConns),
 		logger.F("conn_max_lifetime", config.AppConfig.Database.ConnMaxLifetime))
@@ -104,31 +103,28 @@ func main() {
 		&models.FittingRoom{},
 		&controllers.PointsTransaction{},
 		&models.SystemSetting{},
-		&models.PermissionAuditLog{},
 	)
 	// 重新启用外键约束检查
 	db.Exec("SET FOREIGN_KEY_CHECKS = 1")
 	logger.Info("数据模型自动迁移完成")
 
 	// 初始化Casbin服务
-	casbinService := services.NewCasbinService(db)
-	logger.Info("Casbin服务初始化成功")
 
 	// 初始化Gin引擎
 	r := gin.New() // 使用New()而不是Default()，因为我们将自定义中间件
 
 	// 添加中间件
-	r.Use(middleware.ErrorHandlerMiddleware())                                // 错误处理中间件
-	r.Use(middleware.RequestLoggerMiddleware("/assets/*", "/favicon.ico"))    // 请求日志中间件，跳过静态资源
-	r.Use(middleware.CORSMiddleware())                                        // CORS中间件
-	r.Use(middleware.ValidationErrorMiddleware())                             // 验证错误处理中间件
+	r.Use(middleware.ErrorHandlerMiddleware())                             // 错误处理中间件
+	r.Use(middleware.RequestLoggerMiddleware("/assets/*", "/favicon.ico")) // 请求日志中间件，跳过静态资源
+	r.Use(middleware.CORSMiddleware())                                     // CORS中间件
+	r.Use(middleware.ValidationErrorMiddleware())                          // 验证错误处理中间件
 
 	// 设置404和405处理器
 	r.NoRoute(middleware.NotFoundHandler)
 	r.NoMethod(middleware.MethodNotAllowedHandler)
 
 	// 注册路由
-	routes.RegisterRoutes(r, db, casbinService)
+	routes.RegisterRoutes(r, db)
 	logger.Info("路由注册完成")
 
 	// 静态文件服务
