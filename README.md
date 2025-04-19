@@ -1,10 +1,10 @@
-# 服装进销存系统 (HD-PSI)
+# 宏达服装进销存系统 (HD-PSI)
 
 基于 Go + Vue 3 开发的服装行业进销存管理系统，采用前后端分离架构，专为男女装店铺设计的全流程管理解决方案。
 
 ## 项目概述
 
-HD-PSI 是一套专为服装零售行业设计的进销存管理系统，支持多店铺管理、商品全生命周期追踪、智能库存预警、会员管理等功能，满足服装零售企业的日常运营需求。
+HD-PSI 是宏达服装有限公司开发的进销存管理系统，支持多店铺管理、商品全生命周期追踪、智能库存预警、会员管理等功能，满足服装零售企业的日常运营需求。
 
 ### 核心特点
 
@@ -63,7 +63,7 @@ HD-PSI 是一套专为服装零售行业设计的进销存管理系统，支持�
 
 ### 5. 会员管理
 - ✅ 顾客档案
-- 🚧 积分体系
+- ✅ 积分体系
 - 🚧 消费历史
 - 🚧 智能推荐
 
@@ -75,21 +75,28 @@ hd_psi/
 │   ├── cmd/                # 命令行工具
 │   ├── config/             # 配置文件
 │   ├── controllers/        # 控制器
+│   ├── embed/              # 嵌入式资源
 │   ├── middleware/         # 中间件
+│   ├── migrations/         # 数据库迁移
 │   ├── models/             # 数据模型
+│   ├── public/             # 静态资源
 │   ├── routes/             # 路由配置
+│   ├── scripts/            # 脚本文件
+│   ├── services/           # 业务服务
 │   ├── utils/              # 工具类
 │   ├── go.mod              # Go 模块文件
 │   └── main.go             # 程序入口
 │
-└── hd-psi-frontend/        # Vue 前端项目
+└── fronted/                # Vue 前端项目
     ├── public/             # 静态资源
     ├── src/                # 源代码
     │   ├── assets/         # 资源文件
     │   ├── components/     # 公共组件
     │   ├── router/         # 路由配置
     │   ├── services/       # API 服务
-    │   ├── store/          # 状态管理
+    │   ├── stores/         # 状态管理
+    │   ├── styles/         # 样式文件
+    │   ├── utils/          # 工具函数
     │   ├── views/          # 页面组件
     │   ├── App.vue         # 根组件
     │   └── main.js         # 入口文件
@@ -121,7 +128,7 @@ go run main.go
 
 1. 进入前端目录
 ```bash
-cd hd-psi-frontend
+cd fronted
 ```
 
 2. 安装依赖
@@ -162,23 +169,20 @@ npm run build
 
 1. 构建前端
 ```bash
-cd hd-psi-frontend
+cd fronted
 npm run build
 ```
 
-2. 将前端构建文件复制到后端
+2. 将前端构建文件复制到后端的public目录
 
 Windows环境：
 ```powershell
-cd backend
-.\copy_frontend.ps1
+xcopy /E /Y fronted\dist\* backend\public\
 ```
 
 Linux/Mac环境：
 ```bash
-cd backend
-chmod +x copy_frontend.sh
-./copy_frontend.sh
+cp -r fronted/dist/* backend/public/
 ```
 
 3. 构建并运行后端服务
@@ -201,7 +205,7 @@ docker build -t hd-psi-backend .
 
 2. 构建前端镜像
 ```bash
-cd hd-psi-frontend
+cd fronted
 docker build -t hd-psi-frontend .
 ```
 
@@ -215,13 +219,13 @@ docker-compose up -d
 1. 后端部署
 ```bash
 cd backend
-go build -o hd-psi-backend
-./hd-psi-backend
+go build -o hd-psi-server
+./hd-psi-server
 ```
 
 2. 前端部署
 ```bash
-cd hd-psi-frontend
+cd fronted
 npm run build
 # 将 dist 目录部署到 Nginx 或其他 Web 服务器
 ```
@@ -229,30 +233,55 @@ npm run build
 ## 开发计划
 
 - **第一阶段**：基础功能开发（已完成）
-  - 用户认证
-  - 商品管理
+  - 用户认证与权限管理
+  - 商品管理与分类
   - 供应商管理
   - 基础库存管理
+  - 字典管理
+  - 系统设置
 
 - **第二阶段**：核心业务功能（进行中）
+  - 会员管理与积分系统（已完成）
   - 采购管理
   - 销售管理
   - 库存盘点
-  - 会员管理
+  - 试衣间管理
 
 - **第三阶段**：高级功能（计划中）
   - 数据分析看板
   - 微信小程序集成
   - 智能试衣镜接口
   - 电子价签管理
+  - 移动端库存查询
 
-## 贡献指南
+## 系统功能一览
 
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+### 已实现功能
+
+- 用户管理与权限控制
+- 商品管理与分类
+- 供应商管理
+- 库存管理与预警
+- 会员管理
+- 会员积分系统
+- 字典管理
+- 系统设置
+- 暗色模式切换
+
+### 开发中功能
+
+- 采购订单管理
+- 销售订单管理
+- 库存盘点
+- 试衣间管理
+- 会员消费历史
+
+## 联系我们
+
+- 公司名称：宏达服装有限公司
+- 地址：兰州市城关区张掘路商业街区
+- 电话：0931-XXXXXXX
+- 邮箱：oliyo2023@gmail.com
 
 ## 许可证
 
