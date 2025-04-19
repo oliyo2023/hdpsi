@@ -9,6 +9,8 @@ import ProductEdit from '../views/ProductEdit.vue'
 import InventoryList from '../views/InventoryList.vue'
 import MemberList from '../views/MemberList.vue'
 import MemberCreate from '../views/MemberCreate.vue'
+import MemberEdit from '../views/MemberEdit.vue'
+import MemberPoints from '../views/MemberPoints.vue'
 import PurchaseList from '../views/PurchaseList.vue'
 import PurchaseDetail from '../views/PurchaseDetail.vue'
 import PurchaseCreate from '../views/PurchaseCreate.vue'
@@ -74,6 +76,18 @@ const routes = [
     path: '/members/create',
     name: 'MemberCreate',
     component: MemberCreate,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/members/edit/:id',
+    name: 'MemberEdit',
+    component: MemberEdit,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/members/points/:id',
+    name: 'MemberPoints',
+    component: MemberPoints,
     meta: { requiresAuth: true }
   },
   {

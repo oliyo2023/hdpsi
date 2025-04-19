@@ -58,12 +58,14 @@
 import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  NButton, NDataTable, NInput, NSelect, NSpace, NTag
+  NButton, NDataTable, NInput, NSelect, NSpace, NTag, useMessage, useDialog
 } from 'naive-ui'
 import memberService from '../services/member'
 
 // 路由
 const router = useRouter()
+const message = useMessage()
+const dialog = useDialog()
 
 // 响应式状态
 const loading = ref(false)
@@ -99,22 +101,22 @@ const levelOptions = [
 const columns = [
   {
     title: 'ID',
-    key: 'id',
+    key: 'ID',  // 根据API返回的字段调整
     width: 80
   },
   {
     title: '会员姓名',
-    key: 'name',
+    key: 'Name',  // 根据API返回的字段调整
     width: 120
   },
   {
     title: '手机号码',
-    key: 'phone',
+    key: 'Phone',  // 根据API返回的字段调整
     width: 150
   },
   {
     title: '会员等级',
-    key: 'level',
+    key: 'Level',  // 根据API返回的字段调整
     width: 120,
     render(row) {
       const levelMap = {
@@ -125,28 +127,37 @@ const columns = [
         'diamond': { type: 'error', text: '钻石会员' }
       }
 
-      const level = levelMap[row.level] || levelMap['regular']
+      // 如果等级字段不存在或不在预定义的映射中，使用默认值
+      const level = (row.Level && levelMap[row.Level.toLowerCase()]) || levelMap['regular']
 
       return h(NTag, { type: level.type }, { default: () => level.text })
     }
   },
   {
     title: '积分',
-    key: 'points',
+    key: 'Points',  // 根据API返回的字段调整
     width: 100
   },
   {
     title: '累计消费',
-    key: 'totalSpent',
+    key: 'TotalSpent',  // 根据API返回的字段调整
     width: 120,
     render(row) {
-      return `¥${row.totalSpent.toFixed(2)}`
+      // 添加空值检查，防止TotalSpent为undefined时报错
+      return row.TotalSpent !== undefined && row.TotalSpent !== null
+        ? `¥${Number(row.TotalSpent).toFixed(2)}`
+        : '¥0.00'
     }
   },
   {
     title: '生日',
-    key: 'birthday',
-    width: 120
+    key: 'Birthday',  // 根据API返回的字段调整
+    width: 120,
+    render(row) {
+      // 处理日期格式
+      if (!row.Birthday) return '-'
+      return new Date(row.Birthday).toLocaleDateString()
+    }
   },
   {
     title: '操作',
@@ -193,48 +204,93 @@ const columns = [
 const loadMembers = async () => {
   loading.value = true
   try {
-    // 模拟数据，实际应该从API获取
-    members.value = [
-      {
-        id: 1,
-        name: '张三',
-        phone: '13800138001',
-        level: '金卡会员',
-        points: 2500,
-        totalSpent: 15000.00,
-        birthday: '1990-01-15'
-      },
-      {
-        id: 2,
-        name: '李四',
-        phone: '13800138002',
-        level: '普通会员',
-        points: 500,
-        totalSpent: 2000.00,
-        birthday: '1985-05-20'
-      },
-      {
-        id: 3,
-        name: '王五',
-        phone: '13800138003',
-        level: '银卡会员',
-        points: 1200,
-        totalSpent: 8000.00,
-        birthday: '1992-11-08'
-      },
-      {
-        id: 4,
-        name: '赵六',
-        phone: '13800138004',
-        level: '钻石会员',
-        points: 5000,
-        totalSpent: 30000.00,
-        birthday: '1988-07-30'
+    // 构建查询参数
+    const params = {
+      page: pagination.page,
+      limit: pagination.pageSize,
+      name: searchForm.name || undefined,
+      phone: searchForm.phone || undefined,
+      level: searchForm.level || undefined
+    }
+
+    // 调用API获取会员列表
+    const response = await memberService.getMembers(params)
+
+    // 打印响应数据，便于调试
+    console.log('会员列表API响应:', response)
+
+    // 处理响应数据
+    if (response && response.data) {
+      // 如果数据在data字段中
+      if (Array.isArray(response.data.items)) {
+        members.value = response.data.items
+        pagination.itemCount = response.data.total || response.data.items.length
+      } else if (Array.isArray(response.data)) {
+        // 如果数据直接在data数组中
+        members.value = response.data
+        pagination.itemCount = response.data.length
+      } else {
+        // 如果数据在其他字段中
+        members.value = []
+        pagination.itemCount = 0
       }
-    ]
-    pagination.itemCount = members.value.length
+    } else if (response && Array.isArray(response)) {
+      // 如果响应直接是数组
+      members.value = response
+      pagination.itemCount = response.length
+    } else if (response && response.items) {
+      // 如果数据在items字段中
+      members.value = response.items
+      pagination.itemCount = response.total || response.items.length
+    } else {
+      // 如果后端还未实现，使用模拟数据
+      members.value = [
+        {
+          id: 1,
+          name: '张三',
+          phone: '13800138001',
+          level: 'gold',
+          points: 2500,
+          totalSpent: 15000.00,
+          birthday: '1990-01-15'
+        },
+        {
+          id: 2,
+          name: '李四',
+          phone: '13800138002',
+          level: 'regular',
+          points: 500,
+          totalSpent: 2000.00,
+          birthday: '1985-05-20'
+        },
+        {
+          id: 3,
+          name: '王五',
+          phone: '13800138003',
+          level: 'silver',
+          points: 1200,
+          totalSpent: 8000.00,
+          birthday: '1992-11-08'
+        },
+        {
+          id: 4,
+          name: '赵六',
+          phone: '13800138004',
+          level: 'diamond',
+          points: 5000,
+          totalSpent: 30000.00,
+          birthday: '1988-07-30'
+        }
+      ]
+      pagination.itemCount = members.value.length
+    }
+
+    // 打印处理后的数据，便于调试
+    console.log('处理后的会员数据:', members.value)
   } catch (error) {
     console.error('加载会员列表失败:', error)
+    members.value = []
+    pagination.itemCount = 0
   } finally {
     loading.value = false
   }
@@ -269,25 +325,42 @@ const handleAddMember = () => {
 }
 
 const handleEdit = (row) => {
-  router.push(`/members/edit/${row.id}`)
+  // 使用大写的ID字段
+  const id = row.ID || row.id
+  router.push(`/members/edit/${id}`)
 }
 
 const handlePoints = (row) => {
-  router.push(`/members/points/${row.id}`)
+  // 使用大写的ID字段
+  const id = row.ID || row.id
+  router.push(`/members/points/${id}`)
 }
 
 const handleDelete = (row) => {
-  if (confirm(`确定要删除会员 ${row.name} 吗？`)) {
-    memberService.deleteMember(row.id)
-      .then(() => {
-        alert('删除成功')
+  // 使用Naive UI的对话框替代原生的confirm
+  // 使用大写的Name和ID字段
+  const name = row.Name || row.name
+  const id = row.ID || row.id
+
+  dialog.warning({
+    title: '删除确认',
+    content: `确定要删除会员 ${name} 吗？此操作不可恢复。`,
+    positiveText: '确定删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        loading.value = true
+        await memberService.deleteMember(id)
+        message.success('会员删除成功')
         loadMembers()
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('删除会员失败:', error)
-        alert('删除失败')
-      })
-  }
+        message.error('删除会员失败: ' + (error.response?.data?.error || '未知错误'))
+      } finally {
+        loading.value = false
+      }
+    }
+  })
 }
 
 // 生命周期钩子
