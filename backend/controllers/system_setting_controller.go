@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"hd_psi/backend/models"
+	"hd_psi/backend/utils/errors"
+	"hd_psi/backend/utils/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,9 +24,16 @@ func NewSystemSettingController(db *gorm.DB) *SystemSettingController {
 // 参数：
 //   - c: Gin上下文对象
 func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+	
 	// 获取查询参数
 	group := c.Query("group")
 	userID := c.Query("user_id")
+	
+	log.Info("获取系统设置", 
+		logger.F("group", group), 
+		logger.F("user_id", userID))
 
 	// 构建查询
 	query := ssc.db.Model(&models.SystemSetting{})
@@ -44,7 +53,12 @@ func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 	// 执行查询
 	var settings []models.SystemSetting
 	if err := query.Find(&settings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取系统设置失败", "details": err.Error()})
+		log.Error("获取系统设置失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取系统设置失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
 
@@ -54,6 +68,7 @@ func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 		settingsMap[setting.Key] = setting.Value
 	}
 
+	log.Info("获取系统设置成功", logger.F("settings_count", len(settings)))
 	c.JSON(http.StatusOK, settingsMap)
 }
 
@@ -61,6 +76,10 @@ func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 // 参数：
 //   - c: Gin上下文对象
 func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+	log.Info("更新系统设置")
+
 	// 获取请求参数
 	var input struct {
 		Group    string            `json:"group" binding:"required"`
@@ -69,9 +88,20 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数", "details": err.Error()})
+		log.Warn("更新系统设置请求参数无效", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrInvalidInput).
+			WithDetails("请提供有效的系统设置信息").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
+
+	log = log.WithFields(
+		logger.F("group", input.Group),
+		logger.F("user_id", input.UserID),
+		logger.F("settings_count", len(input.Settings)),
+	)
 
 	// 开始事务
 	tx := ssc.db.Begin()
@@ -94,31 +124,60 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 			}
 			if err := tx.Create(&setting).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建设置失败", "details": err.Error()})
+				log.Error("创建设置失败", 
+					logger.F("key", key), 
+					logger.F("error", err.Error()))
+				appErr := errors.New(errors.ErrDatabaseInsert).
+					WithDetails("创建设置失败").
+					WithError(err).
+					WithRequestID(c.GetString("request_id"))
+				c.Error(appErr)
 				return
 			}
+			log.Info("创建设置", logger.F("key", key), logger.F("value", value))
 		} else {
 			// 如果设置存在，更新设置值
+			oldValue := setting.Value
 			setting.Value = value
 			if err := tx.Save(&setting).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "更新设置失败", "details": err.Error()})
+				log.Error("更新设置失败", 
+					logger.F("key", key), 
+					logger.F("error", err.Error()))
+				appErr := errors.New(errors.ErrDatabaseUpdate).
+					WithDetails("更新设置失败").
+					WithError(err).
+					WithRequestID(c.GetString("request_id"))
+				c.Error(appErr)
 				return
 			}
+			log.Info("更新设置", 
+				logger.F("key", key), 
+				logger.F("old_value", oldValue), 
+				logger.F("new_value", value))
 		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存设置失败", "details": err.Error()})
+		log.Error("提交事务失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseUpdate).
+			WithDetails("保存设置失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
 
+	log.Info("更新系统设置成功")
 	c.JSON(http.StatusOK, gin.H{"message": "设置已更新"})
 }
 
 // InitDefaultSettings 初始化默认系统设置
 func (ssc *SystemSettingController) InitDefaultSettings() error {
+	log := logger.WithField("component", "SystemSettingController")
+	log.Info("初始化默认系统设置")
+
 	// 默认设置
 	defaultSettings := []models.SystemSetting{
 		// 基本设置
@@ -142,6 +201,8 @@ func (ssc *SystemSettingController) InitDefaultSettings() error {
 		{Key: models.SettingPrintFooter, Value: "感谢您的惠顾", Group: models.SettingGroupPrinting, UserID: nil},
 	}
 
+	log.Info("准备初始化默认设置", logger.F("settings_count", len(defaultSettings)))
+
 	// 开始事务
 	tx := ssc.db.Begin()
 
@@ -155,25 +216,53 @@ func (ssc *SystemSettingController) InitDefaultSettings() error {
 		if result.Error != nil {
 			if err := tx.Create(&setting).Error; err != nil {
 				tx.Rollback()
-				return err
+				log.Error("创建默认设置失败", 
+					logger.F("key", setting.Key), 
+					logger.F("error", err.Error()))
+				return errors.Wrap(err, errors.ErrDatabaseInsert).
+					WithDetails("创建默认设置失败")
 			}
+			log.Info("创建默认设置", 
+				logger.F("key", setting.Key), 
+				logger.F("value", setting.Value))
+		} else {
+			log.Info("默认设置已存在，跳过", 
+				logger.F("key", setting.Key), 
+				logger.F("value", existingSetting.Value))
 		}
 	}
 
 	// 提交事务
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		log.Error("提交事务失败", logger.F("error", err.Error()))
+		return errors.Wrap(err, errors.ErrDatabaseUpdate).
+			WithDetails("保存默认设置失败")
+	}
+
+	log.Info("初始化默认系统设置成功")
+	return nil
 }
 
 // GetUserTheme 获取用户主题设置
 // 参数：
 //   - c: Gin上下文对象
 func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+	log.Info("获取用户主题设置")
+
 	// 从上下文中获取用户ID
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+		log.Warn("未授权的主题设置请求")
+		appErr := errors.New(errors.ErrUnauthorized).
+			WithDetails("请先登录").
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
+
+	log = log.WithField("user_id", userID)
 
 	// 查询用户主题设置
 	var themeSetting models.SystemSetting
@@ -182,16 +271,19 @@ func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
 
 	// 如果用户没有特定设置，则获取全局设置
 	if result.Error != nil {
+		log.Info("用户特定主题设置不存在，获取全局设置")
 		result = ssc.db.Where("`key` = ? AND `group` = ? AND `user_id` IS NULL",
 			models.SettingTheme, models.SettingGroupTheme).First(&themeSetting)
 
 		// 如果全局设置也不存在，则返回默认主题
 		if result.Error != nil {
+			log.Info("全局主题设置不存在，使用默认主题")
 			c.JSON(http.StatusOK, gin.H{"theme": "light"})
 			return
 		}
 	}
 
+	log.Info("获取用户主题设置成功", logger.F("theme", themeSetting.Value))
 	c.JSON(http.StatusOK, gin.H{"theme": themeSetting.Value})
 }
 
@@ -199,12 +291,22 @@ func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
 // 参数：
 //   - c: Gin上下文对象
 func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+	log.Info("更新用户主题设置")
+
 	// 从上下文中获取用户ID
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+		log.Warn("未授权的主题设置更新请求")
+		appErr := errors.New(errors.ErrUnauthorized).
+			WithDetails("请先登录").
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
+
+	log = log.WithField("user_id", userID)
 
 	// 获取请求参数
 	var input struct {
@@ -212,13 +314,24 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数", "details": err.Error()})
+		log.Warn("更新主题设置请求参数无效", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrInvalidInput).
+			WithDetails("请提供有效的主题设置").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
 
+	log = log.WithField("theme", input.Theme)
+
 	// 验证主题值
 	if input.Theme != "light" && input.Theme != "dark" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的主题值，必须是 'light' 或 'dark'"})
+		log.Warn("无效的主题值", logger.F("theme", input.Theme))
+		appErr := errors.New(errors.ErrInvalidInput).
+			WithDetails("无效的主题值，必须是 'light' 或 'dark'").
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
 		return
 	}
 
@@ -229,6 +342,7 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 
 	// 如果设置不存在，创建新设置
 	if result.Error != nil {
+		log.Info("用户主题设置不存在，创建新设置")
 		themeSetting = models.SystemSetting{
 			Key:    models.SettingTheme,
 			Value:  input.Theme,
@@ -236,17 +350,32 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 			UserID: &[]uint{userID.(uint)}[0], // 转换为指针
 		}
 		if err := ssc.db.Create(&themeSetting).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建主题设置失败", "details": err.Error()})
+			log.Error("创建主题设置失败", logger.F("error", err.Error()))
+			appErr := errors.New(errors.ErrDatabaseInsert).
+				WithDetails("创建主题设置失败").
+				WithError(err).
+				WithRequestID(c.GetString("request_id"))
+			c.Error(appErr)
 			return
 		}
 	} else {
 		// 如果设置存在，更新设置值
+		oldTheme := themeSetting.Value
 		themeSetting.Value = input.Theme
 		if err := ssc.db.Save(&themeSetting).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新主题设置失败", "details": err.Error()})
+			log.Error("更新主题设置失败", logger.F("error", err.Error()))
+			appErr := errors.New(errors.ErrDatabaseUpdate).
+				WithDetails("更新主题设置失败").
+				WithError(err).
+				WithRequestID(c.GetString("request_id"))
+			c.Error(appErr)
 			return
 		}
+		log.Info("更新用户主题设置", 
+			logger.F("old_theme", oldTheme), 
+			logger.F("new_theme", input.Theme))
 	}
 
+	log.Info("更新用户主题设置成功")
 	c.JSON(http.StatusOK, gin.H{"message": "主题设置已更新", "theme": input.Theme})
 }

@@ -25,8 +25,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		authGroup.POST("/login", authController.Login)
 		authGroup.POST("/register", authController.Register)
 		authGroup.POST("/refresh-token", authController.RefreshToken)
-		authGroup.POST("/forgot-password", authController.ForgotPassword)
-		authGroup.POST("/reset-password", authController.ResetPassword)
 	}
 
 	// 字典管理路由 - 不需要认证
@@ -47,6 +45,24 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		dictGroup.PUT("/:code/items/:itemId", dictionaryController.UpdateDictionaryItem)
 		dictGroup.DELETE("/:code/items/:itemId", dictionaryController.DeleteDictionaryItem)
 	}
+
+	// 权限管理路由 - 仅管理员可访问
+	// permissionController := controllers.NewPermissionController(db, casbinService)
+	// permGroup := api.Group("/permissions")
+	// permGroup.Use(middleware.JWTAuth(), middleware.RoleAuth("admin"))
+	// {
+	// permGroup.GET("/policies", permissionController.GetAllPolicies)
+	// permGroup.GET("/roles", permissionController.GetAllRoles)
+	// permGroup.GET("/roles/:role", permissionController.GetRolePermissions)
+	// permGroup.POST("/policies", permissionController.AddPolicy)
+	// permGroup.DELETE("/policies", permissionController.RemovePolicy)
+	// permGroup.POST("/roles", permissionController.AddRoleForUser)
+	// permGroup.DELETE("/roles", permissionController.DeleteRoleForUser)
+	// permGroup.GET("/users/:user/roles", permissionController.GetRolesForUser)
+	// permGroup.GET("/roles/:role/users", permissionController.GetUsersForRole)
+	// permGroup.POST("/check", permissionController.CheckPermission)
+	// permGroup.GET("/audit-logs", permissionController.GetAuditLogs)
+	// }
 
 	// 需要认证的路由
 	apiAuth := api.Group("/")
@@ -122,23 +138,23 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			receivingGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), purchaseReceivingController.DeletePurchaseReceiving)
 		}
 
-		// 会员管理路由
+		// 会员管理路由 - 暂时移除权限控制以便于开发
 		memberController := controllers.NewMemberController(db)
 		memberGroup := api.Group("/members")
 		{
 			memberGroup.GET("", memberController.ListMembers)
 			memberGroup.GET("/:id", memberController.GetMember)
-			memberGroup.POST("", middleware.RoleAuth("admin", "manager", "staff"), memberController.CreateMember)
-			memberGroup.PUT("/:id", middleware.RoleAuth("admin", "manager", "staff"), memberController.UpdateMember)
-			memberGroup.DELETE("/:id", middleware.RoleAuth("admin"), memberController.DeleteMember)
+			memberGroup.POST("", memberController.CreateMember)
+			memberGroup.PUT("/:id", memberController.UpdateMember)
+			memberGroup.DELETE("/:id", memberController.DeleteMember)
 
 			// 会员积分路由
 			memberPointsController := controllers.NewMemberPointsController(db)
 			memberGroup.GET("/:id/points", memberPointsController.GetMemberPoints)
 			memberGroup.GET("/:id/points/transactions", memberPointsController.ListPointsTransactions)
-			memberGroup.POST("/:id/points/add", middleware.RoleAuth("admin", "manager", "cashier"), memberPointsController.AddPoints)
-			memberGroup.POST("/:id/points/deduct", middleware.RoleAuth("admin", "manager", "cashier"), memberPointsController.DeductPoints)
-			memberGroup.POST("/:id/level/calculate", middleware.RoleAuth("admin", "manager"), memberPointsController.CalculateMemberLevel)
+			memberGroup.POST("/:id/points/add", memberPointsController.AddPoints)
+			memberGroup.POST("/:id/points/deduct", memberPointsController.DeductPoints)
+			memberGroup.POST("/:id/level/calculate", memberPointsController.CalculateMemberLevel)
 		}
 
 		// 店铺管理路由
