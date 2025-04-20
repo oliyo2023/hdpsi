@@ -6,6 +6,7 @@ import Login from '../views/Login.vue'
 import ProductList from '../views/ProductList.vue'
 import ProductCreate from '../views/ProductCreate.vue'
 import ProductEdit from '../views/ProductEdit.vue'
+import ProductFormNew from '../views/ProductFormNew.vue'
 import InventoryList from '../views/InventoryList.vue'
 import MemberList from '../views/MemberList.vue'
 import MemberCreate from '../views/MemberCreate.vue'
@@ -51,13 +52,19 @@ const routes = [
   {
     path: '/products/create',
     name: 'ProductCreate',
-    component: ProductCreate,
+    component: ProductFormNew,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/products/new',
+    name: 'ProductFormNew',
+    component: ProductFormNew,
     meta: { requiresAuth: true }
   },
   {
     path: '/products/edit/:id',
     name: 'ProductEdit',
-    component: ProductEdit,
+    component: ProductFormNew,
     meta: { requiresAuth: true }
   },
   {

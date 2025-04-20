@@ -114,10 +114,10 @@ func main() {
 	r := gin.New() // 使用New()而不是Default()，因为我们将自定义中间件
 
 	// 添加中间件
-	r.Use(middleware.ErrorHandlerMiddleware())                             // 错误处理中间件
-	r.Use(middleware.RequestLoggerMiddleware("/assets/*", "/favicon.ico")) // 请求日志中间件，跳过静态资源
-	r.Use(middleware.CORSMiddleware())                                     // CORS中间件
-	r.Use(middleware.ValidationErrorMiddleware())                          // 验证错误处理中间件
+	r.Use(middleware.ErrorHandlerMiddleware())                                           // 错误处理中间件
+	r.Use(middleware.RequestLoggerMiddleware("/assets/*", "/favicon.ico", "/uploads/*")) // 请求日志中间件，跳过静态资源
+	r.Use(middleware.CORSMiddleware())                                                   // CORS中间件
+	r.Use(middleware.ValidationErrorMiddleware())                                        // 验证错误处理中间件
 
 	// 设置404和405处理器
 	r.NoRoute(middleware.NotFoundHandler)
@@ -138,6 +138,16 @@ func main() {
 		logger.Info("使用物理静态文件目录")
 		r.Static("/assets", "./public/assets")
 	}
+
+	// 创建上传目录
+	uploadDirs := []string{"./public/uploads/images", "./public/uploads/editor"}
+	for _, dir := range uploadDirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			logger.Error("创建上传目录失败", logger.F("dir", dir), logger.F("error", err.Error()))
+		}
+	}
+	// 静态文件服务 - 上传文件
+	r.Static("/uploads", "./public/uploads")
 
 	// 所有前端路由都返回首页，由前端路由处理
 	r.NoRoute(func(c *gin.Context) {

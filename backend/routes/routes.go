@@ -10,6 +10,8 @@ import (
 
 // RegisterRoutes 注册所有路由
 func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
+	// 注册文件上传路由
+	SetupFileRoutes(r)
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	// 认证路由

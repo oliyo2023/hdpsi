@@ -170,14 +170,14 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		// 将测试数据保存到数据库
 		for _, product := range testProducts {
 			if err := pc.db.Create(&product).Error; err != nil {
-				log.Warn("创建测试商品失败", 
-					logger.F("sku", product.SKU), 
+				log.Warn("创建测试商品失败",
+					logger.F("sku", product.SKU),
 					logger.F("error", err.Error()))
 				continue
 			}
 
-			log.Info("创建测试商品成功", 
-				logger.F("product_id", product.ID), 
+			log.Info("创建测试商品成功",
+				logger.F("product_id", product.ID),
 				logger.F("sku", product.SKU))
 
 			// 为每个商品创建变体
@@ -196,13 +196,13 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 					Status:      true,
 				}
 				if err := pc.db.Create(&variant).Error; err != nil {
-					log.Warn("创建测试商品变体失败", 
-						logger.F("product_id", product.ID), 
-						logger.F("sku", variant.SKU), 
+					log.Warn("创建测试商品变体失败",
+						logger.F("product_id", product.ID),
+						logger.F("sku", variant.SKU),
 						logger.F("error", err.Error()))
 				} else {
-					log.Info("创建测试商品变体成功", 
-						logger.F("variant_id", variant.ID), 
+					log.Info("创建测试商品变体成功",
+						logger.F("variant_id", variant.ID),
 						logger.F("sku", variant.SKU))
 				}
 			} else if product.SKU == "WD001" && colorBlue > 0 && sizeM > 0 && seasonSummer > 0 {
@@ -220,13 +220,13 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 					Status:      true,
 				}
 				if err := pc.db.Create(&variant).Error; err != nil {
-					log.Warn("创建测试商品变体失败", 
-						logger.F("product_id", product.ID), 
-						logger.F("sku", variant.SKU), 
+					log.Warn("创建测试商品变体失败",
+						logger.F("product_id", product.ID),
+						logger.F("sku", variant.SKU),
 						logger.F("error", err.Error()))
 				} else {
-					log.Info("创建测试商品变体成功", 
-						logger.F("variant_id", variant.ID), 
+					log.Info("创建测试商品变体成功",
+						logger.F("variant_id", variant.ID),
 						logger.F("sku", variant.SKU))
 				}
 			} else if product.SKU == "MT001" && colorBlack > 0 && sizeXL > 0 && seasonSummer > 0 {
@@ -244,13 +244,13 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 					Status:      true,
 				}
 				if err := pc.db.Create(&variant).Error; err != nil {
-					log.Warn("创建测试商品变体失败", 
-						logger.F("product_id", product.ID), 
-						logger.F("sku", variant.SKU), 
+					log.Warn("创建测试商品变体失败",
+						logger.F("product_id", product.ID),
+						logger.F("sku", variant.SKU),
 						logger.F("error", err.Error()))
 				} else {
-					log.Info("创建测试商品变体成功", 
-						logger.F("variant_id", variant.ID), 
+					log.Info("创建测试商品变体成功",
+						logger.F("variant_id", variant.ID),
 						logger.F("sku", variant.SKU))
 				}
 			}
@@ -263,8 +263,8 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		total = int64(len(products))
 	}
 
-	log.Info("获取商品列表成功", 
-		logger.F("total", total), 
+	log.Info("获取商品列表成功",
+		logger.F("total", total),
 		logger.F("count", len(products)))
 
 	c.JSON(http.StatusOK, gin.H{
@@ -278,7 +278,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 func (pc *ProductController) GetProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
-	
+
 	id := c.Param("id")
 	log.Info("获取商品详情", logger.F("product_id", id))
 
@@ -300,31 +300,31 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 	} else {
 		// 确保变体的关联数据已加载
 		for i := range product.Variants {
-			if product.Variants[i].ColorID != nil && *product.Variants[i].ColorID > 0 && product.Variants[i].Color.ID == 0 {
+			if product.Variants[i].ColorID != nil && *product.Variants[i].ColorID > 0 && (product.Variants[i].Color == nil || product.Variants[i].Color.ID == 0) {
 				var color models.DictionaryItem
 				pc.db.First(&color, *product.Variants[i].ColorID)
-				product.Variants[i].Color = color
+				product.Variants[i].Color = &color
 			}
-			if product.Variants[i].SizeID != nil && *product.Variants[i].SizeID > 0 && product.Variants[i].Size.ID == 0 {
+			if product.Variants[i].SizeID != nil && *product.Variants[i].SizeID > 0 && (product.Variants[i].Size == nil || product.Variants[i].Size.ID == 0) {
 				var size models.DictionaryItem
 				pc.db.First(&size, *product.Variants[i].SizeID)
-				product.Variants[i].Size = size
+				product.Variants[i].Size = &size
 			}
-			if product.Variants[i].SeasonID != nil && *product.Variants[i].SeasonID > 0 && product.Variants[i].Season.ID == 0 {
+			if product.Variants[i].SeasonID != nil && *product.Variants[i].SeasonID > 0 && (product.Variants[i].Season == nil || product.Variants[i].Season.ID == 0) {
 				var season models.DictionaryItem
 				pc.db.First(&season, *product.Variants[i].SeasonID)
-				product.Variants[i].Season = season
+				product.Variants[i].Season = &season
 			}
-			if product.Variants[i].FabricID != nil && *product.Variants[i].FabricID > 0 && product.Variants[i].Fabric.ID == 0 {
+			if product.Variants[i].FabricID != nil && *product.Variants[i].FabricID > 0 && (product.Variants[i].Fabric == nil || product.Variants[i].Fabric.ID == 0) {
 				var fabric models.DictionaryItem
 				pc.db.First(&fabric, *product.Variants[i].FabricID)
-				product.Variants[i].Fabric = fabric
+				product.Variants[i].Fabric = &fabric
 			}
 		}
 	}
 
-	log.Info("获取商品详情成功", 
-		logger.F("product_id", product.ID), 
+	log.Info("获取商品详情成功",
+		logger.F("product_id", product.ID),
 		logger.F("sku", product.SKU),
 		logger.F("variants_count", len(product.Variants)))
 
@@ -399,7 +399,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 
 		if err := tx.Create(&input.Variants[i]).Error; err != nil {
 			tx.Rollback()
-			log.Error("创建商品变体失败", 
+			log.Error("创建商品变体失败",
 				logger.F("product_id", input.Product.ID),
 				logger.F("variant_index", i),
 				logger.F("error", err.Error()))
@@ -423,8 +423,8 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	log.Info("创建商品成功", 
-		logger.F("product_id", input.Product.ID), 
+	log.Info("创建商品成功",
+		logger.F("product_id", input.Product.ID),
 		logger.F("sku", input.Product.SKU),
 		logger.F("variants_count", len(input.Variants)))
 
@@ -437,7 +437,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
-	
+
 	id := c.Param("id")
 	log.Info("更新商品", logger.F("product_id", id))
 
@@ -476,8 +476,8 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	// 检查SKU是否已被其他商品使用
 	var existingProduct models.Product
 	if err := pc.db.Where("sku = ? AND id != ?", input.Product.SKU, id).First(&existingProduct).Error; err == nil {
-		log.Warn("SKU已被其他商品使用", 
-			logger.F("sku", input.Product.SKU), 
+		log.Warn("SKU已被其他商品使用",
+			logger.F("sku", input.Product.SKU),
 			logger.F("existing_product_id", existingProduct.ID))
 		appErr := errors.New(errors.ErrConflict).
 			WithDetails("商品SKU已被其他商品使用，请使用其他SKU").
@@ -505,7 +505,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	// 删除旧的变体
 	if err := tx.Where("product_id = ?", product.ID).Delete(&models.ProductVariant{}).Error; err != nil {
 		tx.Rollback()
-		log.Error("删除旧变体失败", 
+		log.Error("删除旧变体失败",
 			logger.F("product_id", product.ID),
 			logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseDelete).
@@ -521,7 +521,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		input.Variants[i].ProductID = product.ID
 		if err := tx.Create(&input.Variants[i]).Error; err != nil {
 			tx.Rollback()
-			log.Error("创建商品变体失败", 
+			log.Error("创建商品变体失败",
 				logger.F("product_id", product.ID),
 				logger.F("variant_index", i),
 				logger.F("error", err.Error()))
@@ -545,8 +545,8 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	log.Info("更新商品成功", 
-		logger.F("product_id", product.ID), 
+	log.Info("更新商品成功",
+		logger.F("product_id", product.ID),
 		logger.F("sku", input.Product.SKU),
 		logger.F("variants_count", len(input.Variants)))
 
@@ -559,7 +559,7 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
-	
+
 	id := c.Param("id")
 	log.Info("删除商品", logger.F("product_id", id))
 
@@ -581,7 +581,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	// 删除商品变体
 	if err := tx.Where("product_id = ?", id).Delete(&models.ProductVariant{}).Error; err != nil {
 		tx.Rollback()
-		log.Error("删除商品变体失败", 
+		log.Error("删除商品变体失败",
 			logger.F("product_id", id),
 			logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseDelete).
@@ -595,7 +595,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	// 删除商品
 	if err := tx.Delete(&models.Product{}, id).Error; err != nil {
 		tx.Rollback()
-		log.Error("删除商品失败", 
+		log.Error("删除商品失败",
 			logger.F("product_id", id),
 			logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseDelete).
@@ -617,8 +617,8 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	log.Info("删除商品成功", 
-		logger.F("product_id", id), 
+	log.Info("删除商品成功",
+		logger.F("product_id", id),
 		logger.F("sku", product.SKU))
 
 	c.JSON(http.StatusOK, gin.H{"message": "商品删除成功"})
