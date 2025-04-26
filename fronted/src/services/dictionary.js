@@ -1,54 +1,65 @@
 import api from './api'
+import { convertBackendFields, convertFrontendFields } from '../utils/fieldConverter'
 
 // 字典服务
 export default {
   // 获取字典类型列表
-  getDictionaries() {
-    return api.get('/api/dictionaries')
+  async getDictionaries() {
+    const response = await api.get('/api/dictionaries')
+    return convertBackendFields(response)
   },
-  
+
   // 获取字典类型详情
-  getDictionary(code) {
-    return api.get(`/api/dictionaries/${code}`)
+  async getDictionary(code) {
+    const response = await api.get(`/api/dictionaries/${code}`)
+    return convertBackendFields(response)
   },
-  
+
   // 创建字典类型
-  createDictionary(data) {
-    return api.post('/api/dictionaries', data)
+  async createDictionary(data) {
+    const response = await api.post('/api/dictionaries', convertFrontendFields(data))
+    return convertBackendFields(response)
   },
-  
+
   // 更新字典类型
-  updateDictionary(code, data) {
-    return api.put(`/api/dictionaries/${code}`, data)
+  async updateDictionary(code, data) {
+    const response = await api.put(`/api/dictionaries/${code}`, convertFrontendFields(data))
+    return convertBackendFields(response)
   },
-  
+
   // 删除字典类型
-  deleteDictionary(code) {
-    return api.delete(`/api/dictionaries/${code}`)
+  async deleteDictionary(code) {
+    const response = await api.delete(`/api/dictionaries/${code}`)
+    return convertBackendFields(response)
   },
-  
+
   // 获取字典项列表
-  getDictionaryItems(code) {
-    return api.get(`/api/dictionaries/${code}/items`)
+  async getDictionaryItems(code) {
+    const response = await api.get(`/api/dictionaries/${code}/items`)
+    return convertBackendFields(response)
   },
-  
+
   // 获取字典项详情
-  getDictionaryItem(code, itemId) {
-    return api.get(`/api/dictionaries/${code}/items/${itemId}`)
+  async getDictionaryItem(code, itemId) {
+    const response = await api.get(`/api/dictionaries/${code}/items/${itemId}`)
+    return convertBackendFields(response)
   },
-  
+
   // 创建字典项
-  createDictionaryItem(code, data) {
-    return api.post(`/api/dictionaries/${code}/items`, data)
+  async createDictionaryItem(code, data) {
+    const response = await api.post(`/api/dictionaries/${code}/items`, convertFrontendFields(data))
+    return convertBackendFields(response)
   },
-  
+
   // 更新字典项
-  updateDictionaryItem(code, itemId, data) {
-    return api.put(`/api/dictionaries/${code}/items/${itemId}`, data)
+  async updateDictionaryItem(code, itemId, data) {
+    const response = await api.put(`/api/dictionaries/${code}/items/${itemId}`, convertFrontendFields(data))
+    return convertBackendFields(response)
   },
-  
+
   // 删除字典项
-  deleteDictionaryItem(code, itemId) {
-    return api.delete(`/api/dictionaries/${code}/items/${itemId}`)
+  async deleteDictionaryItem(code, itemId) {
+    const response = await api.delete(`/api/dictionaries/${code}/items/${itemId}`)
+    return convertBackendFields(response)
   }
 }

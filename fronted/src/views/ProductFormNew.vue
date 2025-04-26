@@ -42,10 +42,12 @@
             <n-grid :cols="24" :x-gap="24">
               <n-form-item-gi :span="8" label="SKU" path="sku">
                 <n-input v-model:value="formData.sku" placeholder="请输入商品SKU" />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.sku }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="16" label="商品名称" path="name">
                 <n-input v-model:value="formData.name" placeholder="请输入商品名称" />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.name }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="类别" path="categoryId">
@@ -54,6 +56,7 @@
                   :options="categoryOptions"
                   placeholder="请选择类别"
                 />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.categoryId }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="品牌" path="brandId">
@@ -62,14 +65,17 @@
                   :options="brandOptions"
                   placeholder="请选择品牌"
                 />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.brandId }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="成本价" path="costPrice">
                 <n-input-number v-model:value="formData.costPrice" placeholder="请输入成本价" :min="0" :precision="2" />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.costPrice }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="零售价" path="retailPrice">
                 <n-input-number v-model:value="formData.retailPrice" placeholder="请输入零售价" :min="0" :precision="2" />
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.retailPrice }}</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="24" label="商品图片" path="images">
@@ -126,10 +132,13 @@
         </n-card>
 
         <!-- 调试信息卡片 -->
-        <n-card title="调试信息" class="form-card" v-if="isEdit.value">
+        <n-card title="调试信息" class="form-card">
           <n-space vertical>
             <n-alert type="info" title="当前表单数据状态">
               <pre>{{ JSON.stringify(formData, null, 2) }}</pre>
+            </n-alert>
+            <n-alert type="warning" title="原始数据" v-if="rawProductData">
+              <pre>{{ JSON.stringify(rawProductData, null, 2) }}</pre>
             </n-alert>
           </n-space>
         </n-card>
@@ -279,6 +288,7 @@ const savingVariant = ref(false)
 const showVariantModal = ref(false)
 const isEdit = computed(() => !!route.params.id)
 const productId = ref(isEdit.value ? parseInt(route.params.id) : null)
+const rawProductData = ref(null) // 存储原始数据供调试使用
 
 // 文件列表
 const fileList = ref([])
@@ -548,28 +558,43 @@ const addVariant = () => {
   variantForm.retailPrice = formData.retailPrice
 
   showVariantModal.value = true
+
+  // 重置表单验证状态
+  setTimeout(() => {
+    if (variantFormRef.value) {
+      variantFormRef.value.restoreValidation()
+    }
+  }, 100)
 }
 
 const handleAddVariant = () => {
-  variantFormRef.value?.validate(async (errors) => {
-    if (errors) {
-      return
-    }
+  // 手动检查必填字段
+  if (!variantForm.colorId) {
+    message.error('请选择颜色')
+    return
+  }
 
-    // 检查是否已存在相同的变体
-    const existingVariant = variants.value.find(
-      v => v.colorId === variantForm.colorId && v.sizeId === variantForm.sizeId
-    )
+  if (!variantForm.sizeId) {
+    message.error('请选择尺码')
+    return
+  }
 
-    if (existingVariant) {
-      message.warning('已存在相同颜色和尺码的变体')
-      return
-    }
+  // 检查是否已存在相同的变体
+  const existingVariant = variants.value.find(
+    v => v.colorId === variantForm.colorId && v.sizeId === variantForm.sizeId
+  )
 
-    // 添加到变体列表
-    variants.value.push({ ...variantForm })
-    showVariantModal.value = false
-  })
+  if (existingVariant) {
+    message.warning('已存在相同颜色和尺码的变体')
+    return
+  }
+
+  // 添加到变体列表
+  variants.value.push({ ...variantForm })
+  showVariantModal.value = false
+
+  // 显示成功消息
+  message.success('变体添加成功')
 }
 
 const removeVariant = (index) => {
@@ -651,48 +676,55 @@ const loadProduct = async () => {
   try {
     console.log('正在加载商品数据，商品ID:', productId.value)
     const product = await productService.getProduct(productId.value)
+    // 保存原始数据供调试使用
+    rawProductData.value = product
     console.log('从后端获取的商品数据:', product)
-    console.log('商品描述内容:', product.Description)
+    console.log('原始商品数据类型:', typeof product)
+    console.log('原始商品数据字段:', Object.keys(product))
 
-    // 将后端字段名称转换为前端字段名称
+    // 打印转换后的字段名称和值
     console.log('开始设置表单数据')
+    console.log('id:', product.id, typeof product.id)
+    console.log('sku:', product.sku, typeof product.sku)
+    console.log('name:', product.name, typeof product.name)
+    console.log('categoryId:', product.categoryId, typeof product.categoryId)
+    console.log('brandId:', product.brandId, typeof product.brandId)
+    console.log('description:', product.description, typeof product.description)
+    console.log('costPrice:', product.costPrice, typeof product.costPrice)
+    console.log('retailPrice:', product.retailPrice, typeof product.retailPrice)
 
-    // 打印每个字段的值
-    console.log('ID:', product.ID)
-    console.log('SKU:', product.SKU)
-    console.log('Name:', product.Name)
-    console.log('CategoryID:', product.CategoryID)
-    console.log('BrandID:', product.BrandID)
-    console.log('Description:', product.Description)
-    console.log('CostPrice:', product.CostPrice)
-    console.log('RetailPrice:', product.RetailPrice)
+    // 打印表单数据绑定前的状态
+    console.log('表单数据绑定前:', JSON.stringify(formData))
 
     // 设置表单数据
-    formData.id = product.ID
-    formData.sku = product.SKU || ''
-    formData.name = product.Name || ''
-    formData.categoryId = product.CategoryID || null
-    formData.brandId = product.BrandID || null
-    formData.costPrice = product.CostPrice || 0
-    formData.retailPrice = product.RetailPrice || 0
+    formData.id = product.id
+    formData.sku = product.sku || ''
+    formData.name = product.name || ''
+    formData.categoryId = product.categoryId || null
+    formData.brandId = product.brandId || null
+    formData.costPrice = product.costPrice || 0
+    formData.retailPrice = product.retailPrice || 0
 
     // 特意将description放在最后设置，并确保其值不为空
-    if (product.Description) {
-      console.log('设置描述内容:', product.Description)
-      formData.description = product.Description
+    if (product.description) {
+      console.log('设置描述内容:', product.description)
+      formData.description = product.description
     } else {
       console.log('商品描述为空')
       formData.description = ''
     }
 
+    // 打印表单数据绑定后的状态
+    console.log('表单数据绑定后:', JSON.stringify(formData))
+
     console.log('表单数据设置完成')
 
     // 处理图片
-    if (product.Images && Array.isArray(product.Images)) {
-      formData.images = product.Images
+    if (product.images && Array.isArray(product.images)) {
+      formData.images = product.images
 
       // 为上传组件创建文件列表
-      fileList.value = product.Images.map((url, index) => ({
+      fileList.value = product.images.map((url, index) => ({
         id: `existing-${index}`,
         name: url.split('/').pop() || `image-${index}.jpg`,
         status: 'finished',
@@ -701,15 +733,15 @@ const loadProduct = async () => {
     }
 
     // 处理变体
-    if (product.Variants && Array.isArray(product.Variants)) {
-      variants.value = product.Variants.map(v => ({
-        colorId: v.ColorID,
-        sizeId: v.SizeID,
-        seasonId: v.SeasonID,
-        fabricId: v.FabricID,
-        barcode: v.Barcode,
-        costPrice: v.CostPrice,
-        retailPrice: v.RetailPrice
+    if (product.variants && Array.isArray(product.variants)) {
+      variants.value = product.variants.map(v => ({
+        colorId: v.colorId,
+        sizeId: v.sizeId,
+        seasonId: v.seasonId,
+        fabricId: v.fabricId,
+        barcode: v.barcode,
+        costPrice: v.costPrice,
+        retailPrice: v.retailPrice
       }))
     }
 
@@ -729,6 +761,14 @@ const loadProduct = async () => {
     }
 
     console.log('转换后的表单数据:', formData)
+
+    // 数据加载完成后，重置表单验证状态
+    setTimeout(() => {
+      if (formRef.value) {
+        formRef.value.restoreValidation()
+        console.log('表单验证状态已重置')
+      }
+    }, 300)
   } catch (error) {
     console.error('加载商品数据失败:', error)
     message.error('加载商品数据失败: ' + (error.response?.data?.error || '未知错误'))
@@ -751,25 +791,25 @@ const handleSave = () => {
         formData.description = editor.value.getHtml()
       }
 
-      // 将字段名称转换为大写，以匹配后端模型
+      // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
       const productData = {
-        SKU: formData.sku,
-        Name: formData.name,
-        CategoryID: formData.categoryId,
-        BrandID: formData.brandId,
-        Description: formData.description,
-        CostPrice: formData.costPrice,
-        RetailPrice: formData.retailPrice,
-        Images: formData.images,
-        Status: formData.status,
-        Variants: variants.value.map(v => ({
-          ColorID: v.colorId,
-          SizeID: v.sizeId,
-          SeasonID: v.seasonId,
-          FabricID: v.fabricId,
-          Barcode: v.barcode,
-          CostPrice: v.costPrice,
-          RetailPrice: v.retailPrice
+        sku: formData.sku,
+        name: formData.name,
+        categoryId: formData.categoryId,
+        brandId: formData.brandId,
+        description: formData.description,
+        costPrice: formData.costPrice,
+        retailPrice: formData.retailPrice,
+        images: formData.images,
+        status: formData.status,
+        variants: variants.value.map(v => ({
+          colorId: v.colorId,
+          sizeId: v.sizeId,
+          seasonId: v.seasonId,
+          fabricId: v.fabricId,
+          barcode: v.barcode,
+          costPrice: v.costPrice,
+          retailPrice: v.retailPrice
         }))
       }
 
@@ -778,7 +818,7 @@ const handleSave = () => {
 
       // 调用API保存商品数据
       if (isEdit.value) {
-        productData.ID = productId.value
+        productData.id = productId.value
         await productService.updateProduct(productId.value, productData)
         message.success('商品更新成功')
       } else {

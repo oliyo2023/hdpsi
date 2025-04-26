@@ -94,18 +94,25 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			productGroup.POST("", middleware.RoleAuth("admin", "manager"), productController.CreateProduct)
 			productGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), productController.UpdateProduct)
 			productGroup.DELETE("/:id", middleware.RoleAuth("admin"), productController.DeleteProduct)
+
+			// 已删除商品管理路由
+			productGroup.GET("/deleted/list", middleware.RoleAuth("admin"), productController.ListDeletedProducts)
+			productGroup.POST("/deleted/:id/restore", middleware.RoleAuth("admin"), productController.RestoreProduct)
 		}
 
 		// 库存管理路由
-		inventoryController := controllers.NewInventoryController(db)
-		inventoryGroup := apiAuth.Group("/inventory")
-		{
-			inventoryGroup.GET("", inventoryController.ListInventories)
-			inventoryGroup.GET("/:id", inventoryController.GetInventory)
-			inventoryGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
-			inventoryGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
-			inventoryGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryController.DeleteInventory)
-		}
+		// TODO: 实现库存管理控制器
+		/*
+			inventoryController := controllers.NewInventoryController(db)
+			inventoryGroup := apiAuth.Group("/inventory")
+			{
+				inventoryGroup.GET("", inventoryController.ListInventories)
+				inventoryGroup.GET("/:id", inventoryController.GetInventory)
+				inventoryGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
+				inventoryGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
+				inventoryGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryController.DeleteInventory)
+			}
+		*/
 
 		// 供应商管理路由
 		supplierController := controllers.NewSupplierController(db)

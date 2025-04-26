@@ -20,9 +20,9 @@ func NewDashboardController(db *gorm.DB) *DashboardController {
 
 // GetStatistics 获取仪表盘统计数据
 func (dc *DashboardController) GetStatistics(c *gin.Context) {
-	// 获取商品总数
+	// 获取商品总数（不包含已删除的商品）
 	var productCount int64
-	if err := dc.db.Table("products").Count(&productCount).Error; err != nil {
+	if err := dc.db.Table("products").Where("deleted_at IS NULL").Count(&productCount).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取商品总数失败"})
 		return
 	}
