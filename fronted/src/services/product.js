@@ -13,7 +13,14 @@ export default {
   async getProduct(id) {
     const response = await api.get(`/api/products/${id}`)
     console.log('产品服务收到的原始响应:', response)
-    const convertedData = convertBackendFields(response)
+
+    // 后端返回的是包含product和variants的对象
+    // 需要提取product对象并转换字段
+    const convertedData = {
+      ...convertBackendFields(response.product || {}),
+      variants: response.variants ? convertBackendFields(response.variants) : []
+    }
+
     console.log('产品服务转换后的数据:', convertedData)
     return convertedData
   },

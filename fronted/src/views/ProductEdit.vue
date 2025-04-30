@@ -241,22 +241,22 @@ const loadDictionaryItems = async (code, optionsRef) => {
     const dictionaryService = (await import('../services/dictionary')).default
     const items = await dictionaryService.getDictionaryItems(code)
     console.log(`原始${code}字典项数据:`, items)
-    
+
     // 构建选项
     optionsRef.value = items.map(item => {
       // 处理字段名称不一致的情况
       const name = item.Name || item.name || ''
       const id = item.ID || item.id || 0
       const status = item.Status !== undefined ? item.Status : (item.status !== undefined ? item.status : true)
-      
+
       return {
         label: name,
-        value: name, // 使用名称作为选择器的值
-        id: id, // 保存ID以便于后续使用
+        value: id, // 使用ID作为选择器的值，这样更可靠
+        name: name, // 保存名称以便于显示
         disabled: !status // 根据状态设置是否禁用
       }
     })
-    
+
     console.log(`${code}字典项加载成功:`, optionsRef.value)
   } catch (error) {
     console.error(`加载${code}字典数据失败:`, error)
@@ -264,35 +264,25 @@ const loadDictionaryItems = async (code, optionsRef) => {
   }
 }
 
-// 根据名称获取字典项ID
-const getCategoryID = (name) => {
-  if (!name) return null
-  const item = categoryOptions.value.find(item => item.value === name)
-  return item ? item.id : null
+// 这些函数现在直接返回ID，因为选择器的值已经是ID了
+const getCategoryID = (id) => {
+  return id
 }
 
-const getBrandID = (name) => {
-  if (!name) return null
-  const item = brandOptions.value.find(item => item.value === name)
-  return item ? item.id : null
+const getBrandID = (id) => {
+  return id
 }
 
-const getColorID = (name) => {
-  if (!name) return null
-  const item = colorOptions.value.find(item => item.value === name)
-  return item ? item.id : null
+const getColorID = (id) => {
+  return id
 }
 
-const getSizeID = (name) => {
-  if (!name) return null
-  const item = sizeOptions.value.find(item => item.value === name)
-  return item ? item.id : null
+const getSizeID = (id) => {
+  return id
 }
 
-const getSeasonID = (name) => {
-  if (!name) return null
-  const item = seasonOptions.value.find(item => item.value === name)
-  return item ? item.id : null
+const getSeasonID = (id) => {
+  return id
 }
 
 // 加载商品数据
@@ -305,50 +295,55 @@ const loadProduct = async () => {
     const product = await productService.getProduct(productId.value)
     console.log('从后端获取的商品数据:', product)
     rawProduct.value = product
-    
+
     // 将后端字段名称转换为前端字段名称
     // 注意：字段名称已经被 convertBackendFields 函数转换为小写了
     formData.id = product.id || 0
     formData.sku = product.sku || ''
     formData.name = product.name || ''
-    
-    // 处理关联字段
+
+    // 处理关联字段 - 现在使用ID作为选择器的值
     if (product.category) {
-      // 如果是字典项对象，需要将其转换为选择器需要的格式
-      formData.category = product.category.name || ''
+      // 使用ID作为选择器的值
+      formData.category = product.category.id || null
+      console.log('设置类别ID:', formData.category, '类别对象:', product.category)
     } else {
       formData.category = null
     }
-    
+
     if (product.brand) {
-      formData.brand = product.brand.name || ''
+      formData.brand = product.brand.id || null
+      console.log('设置品牌ID:', formData.brand, '品牌对象:', product.brand)
     } else {
       formData.brand = null
     }
-    
+
     if (product.color) {
-      formData.color = product.color.name || ''
+      formData.color = product.color.id || null
+      console.log('设置颜色ID:', formData.color, '颜色对象:', product.color)
     } else {
       formData.color = null
     }
-    
+
     if (product.size) {
-      formData.size = product.size.name || ''
+      formData.size = product.size.id || null
+      console.log('设置尺码ID:', formData.size, '尺码对象:', product.size)
     } else {
       formData.size = null
     }
-    
+
     if (product.season) {
-      formData.season = product.season.name || ''
+      formData.season = product.season.id || null
+      console.log('设置季节ID:', formData.season, '季节对象:', product.season)
     } else {
       formData.season = null
     }
-    
+
     formData.costPrice = product.costPrice || 0
     formData.retailPrice = product.retailPrice || 0
     formData.image = product.image || ''
     formData.description = product.description || ''
-    
+
     console.log('转换后的表单数据:', formData)
   } catch (error) {
     console.error('加载商品数据失败:', error)
@@ -427,16 +422,27 @@ const handleSave = () => {
 
 // 生命周期钩子
 onMounted(async () => {
-  // 加载字典项
-  await loadDictionaryItems('category', categoryOptions)
-  await loadDictionaryItems('brand', brandOptions)
-  await loadDictionaryItems('color', colorOptions)
-  await loadDictionaryItems('size', sizeOptions)
-  await loadDictionaryItems('season', seasonOptions)
-  
-  // 加载商品数据（如果是编辑模式）
-  if (isEditing.value) {
-    await loadProduct()
+  try {
+    // 先加载字典项
+    console.log('开始加载字典项...')
+    await Promise.all([
+      loadDictionaryItems('category', categoryOptions),
+      loadDictionaryItems('brand', brandOptions),
+      loadDictionaryItems('color', colorOptions),
+      loadDictionaryItems('size', sizeOptions),
+      loadDictionaryItems('season', seasonOptions)
+    ])
+    console.log('字典项加载完成')
+
+    // 等待字典项加载完成后再加载商品数据
+    if (isEditing.value) {
+      console.log('开始加载商品数据...')
+      await loadProduct()
+      console.log('商品数据加载完成')
+    }
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+    message.error('初始化数据失败: ' + error.message)
   }
 })
 </script>
