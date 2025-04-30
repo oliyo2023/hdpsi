@@ -55,8 +55,9 @@
                   v-model:value="formData.categoryId"
                   :options="categoryOptions"
                   placeholder="请选择类别"
+                  @update:value="handleCategoryChange"
                 />
-                <n-text depth="3" v-if="isEdit">当前值: {{ formData.categoryId }}</n-text>
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.categoryId }} ({{ typeof formData.categoryId }})</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="品牌" path="brandId">
@@ -64,8 +65,9 @@
                   v-model:value="formData.brandId"
                   :options="brandOptions"
                   placeholder="请选择品牌"
+                  @update:value="handleBrandChange"
                 />
-                <n-text depth="3" v-if="isEdit">当前值: {{ formData.brandId }}</n-text>
+                <n-text depth="3" v-if="isEdit">当前值: {{ formData.brandId }} ({{ typeof formData.brandId }})</n-text>
               </n-form-item-gi>
 
               <n-form-item-gi :span="8" label="成本价" path="costPrice">
@@ -189,6 +191,7 @@
                 :options="colorOptions"
                 placeholder="请选择颜色"
                 :render-label="renderColorLabel"
+                @update:value="handleVariantColorChange"
               />
             </n-form-item-gi>
 
@@ -197,6 +200,7 @@
                 v-model:value="variantForm.sizeId"
                 :options="sizeOptions"
                 placeholder="请选择尺码"
+                @update:value="handleVariantSizeChange"
               />
             </n-form-item-gi>
 
@@ -205,6 +209,7 @@
                 v-model:value="variantForm.seasonId"
                 :options="seasonOptions"
                 placeholder="请选择季节"
+                @update:value="handleVariantSeasonChange"
               />
             </n-form-item-gi>
 
@@ -213,6 +218,7 @@
                 v-model:value="variantForm.fabricId"
                 :options="fabricOptions"
                 placeholder="请选择面料"
+                @update:value="handleVariantFabricChange"
               />
             </n-form-item-gi>
 
@@ -323,23 +329,23 @@ const rules = {
   sku: {
     required: true,
     message: '请输入商品SKU',
-    trigger: 'blur'
+    trigger: ['blur', 'input', 'change']
   },
   name: {
     required: true,
     message: '请输入商品名称',
-    trigger: 'blur'
+    trigger: ['blur', 'input', 'change']
   },
   categoryId: {
     required: true,
     message: '请选择商品类别',
-    trigger: 'change'
+    trigger: ['blur', 'input', 'change', 'update:value']
   },
   retailPrice: {
     required: true,
     type: 'number',
     message: '请输入零售价',
-    trigger: 'change'
+    trigger: ['blur', 'input', 'change']
   }
 }
 
@@ -432,6 +438,45 @@ watch(() => formData.description, (newValue) => {
   }
 })
 
+// 处理类别变更
+const handleCategoryChange = (val) => {
+  console.log('类别选择变更:', val, typeof val)
+  // 确保值是数字类型
+  formData.categoryId = typeof val === 'string' ? parseInt(val) : val
+  console.log('处理后的类别ID:', formData.categoryId, typeof formData.categoryId)
+
+  // 手动触发表单验证
+  if (formRef.value) {
+    formRef.value.validate(['categoryId'], errors => {
+      console.log('类别验证结果:', errors)
+    })
+  }
+}
+
+// 监听类别ID变化
+watch(() => formData.categoryId, (newValue) => {
+  console.log('类别ID变化:', newValue, typeof newValue)
+  // 手动触发表单验证
+  if (formRef.value) {
+    formRef.value.validate(['categoryId'], errors => {
+      console.log('类别验证结果:', errors)
+    })
+  }
+})
+
+// 处理品牌变更
+const handleBrandChange = (val) => {
+  console.log('品牌选择变更:', val, typeof val)
+  // 确保值是数字类型
+  formData.brandId = typeof val === 'string' ? parseInt(val) : val
+  console.log('处理后的品牌ID:', formData.brandId, typeof formData.brandId)
+}
+
+// 监听品牌ID变化
+watch(() => formData.brandId, (newValue) => {
+  console.log('品牌ID变化:', newValue, typeof newValue)
+})
+
 // 组件卸载时销毁编辑器
 onBeforeUnmount(() => {
   const editorInstance = editor.value
@@ -443,13 +488,18 @@ onBeforeUnmount(() => {
 const loadDictionaryItems = async (code, optionsRef) => {
   try {
     const items = await dictionaryService.getDictionaryItems(code)
-    optionsRef.value = items.map(item => ({
-      label: item.name,
-      value: item.id,
-      color: item.color,
-      code: item.code,
-      disabled: !item.status
-    }))
+    optionsRef.value = items.map(item => {
+      // 确保 value 是数字类型
+      const itemId = typeof item.id === 'string' ? parseInt(item.id) : item.id
+      return {
+        label: item.name,
+        value: itemId,
+        color: item.color,
+        code: item.code,
+        disabled: !item.status
+      }
+    })
+    console.log(`加载${code}字典项成功:`, optionsRef.value)
   } catch (error) {
     console.error(`加载${code}字典项失败:`, error)
     message.error(`加载${code}字典项失败`)
@@ -470,6 +520,27 @@ const renderColorLabel = (option) => {
     }),
     option.label
   ])
+}
+
+// 处理变体表单中的选择器变更
+const handleVariantColorChange = (val) => {
+  console.log('变体颜色选择变更:', val, typeof val)
+  variantForm.colorId = typeof val === 'string' ? parseInt(val) : val
+}
+
+const handleVariantSizeChange = (val) => {
+  console.log('变体尺码选择变更:', val, typeof val)
+  variantForm.sizeId = typeof val === 'string' ? parseInt(val) : val
+}
+
+const handleVariantSeasonChange = (val) => {
+  console.log('变体季节选择变更:', val, typeof val)
+  variantForm.seasonId = typeof val === 'string' ? parseInt(val) : val
+}
+
+const handleVariantFabricChange = (val) => {
+  console.log('变体面料选择变更:', val, typeof val)
+  variantForm.fabricId = typeof val === 'string' ? parseInt(val) : val
 }
 
 // 变体表格列
@@ -579,9 +650,18 @@ const handleAddVariant = () => {
     return
   }
 
+  // 确保所有ID字段都是数字类型
+  const processedVariant = {
+    ...variantForm,
+    colorId: typeof variantForm.colorId === 'string' ? parseInt(variantForm.colorId) : variantForm.colorId,
+    sizeId: typeof variantForm.sizeId === 'string' ? parseInt(variantForm.sizeId) : variantForm.sizeId,
+    seasonId: variantForm.seasonId ? (typeof variantForm.seasonId === 'string' ? parseInt(variantForm.seasonId) : variantForm.seasonId) : null,
+    fabricId: variantForm.fabricId ? (typeof variantForm.fabricId === 'string' ? parseInt(variantForm.fabricId) : variantForm.fabricId) : null
+  }
+
   // 检查是否已存在相同的变体
   const existingVariant = variants.value.find(
-    v => v.colorId === variantForm.colorId && v.sizeId === variantForm.sizeId
+    v => v.colorId === processedVariant.colorId && v.sizeId === processedVariant.sizeId
   )
 
   if (existingVariant) {
@@ -590,11 +670,12 @@ const handleAddVariant = () => {
   }
 
   // 添加到变体列表
-  variants.value.push({ ...variantForm })
+  variants.value.push(processedVariant)
   showVariantModal.value = false
 
   // 显示成功消息
   message.success('变体添加成功')
+  console.log('添加的变体数据:', processedVariant)
 }
 
 const removeVariant = (index) => {
@@ -700,8 +781,22 @@ const loadProduct = async () => {
     formData.id = product.id
     formData.sku = product.sku || ''
     formData.name = product.name || ''
-    formData.categoryId = product.categoryId || null
-    formData.brandId = product.brandId || null
+
+    // 特别处理类别和品牌字段，确保它们是数字类型
+    if (product.categoryId) {
+      formData.categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId
+      console.log('设置类别ID:', formData.categoryId, typeof formData.categoryId)
+    } else {
+      formData.categoryId = null
+    }
+
+    if (product.brandId) {
+      formData.brandId = typeof product.brandId === 'string' ? parseInt(product.brandId) : product.brandId
+      console.log('设置品牌ID:', formData.brandId, typeof formData.brandId)
+    } else {
+      formData.brandId = null
+    }
+
     formData.costPrice = product.costPrice || 0
     formData.retailPrice = product.retailPrice || 0
 
@@ -779,8 +874,33 @@ const loadProduct = async () => {
 }
 
 const handleSave = () => {
+  // 手动检查必填字段
+  if (!formData.sku) {
+    message.error('请输入商品SKU')
+    return
+  }
+
+  if (!formData.name) {
+    message.error('请输入商品名称')
+    return
+  }
+
+  if (!formData.categoryId) {
+    message.error('请选择商品类别')
+    return
+  }
+
+  if (!formData.retailPrice && formData.retailPrice !== 0) {
+    message.error('请输入零售价')
+    return
+  }
+
+  // 打印当前表单数据状态
+  console.log('保存前的表单数据:', formData)
+
   formRef.value?.validate(async (errors) => {
     if (errors) {
+      console.error('表单验证错误:', errors)
       return
     }
 
@@ -795,18 +915,19 @@ const handleSave = () => {
       const productData = {
         sku: formData.sku,
         name: formData.name,
-        categoryId: formData.categoryId,
-        brandId: formData.brandId,
+        // 确保ID字段是数字类型
+        categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
+        brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
         description: formData.description,
         costPrice: formData.costPrice,
         retailPrice: formData.retailPrice,
         images: formData.images,
         status: formData.status,
         variants: variants.value.map(v => ({
-          colorId: v.colorId,
-          sizeId: v.sizeId,
-          seasonId: v.seasonId,
-          fabricId: v.fabricId,
+          colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
+          sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
+          seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
+          fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
           barcode: v.barcode,
           costPrice: v.costPrice,
           retailPrice: v.retailPrice

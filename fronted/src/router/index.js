@@ -186,8 +186,16 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const userJson = localStorage.getItem('user') || '{}'
-  const userInfo = JSON.parse(userJson)
+  let userInfo = {}
+  try {
+    const userJson = localStorage.getItem('user')
+    if (userJson) {
+      userInfo = JSON.parse(userJson)
+    }
+  } catch (error) {
+    console.error('解析用户信息失败:', error)
+    // 如果解析失败，使用空对象作为默认值
+  }
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
 

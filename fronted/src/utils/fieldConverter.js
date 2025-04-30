@@ -32,10 +32,14 @@ export function convertBackendFields(obj) {
       result['name'] = obj[key];
     }
     else if (key === 'CategoryID') {
-      result['categoryId'] = obj[key];
+      // 确保 categoryId 是数字类型
+      result['categoryId'] = obj[key] ? (typeof obj[key] === 'string' ? parseInt(obj[key]) : obj[key]) : null;
+      console.log('转换后的categoryId:', result['categoryId'], typeof result['categoryId']);
     }
     else if (key === 'BrandID') {
-      result['brandId'] = obj[key];
+      // 确保 brandId 是数字类型
+      result['brandId'] = obj[key] ? (typeof obj[key] === 'string' ? parseInt(obj[key]) : obj[key]) : null;
+      console.log('转换后的brandId:', result['brandId'], typeof result['brandId']);
     }
     else if (key === 'CostPrice') {
       result['costPrice'] = obj[key];
@@ -121,10 +125,14 @@ export function convertFrontendFields(obj) {
       result['Name'] = obj[key];
     }
     else if (key === 'categoryId') {
-      result['CategoryID'] = obj[key];
+      // 确保 CategoryID 是数字类型
+      result['CategoryID'] = obj[key] ? (typeof obj[key] === 'string' ? parseInt(obj[key]) : obj[key]) : null;
+      console.log('转换后的CategoryID:', result['CategoryID'], typeof result['CategoryID']);
     }
     else if (key === 'brandId') {
-      result['BrandID'] = obj[key];
+      // 确保 BrandID 是数字类型
+      result['BrandID'] = obj[key] ? (typeof obj[key] === 'string' ? parseInt(obj[key]) : obj[key]) : null;
+      console.log('转换后的BrandID:', result['BrandID'], typeof result['BrandID']);
     }
     else if (key === 'costPrice') {
       result['CostPrice'] = obj[key];

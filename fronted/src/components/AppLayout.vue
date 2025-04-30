@@ -99,7 +99,7 @@
                                 {{ getUserInitials() }}
                               </div>
                               <div class="user-info" v-if="!collapsed">
-                                <div class="user-name">{{ currentUser.Name || currentUser.Username || 'User' }}</div>
+                                <div class="user-name">{{ currentUser?.Name || currentUser?.Username || 'User' }}</div>
                                 <div class="user-role">{{ getUserRole() }}</div>
                               </div>
                               <n-icon size="14" class="dropdown-icon">
@@ -394,17 +394,22 @@ const getUserRole = () => {
 
 // 获取用户名首字母作为头像
 const getUserInitials = () => {
-  const name = currentUser.value?.Name || currentUser.value?.Username || ''
-  console.log('获取用户头像时的用户名:', name)
-  if (!name) return 'U'
+  try {
+    const name = currentUser.value?.Name || currentUser.value?.Username || ''
+    console.log('获取用户头像时的用户名:', name)
+    if (!name) return 'U'
 
-  // 如果是中文名字，取第一个字
-  if (/[\u4e00-\u9fa5]/.test(name)) {
-    return name.charAt(0)
+    // 如果是中文名字，取第一个字
+    if (/[\u4e00-\u9fa5]/.test(name)) {
+      return name.charAt(0)
+    }
+
+    // 如果是英文名字，取首字母
+    return name.charAt(0).toUpperCase()
+  } catch (error) {
+    console.error('获取用户头像失败:', error)
+    return 'U'
   }
-
-  // 如果是英文名字，取首字母
-  return name.charAt(0).toUpperCase()
 }
 
 // 检查登录状态并更新用户信息

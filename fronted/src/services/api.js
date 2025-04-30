@@ -97,7 +97,9 @@ api.interceptors.response.use(
             localStorage.setItem('token', response.token)
             localStorage.setItem('refreshToken', response.refresh_token)
             localStorage.setItem('tokenExpires', response.expires_at)
-            localStorage.setItem('user', JSON.stringify(response.user))
+            if (response.user) {
+              localStorage.setItem('user', JSON.stringify(response.user))
+            }
 
             // 更新原始请求的认证信息
             originalRequest.headers['Authorization'] = `Bearer ${response.token}`
