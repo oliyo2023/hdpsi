@@ -16,6 +16,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	r.POST("/auth/login", authController.Login)
 	r.POST("/auth/register", authController.Register)
 
+	// 系统设置路由 - 公开访问
+	systemSettingController := controllers.NewSystemSettingController(db)
+	r.GET("/api/settings/theme", systemSettingController.GetUserTheme)
+
 	// API路由组
 	api := r.Group("/api")
 
@@ -80,7 +84,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		systemSettingController := controllers.NewSystemSettingController(db)
 		apiAuth.GET("/settings", systemSettingController.GetSettings)
 		apiAuth.PUT("/settings", middleware.RoleAuth("admin"), systemSettingController.UpdateSettings)
-		apiAuth.GET("/settings/theme", systemSettingController.GetUserTheme)
 		apiAuth.PUT("/settings/theme", systemSettingController.UpdateUserTheme)
 
 		// 商品管理路由

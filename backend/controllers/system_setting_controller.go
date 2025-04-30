@@ -257,34 +257,28 @@ func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
 
 	// 从上下文中获取用户ID
 	userID, exists := c.Get("userID")
-	if !exists {
-		log.Warn("未授权的主题设置请求")
-		appErr := errors.New(errors.ErrUnauthorized).
-			WithDetails("请先登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
-		return
-	}
-
-	log = log.WithField("user_id", userID)
 
 	// 查询用户主题设置
 	var themeSetting models.SystemSetting
-	result := ssc.db.Where("`key` = ? AND `group` = ? AND `user_id` = ?",
-		models.SettingTheme, models.SettingGroupTheme, userID).First(&themeSetting)
+	var result *gorm.DB
 
-	// 如果用户没有特定设置，则获取全局设置
-	if result.Error != nil {
-		log.Info("用户特定主题设置不存在，获取全局设置")
+	// 如果用户已登录，尝试获取用户特定设置
+	if exists {
+		log = log.WithField("user_id", userID)
+		result = ssc.db.Where("`key` = ? AND `group` = ? AND `user_id` = ?",
+			models.SettingTheme, models.SettingGroupTheme, userID).First(&themeSetting)
+	} else {
+		log.Info("用户未登录，获取全局设置")
+		// 直接获取全局设置
 		result = ssc.db.Where("`key` = ? AND `group` = ? AND `user_id` IS NULL",
 			models.SettingTheme, models.SettingGroupTheme).First(&themeSetting)
+	}
 
-		// 如果全局设置也不存在，则返回默认主题
-		if result.Error != nil {
-			log.Info("全局主题设置不存在，使用默认主题")
-			c.JSON(http.StatusOK, gin.H{"theme": "light"})
-			return
-		}
+	// 如果设置不存在，则返回默认主题
+	if result.Error != nil {
+		log.Info("主题设置不存在，使用默认主题")
+		c.JSON(http.StatusOK, gin.H{"theme": "light"})
+		return
 	}
 
 	log.Info("获取用户主题设置成功", logger.F("theme", themeSetting.Value))
