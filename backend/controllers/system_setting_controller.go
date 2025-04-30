@@ -26,13 +26,13 @@ func NewSystemSettingController(db *gorm.DB) *SystemSettingController {
 func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
-	
+
 	// 获取查询参数
 	group := c.Query("group")
 	userID := c.Query("user_id")
-	
-	log.Info("获取系统设置", 
-		logger.F("group", group), 
+
+	log.Info("获取系统设置",
+		logger.F("group", group),
 		logger.F("user_id", userID))
 
 	// 构建查询
@@ -124,8 +124,8 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 			}
 			if err := tx.Create(&setting).Error; err != nil {
 				tx.Rollback()
-				log.Error("创建设置失败", 
-					logger.F("key", key), 
+				log.Error("创建设置失败",
+					logger.F("key", key),
 					logger.F("error", err.Error()))
 				appErr := errors.New(errors.ErrDatabaseInsert).
 					WithDetails("创建设置失败").
@@ -141,8 +141,8 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 			setting.Value = value
 			if err := tx.Save(&setting).Error; err != nil {
 				tx.Rollback()
-				log.Error("更新设置失败", 
-					logger.F("key", key), 
+				log.Error("更新设置失败",
+					logger.F("key", key),
 					logger.F("error", err.Error()))
 				appErr := errors.New(errors.ErrDatabaseUpdate).
 					WithDetails("更新设置失败").
@@ -151,9 +151,9 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 				c.Error(appErr)
 				return
 			}
-			log.Info("更新设置", 
-				logger.F("key", key), 
-				logger.F("old_value", oldValue), 
+			log.Info("更新设置",
+				logger.F("key", key),
+				logger.F("old_value", oldValue),
 				logger.F("new_value", value))
 		}
 	}
@@ -175,7 +175,11 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 
 // InitDefaultSettings 初始化默认系统设置
 func (ssc *SystemSettingController) InitDefaultSettings() error {
-	log := logger.WithField("component", "SystemSettingController")
+	// 创建一个新的日志记录器
+	log := &logger.Logger{
+		Fields: make(map[string]interface{}),
+	}
+	log = log.WithField("component", "SystemSettingController")
 	log.Info("初始化默认系统设置")
 
 	// 默认设置
@@ -216,18 +220,18 @@ func (ssc *SystemSettingController) InitDefaultSettings() error {
 		if result.Error != nil {
 			if err := tx.Create(&setting).Error; err != nil {
 				tx.Rollback()
-				log.Error("创建默认设置失败", 
-					logger.F("key", setting.Key), 
+				log.Error("创建默认设置失败",
+					logger.F("key", setting.Key),
 					logger.F("error", err.Error()))
 				return errors.Wrap(err, errors.ErrDatabaseInsert).
 					WithDetails("创建默认设置失败")
 			}
-			log.Info("创建默认设置", 
-				logger.F("key", setting.Key), 
+			log.Info("创建默认设置",
+				logger.F("key", setting.Key),
 				logger.F("value", setting.Value))
 		} else {
-			log.Info("默认设置已存在，跳过", 
-				logger.F("key", setting.Key), 
+			log.Info("默认设置已存在，跳过",
+				logger.F("key", setting.Key),
 				logger.F("value", existingSetting.Value))
 		}
 	}
@@ -371,8 +375,8 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 			c.Error(appErr)
 			return
 		}
-		log.Info("更新用户主题设置", 
-			logger.F("old_theme", oldTheme), 
+		log.Info("更新用户主题设置",
+			logger.F("old_theme", oldTheme),
 			logger.F("new_theme", input.Theme))
 	}
 
