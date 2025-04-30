@@ -1,13 +1,15 @@
 <template>
-  <div class="product-list">
+  <div class="product-deleted-list">
     <div class="page-header">
-      <h1 class="page-title">商品管理</h1>
+      <h2 class="page-title">已删除商品列表</h2>
       <div class="page-actions">
-        <n-button @click="viewDeletedProducts" type="info">
-          查看已删除商品
-        </n-button>
-        <n-button type="primary" @click="handleAddProduct">
-          添加商品
+        <n-button @click="goBack" type="default">
+          <template #icon>
+            <n-icon>
+              <ArrowBackOutline />
+            </n-icon>
+          </template>
+          返回商品列表
         </n-button>
       </div>
     </div>
@@ -44,9 +46,6 @@
           <n-button @click="handleRefresh" type="info">
             刷新
           </n-button>
-          <n-button @click="toggleDebug" type="warning">
-            {{ showDebug ? '隐藏调试' : '显示调试' }}
-          </n-button>
         </div>
       </div>
 
@@ -82,11 +81,11 @@ import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NButton, NDataTable, NInput, NSelect, NSpace, useMessage,
-  NCollapse, NCollapseItem, NCard, NPopconfirm, NIcon
+  NCollapse, NCollapseItem, NCard, NIcon, NPopconfirm
 } from 'naive-ui'
-import { RefreshOutline } from '@vicons/ionicons5'
+import { ArrowBackOutline, RefreshOutline } from '@vicons/ionicons5'
 import productService from '../services/product'
-import { convertBackendFields } from '../utils/fieldConverter'
+import dictionaryService from '../services/dictionary'
 
 // 路由和消息
 const router = useRouter()
@@ -96,7 +95,7 @@ const message = useMessage()
 const loading = ref(false)
 const products = ref([])
 const rawResponse = ref(null) // 原始响应数据
-const showDebug = ref(true) // 显示调试信息
+const showDebug = ref(true) // 显示调试信息，便于排查问题
 
 const pagination = reactive({
   page: 1,
@@ -122,7 +121,6 @@ const categoryOptions = ref([])
 // 加载字典数据
 const loadDictionaryItems = async (code, options) => {
   try {
-    const dictionaryService = (await import('../services/dictionary')).default
     const items = await dictionaryService.getDictionaryItems(code)
     console.log(`原始字典项数据: ${code}`, items)
 
@@ -165,7 +163,7 @@ const columns = [
   {
     title: 'SKU',
     key: 'sku',
-    width: 150,
+    width: 120,
     render(row) {
       return row.sku || '-'
     }
@@ -173,49 +171,38 @@ const columns = [
   {
     title: '商品名称',
     key: 'name',
-    width: 200,
-    render(row) {
-      return row.name || '-'
-    }
+    width: 200
   },
   {
     title: '类别',
     key: 'category',
-    width: 100,
+    width: 120,
     render(row) {
-      return row.category || '-'
+      return row.category?.name || '-'
     }
   },
   {
-    title: '颜色',
-    key: 'color',
+    title: '成本价',
+    key: 'costPrice',
     width: 100,
     render(row) {
-      return row.color || '-'
-    }
-  },
-  {
-    title: '尺码',
-    key: 'size',
-    width: 100,
-    render(row) {
-      return row.size || '-'
-    }
-  },
-  {
-    title: '季节',
-    key: 'season',
-    width: 100,
-    render(row) {
-      return row.season || '-'
+      return row.costPrice ? `¥${row.costPrice.toFixed(2)}` : '-'
     }
   },
   {
     title: '零售价',
     key: 'retailPrice',
-    width: 120,
+    width: 100,
     render(row) {
-      return row.retailPrice ? `¥${row.retailPrice.toFixed(2)}` : '¥0.00'
+      return row.retailPrice ? `¥${row.retailPrice.toFixed(2)}` : '-'
+    }
+  },
+  {
+    title: '删除时间',
+    key: 'deletedAt',
+    width: 180,
+    render(row) {
+      return row.deletedAt ? new Date(row.deletedAt).toLocaleString() : '-'
     }
   },
   {
@@ -227,18 +214,9 @@ const columns = [
       return h(NSpace, { justify: 'center' }, {
         default: () => [
           h(
-            NButton,
-            {
-              size: 'small',
-              type: 'primary',
-              onClick: () => handleEdit(row)
-            },
-            { default: () => '编辑' }
-          ),
-          h(
             NPopconfirm,
             {
-              onPositiveClick: () => handleDelete(row),
+              onPositiveClick: () => handleRestore(row),
               negativeText: '取消',
               positiveText: '确定'
             },
@@ -247,11 +225,11 @@ const columns = [
                 NButton,
                 {
                   size: 'small',
-                  type: 'error'
+                  type: 'primary'
                 },
-                { default: () => '删除' }
+                { default: () => '恢复' }
               ),
-              default: () => `确定要删除商品 ${row.name || 'ID: ' + row.id} 吗？`
+              default: () => `确定要恢复商品 ${row.name || 'ID: ' + row.id} 吗？`
             }
           )
         ]
@@ -281,14 +259,11 @@ const loadProducts = async () => {
 
     console.log('查询参数:', params)
 
-    // 调用API获取商品数据
-    const response = await productService.getProducts(params)
+    // 调用API获取已删除商品数据
+    const response = await productService.getDeletedProducts(params)
 
     // 保存原始响应数据供调试使用
     rawResponse.value = response
-
-    // 调试输出响应数据
-    console.log('API响应数据:', JSON.stringify(response, null, 2))
 
     // 处理响应数据
     if (response.items && response.total !== undefined) {
@@ -310,12 +285,10 @@ const loadProducts = async () => {
           id: id,
           sku: sku,
           name: item.Name || item.name || '',
-          category: item.Category?.Name || (item.category?.name) || '-',
-          color: item.Color?.Name || (item.color?.name) || '-',
-          size: item.Size?.Name || (item.size?.name) || '-',
-          season: item.Season?.Name || (item.season?.name) || '-',
           costPrice: item.CostPrice || item.costPrice || 0,
-          retailPrice: item.RetailPrice || item.retailPrice || 0
+          retailPrice: item.RetailPrice || item.retailPrice || 0,
+          deletedAt: item.DeletedAt || item.deletedAt || null,
+          category: item.Category || item.category || { id: 0, name: '-' }
         }
       })
 
@@ -326,8 +299,8 @@ const loadProducts = async () => {
       pagination.itemCount = 0
     }
   } catch (error) {
-    console.error('加载商品列表失败:', error)
-    message.error('加载商品列表失败: ' + (error.response?.data?.error || '未知错误'))
+    console.error('加载已删除商品列表失败:', error)
+    message.error('加载已删除商品列表失败: ' + (error.response?.data?.error || '未知错误'))
     products.value = []
     pagination.itemCount = 0
   } finally {
@@ -353,10 +326,6 @@ const handleRefresh = () => {
   message.success('刷新成功')
 }
 
-const toggleDebug = () => {
-  showDebug.value = !showDebug.value
-}
-
 const handlePageChange = (page) => {
   pagination.page = page
   loadProducts()
@@ -368,32 +337,38 @@ const handlePageSizeChange = (pageSize) => {
   loadProducts()
 }
 
-const handleAddProduct = () => {
-  router.push('/products/create')
-}
+const handleRestore = (row) => {
+  // 首先检查ID是否有效
+  // 使用原始字段名称或转换后的字段名称
+  const id = row.ID !== undefined ? row.ID : (row.id || 0)
 
-const handleEdit = (row) => {
-  router.push(`/products/edit/${row.id}`)
-}
+  if (!id || id === 0) {
+    message.error('商品ID无效，无法恢复')
+    console.error('尝试恢复无效ID的商品:', row)
+    return
+  }
 
-const handleDelete = (row) => {
+  console.log('尝试恢复商品:', row, '使用ID:', id)
+
   loading.value = true
-  productService.deleteProduct(row.id)
-    .then(() => {
-      message.success('删除成功')
+  productService.restoreProduct(id)
+    .then((response) => {
+      console.log('恢复商品成功响应:', response)
+      const name = row.Name || row.name || ''
+      message.success(`商品 ${name || 'ID: ' + id} 恢复成功`)
       loadProducts()
     })
     .catch(error => {
-      console.error('删除商品失败:', error)
-      message.error('删除失败: ' + (error.response?.data?.error || '未知错误'))
+      console.error('恢复商品失败:', error)
+      message.error('恢复失败: ' + (error.response?.data?.error || '未知错误'))
     })
     .finally(() => {
       loading.value = false
     })
 }
 
-const viewDeletedProducts = () => {
-  router.push('/products/deleted')
+const goBack = () => {
+  router.push('/products')
 }
 
 // 生命周期钩子
@@ -404,7 +379,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.product-list {
+.product-deleted-list {
   padding: 16px;
 }
 
@@ -413,11 +388,6 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-}
-
-.page-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .page-title {

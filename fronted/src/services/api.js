@@ -48,6 +48,13 @@ api.interceptors.response.use(
       data: response.data,
       baseURL: response.config.baseURL
     })
+
+    // 如果是单个商品请求，打印更详细的信息
+    if (response.config.url.includes('/api/products/') && !response.config.url.includes('/list')) {
+      console.log('商品详情原始数据:', response.data)
+      console.log('商品详情数据字段:', Object.keys(response.data))
+    }
+
     return response.data
   },
   async error => {

@@ -201,7 +201,18 @@ const menuOptions = computed(() => {
       label: '商品管理',
       key: 'products',
       icon: CubeOutline,
-      path: '/products'
+      children: [
+        {
+          label: '商品列表',
+          key: 'product-list',
+          path: '/products'
+        },
+        {
+          label: '已删除商品',
+          key: 'product-deleted',
+          path: '/products/deleted'
+        }
+      ]
     },
     {
       label: '库存管理',

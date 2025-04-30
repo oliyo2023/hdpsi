@@ -14,11 +14,23 @@
         :data="dictionaries"
         :loading="loading"
         :pagination="pagination"
-        :row-key="row => row.Code"
+        :row-key="row => row.code || row.Code"
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       />
     </div>
+
+    <!-- 调试信息区域 -->
+    <n-collapse v-if="showDebug">
+      <n-collapse-item title="调试信息" name="debug">
+        <n-card title="原始响应数据">
+          <pre>{{ JSON.stringify(rawResponse, null, 2) }}</pre>
+        </n-card>
+        <n-card title="处理后的数据" class="mt-4">
+          <pre>{{ JSON.stringify(dictionaries, null, 2) }}</pre>
+        </n-card>
+      </n-collapse-item>
+    </n-collapse>
 
     <!-- 字典类型表单对话框 -->
     <n-modal
@@ -72,9 +84,10 @@ import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NButton, NDataTable, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch,
-  NSpace, NTag, useMessage
+  NSpace, NTag, useMessage, NCollapse, NCollapseItem, NCard
 } from 'naive-ui'
 import dictionaryService from '../services/dictionary'
+import { convertBackendFields } from '../utils/fieldConverter'
 
 // 路由和消息
 const router = useRouter()
@@ -84,6 +97,8 @@ const message = useMessage()
 const loading = ref(false)
 const saving = ref(false)
 const dictionaries = ref([])
+const rawResponse = ref(null) // 原始响应数据
+const showDebug = ref(true) // 显示调试信息
 const showDictionaryModal = ref(false)
 const isEditing = ref(false)
 const formRef = ref(null)
@@ -127,36 +142,49 @@ const rules = {
 const columns = [
   {
     title: '编码',
-    key: 'Code',
-    width: 150
+    key: 'code',
+    width: 150,
+    render(row) {
+      return row.code || row.Code || '-'
+    }
   },
   {
     title: '名称',
-    key: 'Name',
-    width: 150
+    key: 'name',
+    width: 150,
+    render(row) {
+      return row.name || row.Name || '-'
+    }
   },
   {
     title: '描述',
-    key: 'Description',
-    width: 200
+    key: 'description',
+    width: 200,
+    render(row) {
+      return row.description || row.Description || '-'
+    }
   },
   {
     title: '排序',
-    key: 'Sort',
-    width: 100
+    key: 'sort',
+    width: 100,
+    render(row) {
+      return row.sort !== undefined ? row.sort : (row.Sort !== undefined ? row.Sort : '-')
+    }
   },
   {
     title: '状态',
-    key: 'Status',
+    key: 'status',
     width: 100,
     render(row) {
+      const status = row.status !== undefined ? row.status : (row.Status !== undefined ? row.Status : false)
       return h(
         NTag,
         {
-          type: row.Status ? 'success' : 'error',
+          type: status ? 'success' : 'error',
           size: 'small'
         },
-        { default: () => row.Status ? '启用' : '禁用' }
+        { default: () => status ? '启用' : '禁用' }
       )
     }
   },
@@ -166,6 +194,7 @@ const columns = [
     width: 250,
     fixed: 'right',
     render(row) {
+      const code = row.code || row.Code
       return h(NSpace, { justify: 'center' }, {
         default: () => [
           h(
@@ -206,11 +235,35 @@ const loadDictionaries = async () => {
   loading.value = true
   try {
     const response = await dictionaryService.getDictionaries()
-    dictionaries.value = response
-    pagination.itemCount = response.length
+    
+    // 保存原始响应数据供调试使用
+    rawResponse.value = response
+    console.log('原始字典数据:', response)
+    
+    // 处理响应数据，确保字段名称一致
+    dictionaries.value = response.map(item => {
+      // 检查原始字段名称
+      console.log('单个字典原始数据:', item)
+      console.log('字典字段名称:', Object.keys(item))
+      
+      return {
+        ...item,
+        // 确保必要字段存在，避免空值错误
+        code: item.Code || item.code || '',
+        name: item.Name || item.name || '',
+        description: item.Description || item.description || '',
+        sort: item.Sort !== undefined ? item.Sort : (item.sort !== undefined ? item.sort : 0),
+        status: item.Status !== undefined ? item.Status : (item.status !== undefined ? item.status : false)
+      }
+    })
+    
+    pagination.itemCount = dictionaries.value.length
+    console.log('处理后的字典数据:', dictionaries.value)
   } catch (error) {
     console.error('加载字典类型列表失败:', error)
     message.error('加载字典类型列表失败: ' + (error.response?.data?.error || '未知错误'))
+    dictionaries.value = []
+    pagination.itemCount = 0
   } finally {
     loading.value = false
   }
@@ -237,18 +290,26 @@ const handleAddDictionary = () => {
 
 const handleEdit = (row) => {
   isEditing.value = true
-  formData.code = row.Code
-  formData.name = row.Name
-  formData.description = row.Description
-  formData.sort = row.Sort
-  formData.status = row.Status
+  formData.code = row.code || row.Code || ''
+  formData.name = row.name || row.Name || ''
+  formData.description = row.description || row.Description || ''
+  formData.sort = row.sort !== undefined ? row.sort : (row.Sort !== undefined ? row.Sort : 0)
+  formData.status = row.status !== undefined ? row.status : (row.Status !== undefined ? row.Status : false)
   showDictionaryModal.value = true
 }
 
 const handleDelete = async (row) => {
-  if (confirm(`确定要删除字典类型 ${row.Name} 吗？`)) {
+  const code = row.code || row.Code
+  const name = row.name || row.Name
+  
+  if (!code) {
+    message.error('字典类型编码无效，无法删除')
+    return
+  }
+  
+  if (confirm(`确定要删除字典类型 ${name || code} 吗？`)) {
     try {
-      await dictionaryService.deleteDictionary(row.Code)
+      await dictionaryService.deleteDictionary(code)
       message.success('删除成功')
       loadDictionaries()
     } catch (error) {
@@ -259,7 +320,14 @@ const handleDelete = async (row) => {
 }
 
 const handleViewItems = (row) => {
-  router.push(`/dictionaries/${row.Code}/items`)
+  const code = row.code || row.Code
+  
+  if (!code) {
+    message.error('字典类型编码无效，无法查看字典项')
+    return
+  }
+  
+  router.push(`/dictionaries/${code}/items`)
 }
 
 const handleSaveDictionary = () => {
@@ -327,5 +395,9 @@ onMounted(() => {
 
 .dark .page-content {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.mt-4 {
+  margin-top: 16px;
 }
 </style>
