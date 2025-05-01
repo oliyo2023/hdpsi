@@ -6,21 +6,21 @@ class CustomBottomNavigation extends StatelessWidget {
   final Function(int) onTap;
 
   const CustomBottomNavigation({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor!,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withAlpha(26),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
         borderRadius: const BorderRadius.vertical(
@@ -35,6 +35,7 @@ class CustomBottomNavigation extends StatelessWidget {
           currentIndex: currentIndex,
           onTap: onTap,
           type: BottomNavigationBarType.fixed,
+          elevation: 0,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           iconSize: 24,

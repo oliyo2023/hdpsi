@@ -33,7 +33,7 @@ jwt:
 log:
   level: info  # debug, info, warn, error
   format: text # text, json
-  output: stdout  # stdout, file
+  output: file  # stdout, file
   file_path: ./logs/hd_psi.log  # 日志文件路径（当output为file时有效）
   max_size: 100  # 单个日志文件最大大小（MB）
   max_age: 30    # 日志文件保留天数

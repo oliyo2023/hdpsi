@@ -7,7 +7,7 @@ import '../providers/member_provider.dart';
 import '../utils/validators.dart';
 
 class MemberAddScreen extends StatefulWidget {
-  const MemberAddScreen({Key? key}) : super(key: key);
+  const MemberAddScreen({super.key});
 
   @override
   State<MemberAddScreen> createState() => _MemberAddScreenState();

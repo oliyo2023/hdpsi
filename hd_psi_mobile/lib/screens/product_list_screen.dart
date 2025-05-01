@@ -8,7 +8,7 @@ import '../widgets/empty_data.dart';
 import '../utils/formatters.dart';
 
 class ProductListScreen extends StatefulWidget {
-  const ProductListScreen({Key? key}) : super(key: key);
+  const ProductListScreen({super.key});
 
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();
@@ -17,20 +17,23 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // 加载商品列表
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).loadProducts(refresh: true);
+      Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      ).loadProducts(refresh: true);
     });
-    
+
     // 添加滚动监听器，用于加载更多
     _scrollController.addListener(_onScroll);
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -38,19 +41,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   // 滚动到底部时加载更多
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
-      final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      final productProvider = Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      );
       if (!productProvider.isLoading && productProvider.hasMorePages) {
         productProvider.loadMoreProducts(
-          name: _searchController.text.isNotEmpty ? _searchController.text : null,
+          name:
+              _searchController.text.isNotEmpty ? _searchController.text : null,
         );
       }
     }
   }
-  
+
   // 搜索商品
   void _searchProducts() {
     Provider.of<ProductProvider>(context, listen: false).loadProducts(
@@ -58,7 +66,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       name: _searchController.text.isNotEmpty ? _searchController.text : null,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,36 +103,41 @@ class _ProductListScreenState extends State<ProductListScreen> {
               onSubmitted: (_) => _searchProducts(),
             ),
           ),
-          
+
           // 商品列表
           Expanded(
             child: Consumer<ProductProvider>(
               builder: (context, productProvider, child) {
-                if (productProvider.isLoading && productProvider.products.isEmpty) {
+                if (productProvider.isLoading &&
+                    productProvider.products.isEmpty) {
                   return const LoadingIndicator(message: '加载商品中...');
                 }
-                
-                if (productProvider.error != null && productProvider.products.isEmpty) {
+
+                if (productProvider.error != null &&
+                    productProvider.products.isEmpty) {
                   return ErrorDisplay(
                     error: productProvider.error!,
                     onRetry: () => productProvider.loadProducts(refresh: true),
                   );
                 }
-                
+
                 if (productProvider.products.isEmpty) {
                   return EmptyData(
                     message: '暂无商品数据',
                     icon: Icons.inventory,
-                    onAction: () => Navigator.of(context).pushNamed('/products/add'),
+                    onAction:
+                        () => Navigator.of(context).pushNamed('/products/add'),
                     actionLabel: '添加商品',
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: () => productProvider.loadProducts(refresh: true),
                   child: ListView.builder(
                     controller: _scrollController,
-                    itemCount: productProvider.products.length + (productProvider.hasMorePages ? 1 : 0),
+                    itemCount:
+                        productProvider.products.length +
+                        (productProvider.hasMorePages ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == productProvider.products.length) {
                         return const Padding(
@@ -132,7 +145,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
-                      
+
                       final product = productProvider.products[index];
                       return _buildProductItem(context, product);
                     },
@@ -145,13 +158,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
     );
   }
-  
+
   Widget _buildProductItem(BuildContext context, Product product) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).pushNamed('/products/detail', arguments: product.id);
+          Navigator.of(
+            context,
+          ).pushNamed('/products/detail', arguments: product.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -165,15 +180,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8.0),
                   image: DecorationImage(
-                    image: product.image.isNotEmpty
-                        ? NetworkImage(product.image)
-                        : const AssetImage('assets/images/no_image.png') as ImageProvider,
+                    image:
+                        product.image.isNotEmpty
+                            ? NetworkImage(product.image)
+                            : const AssetImage('assets/images/no_image.png')
+                                as ImageProvider,
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
               const SizedBox(width: 16.0),
-              
+
               // 商品信息
               Expanded(
                 child: Column(
@@ -191,18 +208,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     const SizedBox(height: 4.0),
                     Text(
                       'SKU: ${product.sku}',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 4.0),
                     Text(
                       '类别: ${product.category?['Name'] ?? '未分类'}',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 8.0),
                     Row(
@@ -222,14 +233,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             vertical: 4.0,
                           ),
                           decoration: BoxDecoration(
-                            color: product.status ? Colors.green[100] : Colors.red[100],
+                            color:
+                                product.status
+                                    ? Colors.green[100]
+                                    : Colors.red[100],
                             borderRadius: BorderRadius.circular(4.0),
                           ),
                           child: Text(
                             product.status ? '上架中' : '已下架',
                             style: TextStyle(
                               fontSize: 12.0,
-                              color: product.status ? Colors.green[800] : Colors.red[800],
+                              color:
+                                  product.status
+                                      ? Colors.green[800]
+                                      : Colors.red[800],
                             ),
                           ),
                         ),

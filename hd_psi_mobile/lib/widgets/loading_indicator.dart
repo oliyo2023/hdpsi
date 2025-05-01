@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class LoadingIndicator extends StatelessWidget {
   final String? message;
-  
-  const LoadingIndicator({Key? key, this.message}) : super(key: key);
-  
+
+  const LoadingIndicator({super.key, this.message});
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -15,10 +15,7 @@ class LoadingIndicator extends StatelessWidget {
           if (message != null)
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
-              child: Text(
-                message!,
-                style: const TextStyle(fontSize: 16.0),
-              ),
+              child: Text(message!, style: const TextStyle(fontSize: 16.0)),
             ),
         ],
       ),

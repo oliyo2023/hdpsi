@@ -4,7 +4,7 @@ import '../providers/auth_provider.dart';
 import '../utils/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +12,7 @@ class ProfileScreen extends StatelessWidget {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           final user = authProvider.currentUser;
-          
+
           return CustomScrollView(
             slivers: [
               // 顶部应用栏
@@ -48,7 +48,7 @@ class ProfileScreen extends StatelessWidget {
                             radius: 50,
                             backgroundColor: Colors.white,
                             child: Text(
-                              user?.name?.isNotEmpty == true
+                              user?.name.isNotEmpty == true
                                   ? user!.name[0].toUpperCase()
                                   : '?',
                               style: TextStyle(
@@ -64,7 +64,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // 用户信息
               SliverToBoxAdapter(
                 child: Card(
@@ -112,7 +112,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // 功能列表
               SliverToBoxAdapter(
                 child: Card(
@@ -135,7 +135,8 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.dark_mode,
                           title: '深色模式',
                           trailing: Switch(
-                            value: Theme.of(context).brightness == Brightness.dark,
+                            value:
+                                Theme.of(context).brightness == Brightness.dark,
                             onChanged: (value) {
                               // 切换主题
                             },
@@ -179,7 +180,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // 退出登录按钮
               SliverToBoxAdapter(
                 child: Padding(
@@ -205,18 +206,16 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // 底部空白
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
       ),
     );
   }
-  
+
   Widget _buildInfoItem(
     BuildContext context, {
     required IconData icon,
@@ -230,11 +229,7 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: AppTheme.primaryColor,
-                size: 24,
-              ),
+              Icon(icon, color: AppTheme.primaryColor, size: 24),
               const SizedBox(width: AppTheme.spacingMedium),
               Expanded(
                 child: Column(
@@ -265,7 +260,7 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
-  
+
   Widget _buildSettingItem(
     BuildContext context, {
     required IconData icon,
@@ -282,11 +277,7 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: AppTheme.primaryColor,
-                  size: 24,
-                ),
+                Icon(icon, color: AppTheme.primaryColor, size: 24),
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: Text(
@@ -310,10 +301,10 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
-  
+
   String _formatRole(String? role) {
     if (role == null) return '未知';
-    
+
     switch (role) {
       case 'admin':
         return '管理员';

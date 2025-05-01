@@ -3,13 +3,9 @@ import 'package:flutter/material.dart';
 class ErrorDisplay extends StatelessWidget {
   final String error;
   final VoidCallback? onRetry;
-  
-  const ErrorDisplay({
-    Key? key,
-    required this.error,
-    this.onRetry,
-  }) : super(key: key);
-  
+
+  const ErrorDisplay({super.key, required this.error, this.onRetry});
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -18,11 +14,7 @@ class ErrorDisplay extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 60,
-            ),
+            const Icon(Icons.error_outline, color: Colors.red, size: 60),
             const SizedBox(height: 16),
             Text(
               error,

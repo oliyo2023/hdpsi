@@ -38,6 +38,7 @@ dependencies:
   # 网络请求
   http: ^1.2.1
   dio: ^5.4.1
+  http_parser: ^4.0.2
 
   # 状态管理
   provider: ^6.1.2
@@ -57,6 +58,9 @@ dependencies:
   flutter_easyloading: ^3.0.5
   flutter_form_builder: ^9.2.1
   form_builder_validators: ^11.1.2
+
+  # 国际化
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:

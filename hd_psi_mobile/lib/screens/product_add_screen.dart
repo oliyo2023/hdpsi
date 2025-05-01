@@ -9,7 +9,7 @@ import '../providers/product_provider.dart';
 import '../utils/validators.dart';
 
 class ProductAddScreen extends StatefulWidget {
-  const ProductAddScreen({Key? key}) : super(key: key);
+  const ProductAddScreen({super.key});
 
   @override
   State<ProductAddScreen> createState() => _ProductAddScreenState();
@@ -23,13 +23,11 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
   bool _isPricingExpanded = false;
   bool _isVariantsExpanded = false;
   bool _isImagesExpanded = false;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('添加商品'),
-      ),
+      appBar: AppBar(title: const Text('添加商品')),
       body: Consumer<ProductProvider>(
         builder: (context, productProvider, child) {
           return SingleChildScrollView(
@@ -61,7 +59,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                         ]),
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // SKU
                       FormBuilderTextField(
                         name: 'sku',
@@ -74,7 +72,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                         ]),
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 商品分类
                       FormBuilderDropdown<int>(
                         name: 'categoryId',
@@ -83,34 +81,16 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                           border: OutlineInputBorder(),
                         ),
                         items: const [
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text('上衣'),
-                          ),
-                          DropdownMenuItem(
-                            value: 2,
-                            child: Text('裤子'),
-                          ),
-                          DropdownMenuItem(
-                            value: 3,
-                            child: Text('裙子'),
-                          ),
-                          DropdownMenuItem(
-                            value: 4,
-                            child: Text('外套'),
-                          ),
-                          DropdownMenuItem(
-                            value: 5,
-                            child: Text('鞋子'),
-                          ),
-                          DropdownMenuItem(
-                            value: 6,
-                            child: Text('配饰'),
-                          ),
+                          DropdownMenuItem(value: 1, child: Text('上衣')),
+                          DropdownMenuItem(value: 2, child: Text('裤子')),
+                          DropdownMenuItem(value: 3, child: Text('裙子')),
+                          DropdownMenuItem(value: 4, child: Text('外套')),
+                          DropdownMenuItem(value: 5, child: Text('鞋子')),
+                          DropdownMenuItem(value: 6, child: Text('配饰')),
                         ],
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 品牌
                       FormBuilderDropdown<int>(
                         name: 'brandId',
@@ -119,22 +99,13 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                           border: OutlineInputBorder(),
                         ),
                         items: const [
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text('品牌A'),
-                          ),
-                          DropdownMenuItem(
-                            value: 2,
-                            child: Text('品牌B'),
-                          ),
-                          DropdownMenuItem(
-                            value: 3,
-                            child: Text('品牌C'),
-                          ),
+                          DropdownMenuItem(value: 1, child: Text('品牌A')),
+                          DropdownMenuItem(value: 2, child: Text('品牌B')),
+                          DropdownMenuItem(value: 3, child: Text('品牌C')),
                         ],
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 商品描述
                       FormBuilderTextField(
                         name: 'description',
@@ -145,7 +116,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 商品状态
                       FormBuilderSwitch(
                         name: 'status',
@@ -158,7 +129,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                     ],
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 价格信息
                   _buildExpandableSection(
                     title: '价格信息',
@@ -178,10 +149,11 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                           prefixText: '¥',
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) => Validators.validatePrice(value, '成本价'),
+                        validator:
+                            (value) => Validators.validatePrice(value, '成本价'),
                       ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 零售价
                       FormBuilderTextField(
                         name: 'retailPrice',
@@ -191,12 +163,13 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                           prefixText: '¥',
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) => Validators.validatePrice(value, '零售价'),
+                        validator:
+                            (value) => Validators.validatePrice(value, '零售价'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 商品图片
                   _buildExpandableSection(
                     title: '商品图片',
@@ -255,7 +228,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                           ),
                         ),
                       const SizedBox(height: 16.0),
-                      
+
                       // 添加图片按钮
                       Row(
                         children: [
@@ -279,7 +252,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                     ],
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 商品变体
                   _buildExpandableSection(
                     title: '商品变体',
@@ -293,7 +266,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       // 变体列表
                       ..._buildVariantsList(),
                       const SizedBox(height: 16.0),
-                      
+
                       // 添加变体按钮
                       ElevatedButton.icon(
                         onPressed: _showAddVariantDialog,
@@ -303,39 +276,37 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                     ],
                   ),
                   const SizedBox(height: 24.0),
-                  
+
                   // 错误信息
                   if (productProvider.error != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: Text(
                         productProvider.error!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 14,
-                        ),
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  
+
                   // 提交按钮
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       onPressed: productProvider.isLoading ? null : _submitForm,
-                      child: productProvider.isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                      child:
+                          productProvider.isLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Text(
+                                '保存商品',
+                                style: TextStyle(fontSize: 16),
                               ),
-                            )
-                          : const Text(
-                              '保存商品',
-                              style: TextStyle(fontSize: 16),
-                            ),
                     ),
                   ),
                 ],
@@ -346,7 +317,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       ),
     );
   }
-  
+
   Widget _buildExpandableSection({
     required String title,
     required bool isExpanded,
@@ -357,10 +328,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       child: ExpansionTile(
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 18.0,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
         ),
         initiallyExpanded: isExpanded,
         onExpansionChanged: onExpansionChanged,
@@ -376,7 +344,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       ),
     );
   }
-  
+
   List<Widget> _buildVariantsList() {
     if (_variants.isEmpty) {
       return [
@@ -388,11 +356,11 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
         ),
       ];
     }
-    
+
     return _variants.asMap().entries.map((entry) {
       final index = entry.key;
       final variant = entry.value;
-      
+
       return Card(
         margin: const EdgeInsets.only(bottom: 8.0),
         child: Padding(
@@ -438,39 +406,27 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       );
     }).toList();
   }
-  
+
   String _getColorName(int? colorId) {
     if (colorId == null) return '无';
-    
-    final colors = {
-      1: '红色',
-      2: '蓝色',
-      3: '黑色',
-      4: '白色',
-      5: '灰色',
-    };
-    
+
+    final colors = {1: '红色', 2: '蓝色', 3: '黑色', 4: '白色', 5: '灰色'};
+
     return colors[colorId] ?? '未知';
   }
-  
+
   String _getSizeName(int? sizeId) {
     if (sizeId == null) return '无';
-    
-    final sizes = {
-      1: 'S',
-      2: 'M',
-      3: 'L',
-      4: 'XL',
-      5: 'XXL',
-    };
-    
+
+    final sizes = {1: 'S', 2: 'M', 3: 'L', 4: 'XL', 5: 'XXL'};
+
     return sizes[sizeId] ?? '未知';
   }
-  
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
-    
+
     if (pickedFiles.isNotEmpty) {
       setState(() {
         for (final pickedFile in pickedFiles) {
@@ -479,21 +435,21 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       });
     }
   }
-  
+
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    
+
     if (pickedFile != null) {
       setState(() {
         _selectedImages.add(File(pickedFile.path));
       });
     }
   }
-  
+
   void _showAddVariantDialog() {
     final formKey = GlobalKey<FormBuilderState>();
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -517,7 +473,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                     ]),
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 颜色
                   FormBuilderDropdown<int>(
                     name: 'colorId',
@@ -526,30 +482,15 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(
-                        value: 1,
-                        child: Text('红色'),
-                      ),
-                      DropdownMenuItem(
-                        value: 2,
-                        child: Text('蓝色'),
-                      ),
-                      DropdownMenuItem(
-                        value: 3,
-                        child: Text('黑色'),
-                      ),
-                      DropdownMenuItem(
-                        value: 4,
-                        child: Text('白色'),
-                      ),
-                      DropdownMenuItem(
-                        value: 5,
-                        child: Text('灰色'),
-                      ),
+                      DropdownMenuItem(value: 1, child: Text('红色')),
+                      DropdownMenuItem(value: 2, child: Text('蓝色')),
+                      DropdownMenuItem(value: 3, child: Text('黑色')),
+                      DropdownMenuItem(value: 4, child: Text('白色')),
+                      DropdownMenuItem(value: 5, child: Text('灰色')),
                     ],
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 尺码
                   FormBuilderDropdown<int>(
                     name: 'sizeId',
@@ -558,30 +499,15 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(
-                        value: 1,
-                        child: Text('S'),
-                      ),
-                      DropdownMenuItem(
-                        value: 2,
-                        child: Text('M'),
-                      ),
-                      DropdownMenuItem(
-                        value: 3,
-                        child: Text('L'),
-                      ),
-                      DropdownMenuItem(
-                        value: 4,
-                        child: Text('XL'),
-                      ),
-                      DropdownMenuItem(
-                        value: 5,
-                        child: Text('XXL'),
-                      ),
+                      DropdownMenuItem(value: 1, child: Text('S')),
+                      DropdownMenuItem(value: 2, child: Text('M')),
+                      DropdownMenuItem(value: 3, child: Text('L')),
+                      DropdownMenuItem(value: 4, child: Text('XL')),
+                      DropdownMenuItem(value: 5, child: Text('XXL')),
                     ],
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 条形码
                   FormBuilderTextField(
                     name: 'barcode',
@@ -591,7 +517,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                     ),
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 成本价
                   FormBuilderTextField(
                     name: 'costPrice',
@@ -601,10 +527,11 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       prefixText: '¥',
                     ),
                     keyboardType: TextInputType.number,
-                    validator: (value) => Validators.validatePrice(value, '成本价'),
+                    validator:
+                        (value) => Validators.validatePrice(value, '成本价'),
                   ),
                   const SizedBox(height: 16.0),
-                  
+
                   // 零售价
                   FormBuilderTextField(
                     name: 'retailPrice',
@@ -614,7 +541,8 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       prefixText: '¥',
                     ),
                     keyboardType: TextInputType.number,
-                    validator: (value) => Validators.validatePrice(value, '零售价'),
+                    validator:
+                        (value) => Validators.validatePrice(value, '零售价'),
                   ),
                 ],
               ),
@@ -631,19 +559,23 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
               onPressed: () {
                 if (formKey.currentState!.saveAndValidate()) {
                   final formData = formKey.currentState!.value;
-                  
+
                   // 转换价格字段为double
                   double costPrice = 0.0;
                   double retailPrice = 0.0;
-                  
-                  if (formData['costPrice'] != null && formData['costPrice'].toString().isNotEmpty) {
+
+                  if (formData['costPrice'] != null &&
+                      formData['costPrice'].toString().isNotEmpty) {
                     costPrice = double.parse(formData['costPrice'].toString());
                   }
-                  
-                  if (formData['retailPrice'] != null && formData['retailPrice'].toString().isNotEmpty) {
-                    retailPrice = double.parse(formData['retailPrice'].toString());
+
+                  if (formData['retailPrice'] != null &&
+                      formData['retailPrice'].toString().isNotEmpty) {
+                    retailPrice = double.parse(
+                      formData['retailPrice'].toString(),
+                    );
                   }
-                  
+
                   setState(() {
                     _variants.add({
                       'sku': formData['sku'],
@@ -655,7 +587,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                       'status': true,
                     });
                   });
-                  
+
                   Navigator.of(context).pop();
                 }
               },
@@ -666,31 +598,33 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       },
     );
   }
-  
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.saveAndValidate()) {
       final formData = _formKey.currentState!.value;
-      
+
       // 检查是否有变体
       if (_variants.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请至少添加一个商品变体')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('请至少添加一个商品变体')));
         return;
       }
-      
+
       // 转换价格字段为double
       double costPrice = 0.0;
       double retailPrice = 0.0;
-      
-      if (formData['costPrice'] != null && formData['costPrice'].toString().isNotEmpty) {
+
+      if (formData['costPrice'] != null &&
+          formData['costPrice'].toString().isNotEmpty) {
         costPrice = double.parse(formData['costPrice'].toString());
       }
-      
-      if (formData['retailPrice'] != null && formData['retailPrice'].toString().isNotEmpty) {
+
+      if (formData['retailPrice'] != null &&
+          formData['retailPrice'].toString().isNotEmpty) {
         retailPrice = double.parse(formData['retailPrice'].toString());
       }
-      
+
       // 创建商品对象
       final product = Product(
         id: 0, // 新商品，ID为0
@@ -707,31 +641,34 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
         createdAt: DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
       );
-      
+
       // 创建变体列表
-      final variants = _variants.map((v) {
-        return ProductVariant(
-          id: 0, // 新变体，ID为0
-          productId: 0, // 新商品，ID为0
-          sku: v['sku'],
-          colorId: v['colorId'],
-          sizeId: v['sizeId'],
-          barcode: v['barcode'] ?? '',
-          qrCode: '', // 二维码会在后端生成
-          costPrice: v['costPrice'],
-          retailPrice: v['retailPrice'],
-          status: v['status'] ?? true,
-        );
-      }).toList();
-      
+      final variants =
+          _variants.map((v) {
+            return ProductVariant(
+              id: 0, // 新变体，ID为0
+              productId: 0, // 新商品，ID为0
+              sku: v['sku'],
+              colorId: v['colorId'],
+              sizeId: v['sizeId'],
+              barcode: v['barcode'] ?? '',
+              qrCode: '', // 二维码会在后端生成
+              costPrice: v['costPrice'],
+              retailPrice: v['retailPrice'],
+              status: v['status'] ?? true,
+            );
+          }).toList();
+
       // 提交商品
-      final success = await Provider.of<ProductProvider>(context, listen: false)
-          .createProduct(product, variants, images: _selectedImages);
-      
+      final success = await Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      ).createProduct(product, variants, images: _selectedImages);
+
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('商品创建成功')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('商品创建成功')));
         Navigator.of(context).pop();
       }
     }

@@ -7,7 +7,7 @@ import 'member_list_screen.dart';
 import 'profile_screen.dart';
 
 class MainContainer extends StatefulWidget {
-  const MainContainer({Key? key}) : super(key: key);
+  const MainContainer({super.key});
 
   @override
   State<MainContainer> createState() => _MainContainerState();
@@ -43,7 +43,7 @@ class _MainContainerState extends State<MainContainer> {
       Navigator.of(context).pushNamed('/scan-checkout');
       return;
     }
-    
+
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -70,18 +70,19 @@ class _MainContainerState extends State<MainContainer> {
         currentIndex: _currentIndex,
         onTap: _onNavTap,
       ),
-      floatingActionButton: _currentIndex == 1 || _currentIndex == 3
-          ? FloatingActionButton(
-              onPressed: () {
-                if (_currentIndex == 1) {
-                  Navigator.of(context).pushNamed('/products/add');
-                } else if (_currentIndex == 3) {
-                  Navigator.of(context).pushNamed('/members/add');
-                }
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton:
+          _currentIndex == 1 || _currentIndex == 3
+              ? FloatingActionButton(
+                onPressed: () {
+                  if (_currentIndex == 1) {
+                    Navigator.of(context).pushNamed('/products/add');
+                  } else if (_currentIndex == 3) {
+                    Navigator.of(context).pushNamed('/members/add');
+                  }
+                },
+                child: const Icon(Icons.add),
+              )
+              : null,
     );
   }
 }

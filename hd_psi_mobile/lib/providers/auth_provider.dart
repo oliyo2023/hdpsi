@@ -20,23 +20,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // 加载用户信息
-  Future<void> _loadUser() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final isLoggedIn = await _authService.isLoggedIn();
-      if (isLoggedIn) {
-        _currentUser = await _authService.getCurrentUser();
-      }
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   // 登录
   Future<bool> login(String username, String password) async {

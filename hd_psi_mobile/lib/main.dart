@@ -18,6 +18,7 @@ import 'screens/scan_checkout_screen.dart';
 import 'screens/member_list_screen.dart';
 import 'screens/member_add_screen.dart';
 import 'utils/app_theme.dart';
+import 'utils/scanner_util.dart';
 
 void main() {
   // 初始化日期格式化
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '服装进销存系统',
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey, // 添加全局导航键
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system, // 跟随系统设置

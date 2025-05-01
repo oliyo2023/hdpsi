@@ -5,52 +5,52 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF3F51B5);
   static const Color primaryLightColor = Color(0xFF757DE8);
   static const Color primaryDarkColor = Color(0xFF002984);
-  
+
   // 强调色
   static const Color accentColor = Color(0xFFFF4081);
   static const Color accentLightColor = Color(0xFFFF79B0);
   static const Color accentDarkColor = Color(0xFFC60055);
-  
+
   // 背景色
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color cardColor = Colors.white;
   static const Color scaffoldBackgroundColor = Color(0xFFF5F5F5);
-  
+
   // 文本颜色
   static const Color textPrimaryColor = Color(0xFF212121);
   static const Color textSecondaryColor = Color(0xFF757575);
   static const Color textLightColor = Color(0xFFBDBDBD);
-  
+
   // 状态颜色
   static const Color successColor = Color(0xFF4CAF50);
   static const Color warningColor = Color(0xFFFFC107);
   static const Color errorColor = Color(0xFFF44336);
   static const Color infoColor = Color(0xFF2196F3);
-  
+
   // 边框和分隔线颜色
   static const Color dividerColor = Color(0xFFE0E0E0);
   static const Color borderColor = Color(0xFFE0E0E0);
-  
+
   // 阴影
   static List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.1),
+      color: Colors.black.withAlpha(26),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
   ];
-  
+
   // 圆角
   static const double borderRadius = 8.0;
   static BorderRadius defaultBorderRadius = BorderRadius.circular(borderRadius);
-  
+
   // 间距
   static const double spacing = 8.0;
   static const double spacingSmall = 4.0;
   static const double spacingMedium = 16.0;
   static const double spacingLarge = 24.0;
   static const double spacingExtraLarge = 32.0;
-  
+
   // 字体大小
   static const double fontSizeSmall = 12.0;
   static const double fontSizeNormal = 14.0;
@@ -58,7 +58,7 @@ class AppTheme {
   static const double fontSizeLarge = 18.0;
   static const double fontSizeExtraLarge = 24.0;
   static const double fontSizeHuge = 32.0;
-  
+
   // 创建主题
   static ThemeData lightTheme() {
     return ThemeData(
@@ -70,9 +70,8 @@ class AppTheme {
         onSecondary: Colors.white,
         error: errorColor,
         onError: Colors.white,
-        background: backgroundColor,
-        onBackground: textPrimaryColor,
-        surface: cardColor,
+        // 使用surface替代已弃用的background
+        surface: backgroundColor,
         onSurface: textPrimaryColor,
       ),
       scaffoldBackgroundColor: scaffoldBackgroundColor,
@@ -190,10 +189,7 @@ class AppTheme {
           fontWeight: FontWeight.bold,
           color: textPrimaryColor,
         ),
-        bodyLarge: TextStyle(
-          fontSize: fontSizeNormal,
-          color: textPrimaryColor,
-        ),
+        bodyLarge: TextStyle(fontSize: fontSizeNormal, color: textPrimaryColor),
         bodyMedium: TextStyle(
           fontSize: fontSizeNormal,
           color: textSecondaryColor,
@@ -206,11 +202,9 @@ class AppTheme {
       ),
       tabBarTheme: TabBarTheme(
         labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.7),
+        unselectedLabelColor: Colors.white.withAlpha(179),
         indicator: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.white, width: 3),
-          ),
+          border: Border(bottom: BorderSide(color: Colors.white, width: 3)),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -228,34 +222,32 @@ class AppTheme {
         color: primaryColor,
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryColor;
           }
           return Colors.transparent;
         }),
         side: const BorderSide(color: borderColor),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryColor;
           }
           return Colors.grey;
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryLightColor;
           }
-          return Colors.grey.withOpacity(0.5);
+          return Colors.grey.withAlpha(128);
         }),
       ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryColor;
           }
           return textSecondaryColor;
@@ -273,13 +265,11 @@ class AppTheme {
         labelStyle: const TextStyle(color: textPrimaryColor),
         secondaryLabelStyle: const TextStyle(color: Colors.white),
         brightness: Brightness.light,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
-  
+
   // 暗色主题
   static ThemeData darkTheme() {
     return ThemeData(
@@ -291,8 +281,6 @@ class AppTheme {
         onSecondary: Colors.black,
         error: errorColor,
         onError: Colors.black,
-        background: const Color(0xFF121212),
-        onBackground: Colors.white,
         surface: const Color(0xFF1E1E1E),
         onSurface: Colors.white,
       ),
@@ -411,14 +399,8 @@ class AppTheme {
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        bodyLarge: TextStyle(
-          fontSize: fontSizeNormal,
-          color: Colors.white,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: fontSizeNormal,
-          color: Colors.white70,
-        ),
+        bodyLarge: TextStyle(fontSize: fontSizeNormal, color: Colors.white),
+        bodyMedium: TextStyle(fontSize: fontSizeNormal, color: Colors.white70),
       ),
       dividerTheme: const DividerThemeData(
         color: Color(0xFF3E3E3E),
@@ -427,7 +409,7 @@ class AppTheme {
       ),
       tabBarTheme: TabBarTheme(
         labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.7),
+        unselectedLabelColor: Colors.white.withAlpha(179),
         indicator: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: primaryLightColor, width: 3),
@@ -449,34 +431,32 @@ class AppTheme {
         color: primaryLightColor,
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryLightColor;
           }
           return Colors.transparent;
         }),
         side: const BorderSide(color: Colors.white70),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryLightColor;
           }
           return Colors.grey;
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
-            return primaryColor.withOpacity(0.5);
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primaryColor.withAlpha(128);
           }
-          return Colors.grey.withOpacity(0.3);
+          return Colors.grey.withAlpha(77);
         }),
       ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return primaryLightColor;
           }
           return Colors.white70;
@@ -494,9 +474,7 @@ class AppTheme {
         labelStyle: const TextStyle(color: Colors.white),
         secondaryLabelStyle: const TextStyle(color: Colors.black),
         brightness: Brightness.dark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

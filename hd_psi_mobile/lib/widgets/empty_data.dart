@@ -5,15 +5,15 @@ class EmptyData extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onAction;
   final String? actionLabel;
-  
+
   const EmptyData({
-    Key? key,
+    super.key,
     this.message = '暂无数据',
     this.icon = Icons.inbox,
     this.onAction,
     this.actionLabel,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -22,18 +22,11 @@ class EmptyData extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 60,
-              color: Colors.grey[400],
-            ),
+            Icon(icon, size: 60, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               message,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onAction != null && actionLabel != null)

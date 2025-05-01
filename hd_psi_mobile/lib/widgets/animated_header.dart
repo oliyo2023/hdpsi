@@ -8,11 +8,11 @@ class AnimatedHeader extends StatefulWidget {
   final bool showBackButton;
 
   const AnimatedHeader({
-    Key? key,
+    super.key,
     required this.title,
     this.height = 150.0,
     this.showBackButton = false,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedHeader> createState() => _AnimatedHeaderState();
@@ -87,17 +87,14 @@ class _AnimatedHeaderState extends State<AnimatedHeader>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryDarkColor,
-          ],
+          colors: [AppTheme.primaryColor, AppTheme.primaryDarkColor],
         ),
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppTheme.borderRadius * 2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withAlpha(51),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -118,7 +115,7 @@ class _AnimatedHeaderState extends State<AnimatedHeader>
                     width: 200,
                     height: 200,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withAlpha(25),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -139,7 +136,7 @@ class _AnimatedHeaderState extends State<AnimatedHeader>
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withAlpha(25),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -160,7 +157,7 @@ class _AnimatedHeaderState extends State<AnimatedHeader>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withAlpha(25),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -217,12 +214,16 @@ class _AnimatedHeaderState extends State<AnimatedHeader>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => Navigator.of(context).pop(),
-                        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.borderRadius,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                            color: Colors.white.withAlpha(51),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.borderRadius,
+                            ),
                           ),
                           child: const Icon(
                             Icons.arrow_back,

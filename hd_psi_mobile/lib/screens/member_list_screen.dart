@@ -8,7 +8,7 @@ import '../widgets/empty_data.dart';
 import '../utils/formatters.dart';
 
 class MemberListScreen extends StatefulWidget {
-  const MemberListScreen({Key? key}) : super(key: key);
+  const MemberListScreen({super.key});
 
   @override
   State<MemberListScreen> createState() => _MemberListScreenState();
@@ -17,20 +17,23 @@ class MemberListScreen extends StatefulWidget {
 class _MemberListScreenState extends State<MemberListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // 加载会员列表
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MemberProvider>(context, listen: false).loadMembers(refresh: true);
+      Provider.of<MemberProvider>(
+        context,
+        listen: false,
+      ).loadMembers(refresh: true);
     });
-    
+
     // 添加滚动监听器，用于加载更多
     _scrollController.addListener(_onScroll);
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -38,19 +41,24 @@ class _MemberListScreenState extends State<MemberListScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   // 滚动到底部时加载更多
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
-      final memberProvider = Provider.of<MemberProvider>(context, listen: false);
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      final memberProvider = Provider.of<MemberProvider>(
+        context,
+        listen: false,
+      );
       if (!memberProvider.isLoading && memberProvider.hasMorePages) {
         memberProvider.loadMoreMembers(
-          name: _searchController.text.isNotEmpty ? _searchController.text : null,
+          name:
+              _searchController.text.isNotEmpty ? _searchController.text : null,
         );
       }
     }
   }
-  
+
   // 搜索会员
   void _searchMembers() {
     Provider.of<MemberProvider>(context, listen: false).loadMembers(
@@ -58,7 +66,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
       name: _searchController.text.isNotEmpty ? _searchController.text : null,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,36 +103,41 @@ class _MemberListScreenState extends State<MemberListScreen> {
               onSubmitted: (_) => _searchMembers(),
             ),
           ),
-          
+
           // 会员列表
           Expanded(
             child: Consumer<MemberProvider>(
               builder: (context, memberProvider, child) {
-                if (memberProvider.isLoading && memberProvider.members.isEmpty) {
+                if (memberProvider.isLoading &&
+                    memberProvider.members.isEmpty) {
                   return const LoadingIndicator(message: '加载会员中...');
                 }
-                
-                if (memberProvider.error != null && memberProvider.members.isEmpty) {
+
+                if (memberProvider.error != null &&
+                    memberProvider.members.isEmpty) {
                   return ErrorDisplay(
                     error: memberProvider.error!,
                     onRetry: () => memberProvider.loadMembers(refresh: true),
                   );
                 }
-                
+
                 if (memberProvider.members.isEmpty) {
                   return EmptyData(
                     message: '暂无会员数据',
                     icon: Icons.people,
-                    onAction: () => Navigator.of(context).pushNamed('/members/add'),
+                    onAction:
+                        () => Navigator.of(context).pushNamed('/members/add'),
                     actionLabel: '添加会员',
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: () => memberProvider.loadMembers(refresh: true),
                   child: ListView.builder(
                     controller: _scrollController,
-                    itemCount: memberProvider.members.length + (memberProvider.hasMorePages ? 1 : 0),
+                    itemCount:
+                        memberProvider.members.length +
+                        (memberProvider.hasMorePages ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == memberProvider.members.length) {
                         return const Padding(
@@ -132,7 +145,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
-                      
+
                       final member = memberProvider.members[index];
                       return _buildMemberItem(context, member);
                     },
@@ -145,13 +158,15 @@ class _MemberListScreenState extends State<MemberListScreen> {
       ),
     );
   }
-  
+
   Widget _buildMemberItem(BuildContext context, Member member) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).pushNamed('/members/detail', arguments: member.id);
+          Navigator.of(
+            context,
+          ).pushNamed('/members/detail', arguments: member.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -171,7 +186,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
                 ),
               ),
               const SizedBox(width: 16.0),
-              
+
               // 会员信息
               Expanded(
                 child: Column(
@@ -187,10 +202,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
                     const SizedBox(height: 4.0),
                     Text(
                       '手机: ${member.phone}',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 4.0),
                     Row(
@@ -201,7 +213,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
                             vertical: 2.0,
                           ),
                           decoration: BoxDecoration(
-                            color: _getLevelColor(member.level).withOpacity(0.2),
+                            color: _getLevelColor(member.level).withAlpha(51),
                             borderRadius: BorderRadius.circular(4.0),
                           ),
                           child: Text(
@@ -225,19 +237,16 @@ class _MemberListScreenState extends State<MemberListScreen> {
                   ],
                 ),
               ),
-              
+
               // 右侧箭头
-              const Icon(
-                Icons.chevron_right,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
             ],
           ),
         ),
       ),
     );
   }
-  
+
   Color _getLevelColor(String level) {
     switch (level) {
       case 'regular':
