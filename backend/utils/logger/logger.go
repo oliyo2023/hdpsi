@@ -97,6 +97,11 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 	return l.WithFields(map[string]interface{}{key: value})
 }
 
+// WithError 添加错误信息到日志记录器
+func (l *Logger) WithError(err error) *Logger {
+	return l.WithField("error", err.Error())
+}
+
 // log 记录日志
 func (l *Logger) log(level, message string, fields ...map[string]interface{}) {
 	// 合并字段

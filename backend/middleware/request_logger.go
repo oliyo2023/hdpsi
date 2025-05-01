@@ -63,8 +63,7 @@ func RequestLoggerMiddleware(skipPaths ...string) gin.HandlerFunc {
 		userAgent := c.Request.UserAgent()
 
 		// 记录日志
-		log := logger.WithFields(
-			logger.F("request_id", requestID),
+		log := logger.WithContext(c).WithFields(
 			logger.F("client_ip", clientIP),
 			logger.F("method", method),
 			logger.F("path", path),

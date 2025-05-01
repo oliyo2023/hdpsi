@@ -16,6 +16,7 @@ const (
 	ErrConflict           = "conflict"
 	ErrTooManyRequests    = "too_many_requests"
 	ErrServiceUnavailable = "service_unavailable"
+	ErrInvalidOperation   = "invalid_operation"
 
 	// 数据库错误
 	ErrDatabaseConnection = "database_connection_error"
@@ -117,6 +118,49 @@ func (e *AppError) WithError(err error) *AppError {
 func (e *AppError) WithRequestID(requestID string) *AppError {
 	e.RequestID = requestID
 	return e
+}
+
+// ShouldAlert 判断是否需要发送告警
+// 返回：
+//   - bool: 如果错误需要发送告警返回true，否则返回false
+func (e *AppError) ShouldAlert() bool {
+	// 内部错误、数据库错误和服务不可用错误需要告警
+	switch e.Type {
+	case ErrInternal,
+		ErrDatabaseConnection,
+		ErrDatabaseQuery,
+		ErrDatabaseInsert,
+		ErrDatabaseUpdate,
+		ErrDatabaseDelete,
+		ErrServiceUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// ToResponse 将错误转换为HTTP响应
+// 参数：
+//   - err: 应用程序错误对象
+//
+// 返回：
+//   - int: HTTP状态码
+//   - map[string]interface{}: 响应体
+func ToResponse(err *AppError) (int, map[string]interface{}) {
+	status := err.HTTPStatus()
+	response := map[string]interface{}{
+		"error": err.Message,
+	}
+
+	if err.Details != "" {
+		response["details"] = err.Details
+	}
+
+	if err.RequestID != "" {
+		response["request_id"] = err.RequestID
+	}
+
+	return status, response
 }
 
 // errTypeToMessage 将错误类型转换为用户友好的消息
