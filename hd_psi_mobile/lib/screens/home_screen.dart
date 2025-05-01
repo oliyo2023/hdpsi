@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/app_theme.dart';
+import '../widgets/animated_header.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -11,103 +13,324 @@ class HomeScreen extends StatelessWidget {
     final user = authProvider.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('服装进销存系统'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
+      body: CustomScrollView(
+        slivers: [
+          // 顶部应用栏
+          SliverAppBar(
+            expandedHeight: 180.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                '服装进销存系统',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [AppTheme.primaryColor, AppTheme.primaryDarkColor],
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -50,
+                      top: -50,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: -30,
+                      bottom: -30,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 用户信息卡片
-          Card(
-            margin: const EdgeInsets.all(16),
+
+          // 欢迎信息
+          SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+              padding: const EdgeInsets.all(AppTheme.spacingMedium),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: AppTheme.primaryColor,
+                        child: Text(
+                          user?.name?.isNotEmpty == true
+                              ? user!.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spacingMedium),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '欢迎回来，${user?.name ?? '用户'}',
+                              style: const TextStyle(
+                                fontSize: AppTheme.fontSizeLarge,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '角色: ${_formatRole(user?.role)}',
+                              style: TextStyle(
+                                fontSize: AppTheme.fontSizeNormal,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 快捷功能
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMedium,
+                vertical: AppTheme.spacing,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.blue,
-                    child: Icon(
-                      Icons.person,
-                      size: 30,
-                      color: Colors.white,
+                  const Text(
+                    '快捷功能',
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSizeLarge,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.name ?? '未知用户',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '角色: ${_formatRole(user?.role)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: AppTheme.spacingMedium),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.add_shopping_cart,
+                        title: '添加商品',
+                        color: AppTheme.primaryColor,
+                        onTap:
+                            () => Navigator.of(
+                              context,
+                            ).pushNamed('/products/add'),
+                      ),
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.qr_code_scanner,
+                        title: '扫码出库',
+                        color: AppTheme.accentColor,
+                        onTap:
+                            () => Navigator.of(
+                              context,
+                            ).pushNamed('/scan-checkout'),
+                      ),
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.person_add,
+                        title: '添加会员',
+                        color: Colors.green,
+                        onTap:
+                            () =>
+                                Navigator.of(context).pushNamed('/members/add'),
+                      ),
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.search,
+                        title: '库存查询',
+                        color: Colors.orange,
+                        onTap:
+                            () => Navigator.of(context).pushNamed('/inventory'),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          
-          // 功能网格
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(16),
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              children: [
+
+          // 主要功能
+          SliverPadding(
+            padding: const EdgeInsets.all(AppTheme.spacingMedium),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.2,
+                crossAxisSpacing: AppTheme.spacingMedium,
+                mainAxisSpacing: AppTheme.spacingMedium,
+              ),
+              delegate: SliverChildListDelegate([
                 _buildFeatureCard(
                   context,
                   '商品管理',
                   Icons.inventory,
-                  Colors.blue,
+                  AppTheme.primaryColor,
+                  '管理所有商品信息',
                   () => Navigator.of(context).pushNamed('/products'),
-                ),
-                _buildFeatureCard(
-                  context,
-                  '扫码出库',
-                  Icons.qr_code_scanner,
-                  Colors.green,
-                  () => Navigator.of(context).pushNamed('/scan-checkout'),
                 ),
                 _buildFeatureCard(
                   context,
                   '会员管理',
                   Icons.people,
-                  Colors.orange,
+                  Colors.purple,
+                  '管理会员信息和积分',
                   () => Navigator.of(context).pushNamed('/members'),
                 ),
                 _buildFeatureCard(
                   context,
-                  '库存查询',
-                  Icons.search,
-                  Colors.purple,
+                  '库存管理',
+                  Icons.inventory_2,
+                  Colors.teal,
+                  '管理商品库存和出入库',
                   () => Navigator.of(context).pushNamed('/inventory'),
                 ),
-              ],
+                _buildFeatureCard(
+                  context,
+                  '销售统计',
+                  Icons.bar_chart,
+                  Colors.amber.shade800,
+                  '查看销售数据和报表',
+                  () {},
+                ),
+              ]),
+            ),
+          ),
+
+          // 最近活动
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingMedium),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '最近活动',
+                        style: TextStyle(
+                          fontSize: AppTheme.fontSizeLarge,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      _buildActivityItem(
+                        context,
+                        icon: Icons.shopping_bag,
+                        title: '添加了新商品',
+                        subtitle: '夏季新款连衣裙',
+                        time: '10分钟前',
+                      ),
+                      _buildActivityItem(
+                        context,
+                        icon: Icons.person,
+                        title: '新会员注册',
+                        subtitle: '张女士',
+                        time: '30分钟前',
+                      ),
+                      _buildActivityItem(
+                        context,
+                        icon: Icons.inventory_2,
+                        title: '商品出库',
+                        subtitle: '牛仔裤 x 2',
+                        time: '1小时前',
+                      ),
+                      _buildActivityItem(
+                        context,
+                        icon: Icons.inventory,
+                        title: '商品入库',
+                        subtitle: '夏季T恤 x 20',
+                        time: '2小时前',
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 底部空白
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 28, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: AppTheme.fontSizeNormal,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -120,48 +343,115 @@ class HomeScreen extends StatelessWidget {
     String title,
     IconData icon,
     Color color,
+    String description,
     VoidCallback onTap,
   ) {
     return Card(
-      elevation: 4,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                ),
+                child: Icon(icon, size: 28, color: color),
               ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: color,
+              const SizedBox(height: AppTheme.spacing),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: AppTheme.fontSizeMedium,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: AppTheme.fontSizeSmall,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildActivityItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String time,
+    bool isLast = false,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                ),
+                child: Icon(icon, size: 20, color: AppTheme.primaryColor),
+              ),
+              const SizedBox(width: AppTheme.spacing),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: AppTheme.fontSizeNormal,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSizeSmall,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: AppTheme.fontSizeSmall,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isLast) const Divider(height: 1),
+      ],
+    );
+  }
+
   String _formatRole(String? role) {
     if (role == null) return '未知';
-    
+
     switch (role) {
       case 'admin':
         return '管理员';

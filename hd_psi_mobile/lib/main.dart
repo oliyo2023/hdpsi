@@ -9,7 +9,7 @@ import 'providers/inventory_provider.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_container.dart';
 import 'screens/product_list_screen.dart';
 import 'screens/product_add_screen.dart';
 import 'screens/product_detail_screen.dart';
@@ -17,6 +17,7 @@ import 'screens/product_edit_screen.dart';
 import 'screens/scan_checkout_screen.dart';
 import 'screens/member_list_screen.dart';
 import 'screens/member_add_screen.dart';
+import 'utils/app_theme.dart';
 
 void main() {
   // 初始化日期格式化
@@ -42,15 +43,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '服装进销存系统',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: ThemeMode.system, // 跟随系统设置
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const MainContainer(),
         '/products': (context) => const ProductListScreen(),
         '/products/add': (context) => const ProductAddScreen(),
         '/scan-checkout': (context) => const ScanCheckoutScreen(),
