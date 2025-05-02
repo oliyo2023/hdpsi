@@ -20,6 +20,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	systemSettingController := controllers.NewSystemSettingController(db)
 	r.GET("/api/settings/theme", systemSettingController.GetUserTheme)
 
+	// 微信公众号事件接收路由 - 不需要认证
+	wechatController := controllers.NewWechatController(db)
+	r.POST("/wechat/event", wechatController.HandleWechatEvent)
+
 	// API路由组
 	api := r.Group("/api")
 

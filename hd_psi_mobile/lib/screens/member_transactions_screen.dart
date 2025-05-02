@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/member_provider.dart';
-import '../utils/formatters.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import '../widgets/empty_data.dart';
+
+// 导入拆分后的组件
+import 'member_transactions/transaction_item_card.dart';
+import 'member_transactions/transaction_details.dart';
+import 'member_transactions/filter_dialog.dart';
+import 'member_transactions/points_adjustment_dialog.dart';
+import 'member_transactions/filter_chips_bar.dart';
+import 'member_transactions/transaction_utils.dart';
 
 class MemberTransactionsScreen extends StatefulWidget {
   final int memberId;
@@ -141,349 +147,147 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
       body: Column(
         children: [
           // 筛选条件显示
-          if (_selectedType != null || _dateRange != null)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              color: Theme.of(context).colorScheme.surface,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 8.0,
-                      children: [
-                        if (_selectedType != null)
-                          Chip(
-                            label: Text(_formatTransactionType(_selectedType!)),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedType = null;
-                              });
-                              _filterTransactions();
-                            },
-                          ),
-                        if (_dateRange != null)
-                          Chip(
-                            label: Text(
-                              '${DateFormat('yyyy-MM-dd').format(_dateRange!.start)} 至 ${DateFormat('yyyy-MM-dd').format(_dateRange!.end)}',
-                            ),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () {
-                              setState(() {
-                                _dateRange = null;
-                              });
-                              _filterTransactions();
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _clearFilters,
-                    child: const Text('清除全部'),
-                  ),
-                ],
-              ),
-            ),
+          FilterChipsBar(
+            selectedType: _selectedType,
+            dateRange: _dateRange,
+            formatTransactionType: TransactionUtils.formatTransactionType,
+            onClearFilters: _clearFilters,
+            onClearType: _clearTypeFilter,
+            onClearDateRange: _clearDateRangeFilter,
+          ),
 
           // 交易记录列表
-          Expanded(
-            child: Consumer<TransactionProvider>(
-              builder: (context, transactionProvider, child) {
-                if (transactionProvider.isLoading &&
-                    transactionProvider.transactions.isEmpty) {
-                  return const LoadingIndicator(message: '加载交易记录中...');
-                }
-
-                if (transactionProvider.error != null &&
-                    transactionProvider.transactions.isEmpty) {
-                  return ErrorDisplay(
-                    error: transactionProvider.error!,
-                    onRetry:
-                        () => transactionProvider.loadMemberTransactions(
-                          memberId: widget.memberId,
-                          refresh: true,
-                        ),
-                  );
-                }
-
-                if (transactionProvider.transactions.isEmpty) {
-                  return EmptyData(
-                    message: '暂无交易记录',
-                    icon: Icons.receipt_long,
-                    onAction: () {
-                      Navigator.of(context).pop();
-                    },
-                    actionLabel: '返回会员详情',
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh:
-                      () => transactionProvider.loadMemberTransactions(
-                        memberId: widget.memberId,
-                        refresh: true,
-                        type: _selectedType,
-                        startDate: _dateRange?.start.toIso8601String(),
-                        endDate: _dateRange?.end.toIso8601String(),
-                      ),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount:
-                        transactionProvider.transactions.length +
-                        (transactionProvider.hasMorePages ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == transactionProvider.transactions.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      final transaction =
-                          transactionProvider.transactions[index];
-                      return _buildTransactionItem(context, transaction);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
+          Expanded(child: _buildTransactionList()),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showPointsAdjustmentDialog();
-        },
+        onPressed: _showPointsAdjustmentDialog,
         tooltip: '调整积分',
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildTransactionItem(BuildContext context, Transaction transaction) {
-    final Color typeColor = _getTypeColor(transaction.type);
-    final String typeText = _formatTransactionType(transaction.type);
-    final bool isPositive =
-        transaction.type == 'purchase' ||
-        (transaction.type == 'points_adjustment' &&
-            transaction.pointsEarned > 0);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: InkWell(
-        onTap: () {
-          _showTransactionDetails(transaction);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // 交易类型标签
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 4.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: typeColor.withAlpha(51),
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                    child: Text(
-                      typeText,
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        color: typeColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  // 交易时间
-                  Text(
-                    Formatters.formatDateTime(transaction.createdAt),
-                    style: TextStyle(
-                      fontSize: 12.0,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12.0),
-
-              // 交易金额和积分
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (transaction.amount > 0)
-                        Text(
-                          '金额: ¥${transaction.amount.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      if (transaction.pointsEarned > 0 ||
-                          transaction.pointsUsed > 0)
-                        Text(
-                          transaction.type == 'points_adjustment'
-                              ? '积分: ${isPositive ? '+' : '-'}${transaction.pointsEarned > 0 ? transaction.pointsEarned : transaction.pointsUsed}'
-                              : '积分: +${transaction.pointsEarned} / -${transaction.pointsUsed}',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: isPositive ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  // 右侧箭头
-                  const Icon(Icons.chevron_right, color: Colors.grey),
-                ],
-              ),
-
-              // 备注
-              if (transaction.note != null && transaction.note!.isNotEmpty) ...[
-                const SizedBox(height: 8.0),
-                Text(
-                  '备注: ${transaction.note}',
-                  style: TextStyle(
-                    fontSize: 12.0,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+  // 清除类型筛选
+  void _clearTypeFilter() {
+    setState(() {
+      _selectedType = null;
+    });
+    _filterTransactions();
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('筛选交易记录'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 交易类型筛选
-                  const Text('交易类型'),
-                  const SizedBox(height: 8.0),
-                  Wrap(
-                    spacing: 8.0,
-                    children: [
-                      _buildFilterChip(
-                        label: '全部',
-                        selected: _selectedType == null,
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedType = null;
-                          });
-                        },
-                      ),
-                      _buildFilterChip(
-                        label: '购买',
-                        selected: _selectedType == 'purchase',
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedType = selected ? 'purchase' : null;
-                          });
-                        },
-                      ),
-                      _buildFilterChip(
-                        label: '退款',
-                        selected: _selectedType == 'refund',
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedType = selected ? 'refund' : null;
-                          });
-                        },
-                      ),
-                      _buildFilterChip(
-                        label: '积分调整',
-                        selected: _selectedType == 'points_adjustment',
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedType =
-                                selected ? 'points_adjustment' : null;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
+  // 清除日期范围筛选
+  void _clearDateRangeFilter() {
+    setState(() {
+      _dateRange = null;
+    });
+    _filterTransactions();
+  }
 
-                  // 日期范围筛选
-                  const Text('日期范围'),
-                  const SizedBox(height: 8.0),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.date_range),
-                    label: Text(
-                      _dateRange != null
-                          ? '${DateFormat('yyyy-MM-dd').format(_dateRange!.start)} 至 ${DateFormat('yyyy-MM-dd').format(_dateRange!.end)}'
-                          : '选择日期范围',
-                    ),
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      await _selectDateRange();
-                    },
-                  ),
-                ],
+  // 构建交易记录列表
+  Widget _buildTransactionList() {
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, _) {
+        if (transactionProvider.isLoading &&
+            transactionProvider.transactions.isEmpty) {
+          return const LoadingIndicator(message: '加载交易记录中...');
+        }
+
+        if (transactionProvider.error != null &&
+            transactionProvider.transactions.isEmpty) {
+          return ErrorDisplay(
+            error: transactionProvider.error!,
+            onRetry:
+                () => transactionProvider.loadMemberTransactions(
+                  memberId: widget.memberId,
+                  refresh: true,
+                ),
+          );
+        }
+
+        if (transactionProvider.transactions.isEmpty) {
+          return EmptyData(
+            message: '暂无交易记录',
+            icon: Icons.receipt_long,
+            onAction: () {
+              Navigator.of(context).pop();
+            },
+            actionLabel: '返回会员详情',
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh:
+              () => transactionProvider.loadMemberTransactions(
+                memberId: widget.memberId,
+                refresh: true,
+                type: _selectedType,
+                startDate: _dateRange?.start.toIso8601String(),
+                endDate: _dateRange?.end.toIso8601String(),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('取消'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _filterTransactions();
-                  },
-                  child: const Text('应用'),
-                ),
-              ],
-            );
-          },
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount:
+                transactionProvider.transactions.length +
+                (transactionProvider.hasMorePages ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == transactionProvider.transactions.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final transaction = transactionProvider.transactions[index];
+              final typeColor = TransactionUtils.getTypeColor(transaction.type);
+              final typeText = TransactionUtils.formatTransactionType(
+                transaction.type,
+              );
+              final isPositive = TransactionUtils.isPositiveTransaction(
+                transaction.type,
+                transaction.pointsEarned,
+              );
+
+              return TransactionItemCard(
+                transaction: transaction,
+                onTap: _showTransactionDetails,
+                typeColor: typeColor,
+                typeText: typeText,
+                isPositive: isPositive,
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  Widget _buildFilterChip({
-    required String label,
-    required bool selected,
-    required Function(bool) onSelected,
-  }) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: onSelected,
-      selectedColor: Theme.of(context).primaryColor.withAlpha(51),
-      checkmarkColor: Theme.of(context).primaryColor,
+  // 显示筛选对话框
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return FilterDialog(
+          selectedType: _selectedType,
+          dateRange: _dateRange,
+          onTypeSelected: (type) {
+            setState(() {
+              _selectedType = type;
+            });
+          },
+          onDateRangeSelected: (range) {
+            setState(() {
+              _dateRange = range;
+            });
+          },
+          onApplyFilter: _filterTransactions,
+          onSelectDateRange: _selectDateRange,
+        );
+      },
     );
   }
 
+  // 显示交易详情
   void _showTransactionDetails(Transaction transaction) {
     showModalBottomSheet(
       context: context,
@@ -492,338 +296,25 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 标题
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2.0),
-                      ),
-                    ),
-                  ),
-                  Text('交易详情', style: Theme.of(context).textTheme.titleLarge),
-                  const Divider(),
-
-                  // 基本信息
-                  _buildDetailItem(
-                    '交易类型',
-                    _formatTransactionType(transaction.type),
-                  ),
-                  _buildDetailItem(
-                    '交易时间',
-                    Formatters.formatDateTime(transaction.createdAt),
-                  ),
-                  if (transaction.staffName != null)
-                    _buildDetailItem('操作员', transaction.staffName!),
-
-                  // 金额和积分
-                  if (transaction.amount > 0)
-                    _buildDetailItem(
-                      '交易金额',
-                      '¥${transaction.amount.toStringAsFixed(2)}',
-                    ),
-                  if (transaction.pointsEarned > 0)
-                    _buildDetailItem(
-                      '获得积分',
-                      transaction.pointsEarned.toString(),
-                    ),
-                  if (transaction.pointsUsed > 0)
-                    _buildDetailItem('使用积分', transaction.pointsUsed.toString()),
-
-                  // 备注
-                  if (transaction.note != null && transaction.note!.isNotEmpty)
-                    _buildDetailItem('备注', transaction.note!),
-
-                  // 商品列表
-                  if (transaction.items != null &&
-                      transaction.items!.isNotEmpty) ...[
-                    const SizedBox(height: 16.0),
-                    const Text(
-                      '商品明细',
-                      style: TextStyle(
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(),
-                    ...transaction.items!.map((item) => _buildItemDetail(item)),
-                  ],
-                ],
-              ),
-            );
-          },
+        return TransactionDetails(
+          transaction: transaction,
+          formatTransactionType: TransactionUtils.formatTransactionType,
         );
       },
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14.0,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemDetail(TransactionItem item) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    item.productName,
-                    style: const TextStyle(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Text(
-                  '¥${item.subtotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 14.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${item.quantity} x ¥${item.price.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 12.0,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                ),
-                if (item.discount > 0)
-                  Text(
-                    '优惠: ¥${item.discount.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: 12.0, color: Colors.red),
-                  ),
-              ],
-            ),
-            if (item.productSku != null && item.productSku!.isNotEmpty)
-              Text(
-                'SKU: ${item.productSku}',
-                style: TextStyle(
-                  fontSize: 12.0,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // 显示积分调整对话框
   void _showPointsAdjustmentDialog() {
-    final formKey = GlobalKey<FormState>();
-    int points = 0;
-    String note = '';
-    bool isPositive = true;
-
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('积分调整'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 积分调整方向
-                Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<bool>(
-                        title: const Text('增加'),
-                        value: true,
-                        groupValue: isPositive,
-                        onChanged: (value) {
-                          setState(() {
-                            isPositive = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<bool>(
-                        title: const Text('减少'),
-                        value: false,
-                        groupValue: isPositive,
-                        onChanged: (value) {
-                          setState(() {
-                            isPositive = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                // 积分数量
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: '积分数量',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '请输入积分数量';
-                    }
-                    if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                      return '请输入有效的积分数量';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) {
-                    points = int.parse(value!);
-                  },
-                ),
-                const SizedBox(height: 16.0),
-
-                // 备注
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: '备注',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  onSaved: (value) {
-                    note = value ?? '';
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('取消'),
-            ),
-            Consumer<TransactionProvider>(
-              builder: (context, provider, _) {
-                // 使用下划线表示不使用child参数
-                return ElevatedButton(
-                  onPressed:
-                      provider.isLoading
-                          ? null
-                          : () {
-                            if (formKey.currentState!.validate()) {
-                              formKey.currentState!.save();
-
-                              // 根据选择的方向调整积分值
-                              final adjustedPoints =
-                                  isPositive ? points : -points;
-
-                              // 在异步操作前保存必要的变量
-                              final bool currentIsPositive = isPositive;
-                              final int currentMemberId = widget.memberId;
-
-                              // 获取需要的provider
-                              final memberProvider =
-                                  Provider.of<MemberProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-
-                              // 使用一个单独的方法处理异步操作，避免在回调中使用context
-                              _processPointsAdjustment(
-                                provider: provider,
-                                memberId: currentMemberId,
-                                points: adjustedPoints,
-                                note: note,
-                                isPositive: currentIsPositive,
-                                memberProvider: memberProvider,
-                              );
-
-                              // 立即关闭对话框
-                              Navigator.of(context).pop();
-                            }
-                          },
-                  child:
-                      provider.isLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Text('确认'),
-                );
-              },
-            ),
-          ],
+        return PointsAdjustmentDialog(
+          memberId: widget.memberId,
+          onAdjustPoints: _processPointsAdjustment,
         );
       },
     );
-  }
-
-  String _formatTransactionType(String type) {
-    return Formatters.formatMemberTransactionType(type);
-  }
-
-  Color _getTypeColor(String type) {
-    switch (type) {
-      case 'purchase':
-        return Colors.green;
-      case 'refund':
-        return Colors.orange;
-      case 'points_adjustment':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 
   // 处理积分调整的异步操作
