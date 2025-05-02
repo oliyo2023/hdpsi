@@ -753,12 +753,13 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
               child: const Text('取消'),
             ),
             Consumer<TransactionProvider>(
-              builder: (context, provider, child) {
+              builder: (context, provider, _) {
+                // 使用下划线表示不使用child参数
                 return ElevatedButton(
                   onPressed:
                       provider.isLoading
                           ? null
-                          : () async {
+                          : () {
                             if (formKey.currentState!.validate()) {
                               formKey.currentState!.save();
 
@@ -766,40 +767,29 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
                               final adjustedPoints =
                                   isPositive ? points : -points;
 
-                              final success = await provider.adjustPoints(
-                                memberId: widget.memberId,
-                                points: adjustedPoints,
-                                note: note,
-                              );
+                              // 在异步操作前保存必要的变量
+                              final bool currentIsPositive = isPositive;
+                              final int currentMemberId = widget.memberId;
 
-                              if (success) {
-                                // 保存当前状态
-                                final isPositiveValue = isPositive;
-
-                                // 关闭对话框
-                                if (mounted) {
-                                  Navigator.of(context).pop();
-                                }
-
-                                // 显示成功消息
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '积分${isPositiveValue ? '增加' : '减少'}成功',
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                // 刷新会员信息以更新积分
-                                if (mounted) {
+                              // 获取需要的provider
+                              final memberProvider =
                                   Provider.of<MemberProvider>(
                                     context,
                                     listen: false,
-                                  ).getMember(widget.memberId);
-                                }
-                              }
+                                  );
+
+                              // 使用一个单独的方法处理异步操作，避免在回调中使用context
+                              _processPointsAdjustment(
+                                provider: provider,
+                                memberId: currentMemberId,
+                                points: adjustedPoints,
+                                note: note,
+                                isPositive: currentIsPositive,
+                                memberProvider: memberProvider,
+                              );
+
+                              // 立即关闭对话框
+                              Navigator.of(context).pop();
                             }
                           },
                   child:
@@ -833,6 +823,32 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
         return Colors.blue;
       default:
         return Colors.grey;
+    }
+  }
+
+  // 处理积分调整的异步操作
+  Future<void> _processPointsAdjustment({
+    required TransactionProvider provider,
+    required int memberId,
+    required int points,
+    required String note,
+    required bool isPositive,
+    required MemberProvider memberProvider,
+  }) async {
+    final success = await provider.adjustPoints(
+      memberId: memberId,
+      points: points,
+      note: note,
+    );
+
+    if (success && mounted) {
+      // 显示成功消息
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('积分${isPositive ? '增加' : '减少'}成功')),
+      );
+
+      // 刷新会员信息以更新积分
+      memberProvider.getMember(memberId);
     }
   }
 }
