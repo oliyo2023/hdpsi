@@ -158,15 +158,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          // 开发阶段：跳过登录按钮
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(
-                                context,
-                              ).pushReplacementNamed('/home');
-                            },
-                            child: const Text('开发模式：跳过登录'),
+                          // 版本信息
+                          const SizedBox(height: 32),
+                          Text(
+                            'v1.0.0',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),

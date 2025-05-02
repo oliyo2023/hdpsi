@@ -183,7 +183,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     image:
                         product.image.isNotEmpty
                             ? NetworkImage(product.image)
-                            : const AssetImage('assets/images/no_image.png')
+                            : const AssetImage('images/no_image.png')
                                 as ImageProvider,
                     fit: BoxFit.cover,
                   ),

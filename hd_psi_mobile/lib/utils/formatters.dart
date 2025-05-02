@@ -6,7 +6,7 @@ class Formatters {
     if (dateString == null || dateString.isEmpty) {
       return '';
     }
-    
+
     try {
       final date = DateTime.parse(dateString);
       return DateFormat('yyyy-MM-dd').format(date);
@@ -14,13 +14,13 @@ class Formatters {
       return dateString;
     }
   }
-  
+
   // 格式化日期时间
   static String formatDateTime(String? dateTimeString) {
     if (dateTimeString == null || dateTimeString.isEmpty) {
       return '';
     }
-    
+
     try {
       final dateTime = DateTime.parse(dateTimeString);
       return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
@@ -28,37 +28,37 @@ class Formatters {
       return dateTimeString;
     }
   }
-  
+
   // 格式化价格
   static String formatPrice(double? price) {
     if (price == null) {
       return '¥0.00';
     }
-    
+
     final formatter = NumberFormat.currency(
       locale: 'zh_CN',
       symbol: '¥',
       decimalDigits: 2,
     );
-    
+
     return formatter.format(price);
   }
-  
+
   // 格式化数量
   static String formatQuantity(int? quantity) {
     if (quantity == null) {
       return '0';
     }
-    
+
     return quantity.toString();
   }
-  
+
   // 格式化会员等级
   static String formatMemberLevel(String? level) {
     if (level == null || level.isEmpty) {
       return '普通会员';
     }
-    
+
     switch (level) {
       case 'regular':
         return '普通会员';
@@ -74,13 +74,13 @@ class Formatters {
         return level;
     }
   }
-  
-  // 格式化交易类型
-  static String formatTransactionType(String? type) {
+
+  // 格式化库存交易类型
+  static String formatInventoryTransactionType(String? type) {
     if (type == null || type.isEmpty) {
       return '未知';
     }
-    
+
     switch (type) {
       case 'purchase_in':
         return '采购入库';
@@ -96,6 +96,24 @@ class Formatters {
         return '报损出库';
       case 'transfer_out':
         return '调拨出库';
+      default:
+        return type;
+    }
+  }
+
+  // 格式化会员交易类型
+  static String formatMemberTransactionType(String? type) {
+    if (type == null || type.isEmpty) {
+      return '未知';
+    }
+
+    switch (type) {
+      case 'purchase':
+        return '购买';
+      case 'refund':
+        return '退款';
+      case 'points_adjustment':
+        return '积分调整';
       default:
         return type;
     }

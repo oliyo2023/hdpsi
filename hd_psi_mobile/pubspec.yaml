@@ -48,7 +48,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
 
   # 扫码功能
-  flutter_barcode_scanner: ^2.0.0
+  mobile_scanner: ^6.0.10
 
   # 图片处理
   image_picker: ^1.0.7

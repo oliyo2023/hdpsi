@@ -8,8 +8,8 @@ class EmptyData extends StatelessWidget {
 
   const EmptyData({
     super.key,
-    this.message = '暂无数据',
-    this.icon = Icons.inbox,
+    required this.message,
+    required this.icon,
     this.onAction,
     this.actionLabel,
   });
@@ -18,25 +18,21 @@ class EmptyData extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 60, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Icon(icon, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16.0),
             Text(
               message,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 16.0, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
-            if (onAction != null && actionLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: ElevatedButton(
-                  onPressed: onAction,
-                  child: Text(actionLabel!),
-                ),
-              ),
+            if (onAction != null && actionLabel != null) ...[
+              const SizedBox(height: 24.0),
+              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
           ],
         ),
       ),

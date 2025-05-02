@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../utils/app_theme.dart';
 import '../widgets/animated_header.dart';
+import '../utils/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                        padding: EdgeInsets.all(AppTheme.spacingMedium),
                         child: Row(
                           children: [
                             CircleAvatar(

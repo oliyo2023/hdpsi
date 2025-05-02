@@ -15,11 +15,27 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
 
   AuthProvider() {
-    // 在开发阶段，不自动加载用户信息
-    // _loadUser();
+    // 自动加载用户信息
+    _loadUser();
   }
 
   // 加载用户信息
+  Future<void> _loadUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final user = await _authService.getCurrentUser();
+      if (user != null) {
+        _currentUser = user;
+      }
+    } catch (e) {
+      _error = '加载用户信息失败: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   // 登录
   Future<bool> login(String username, String password) async {
