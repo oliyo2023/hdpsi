@@ -16,8 +16,7 @@ class TransactionService {
   }) async {
     final queryParams = {
       'page': page.toString(),
-      'pageSize': pageSize.toString(),
-      'memberId': memberId.toString(),
+      'limit': pageSize.toString(), // 后端使用limit而不是pageSize
     };
 
     if (type != null) queryParams['type'] = type;
@@ -25,7 +24,7 @@ class TransactionService {
     if (endDate != null) queryParams['endDate'] = endDate;
 
     final response = await _apiService.get(
-      '${AppConfig.apiBaseUrl}/api/transactions',
+      '${AppConfig.apiBaseUrl}/api/members/$memberId/points/transactions',
       queryParameters: queryParams,
     );
 
@@ -66,16 +65,30 @@ class TransactionService {
     String? note,
   }) async {
     final data = {
-      'memberId': memberId,
-      'points': points,
+      'points': points.abs(), // 使用绝对值，API会根据正负处理
       'type': 'points_adjustment',
       'note': note,
     };
 
-    final response = await _apiService.post(
-      '${AppConfig.apiBaseUrl}/api/transactions/adjust-points',
-      data: data,
+    // 根据积分正负选择不同的API端点
+    final endpoint =
+        points >= 0
+            ? '${AppConfig.apiBaseUrl}/api/members/$memberId/points/add'
+            : '${AppConfig.apiBaseUrl}/api/members/$memberId/points/deduct';
+
+    final response = await _apiService.post(endpoint, data: data);
+
+    // 构造一个Transaction对象
+    return Transaction(
+      id: response['ID'] ?? 0,
+      memberId: memberId,
+      memberName: '',
+      type: 'points_adjustment',
+      amount: 0,
+      pointsEarned: points > 0 ? points : 0,
+      pointsUsed: points < 0 ? -points : 0,
+      note: note,
+      createdAt: DateTime.now().toIso8601String(),
     );
-    return Transaction.fromJson(response);
   }
 }

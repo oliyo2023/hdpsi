@@ -28,23 +28,49 @@ class Transaction {
   factory Transaction.fromJson(Map<String, dynamic> json) {
     List<TransactionItem>? items;
     if (json['Items'] != null) {
-      items = (json['Items'] as List)
-          .map((item) => TransactionItem.fromJson(item))
-          .toList();
+      items =
+          (json['Items'] as List)
+              .map((item) => TransactionItem.fromJson(item))
+              .toList();
+    }
+
+    // 处理积分交易记录的特殊字段
+    int pointsEarned = 0;
+    int pointsUsed = 0;
+
+    // 如果是积分交易记录（来自会员积分交易API）
+    if (json['Points'] != null) {
+      // Points字段：正数表示获得积分，负数表示使用积分
+      int points =
+          json['Points'] is int
+              ? json['Points']
+              : int.parse(json['Points'].toString());
+      if (points > 0) {
+        pointsEarned = points;
+      } else if (points < 0) {
+        pointsUsed = -points; // 转为正数
+      }
+    } else {
+      // 常规交易记录
+      pointsEarned = json['PointsEarned'] ?? 0;
+      pointsUsed = json['PointsUsed'] ?? 0;
     }
 
     return Transaction(
-      id: json['ID'],
-      memberId: json['MemberID'],
+      id: json['ID'] ?? json['id'] ?? 0,
+      memberId: json['MemberID'] ?? json['member_id'] ?? 0,
       memberName: json['MemberName'] ?? '',
-      type: json['Type'],
+      type: json['Type'] ?? json['type'] ?? 'unknown',
       amount: json['Amount']?.toDouble() ?? 0.0,
-      pointsEarned: json['PointsEarned'] ?? 0,
-      pointsUsed: json['PointsUsed'] ?? 0,
-      note: json['Note'],
+      pointsEarned: pointsEarned,
+      pointsUsed: pointsUsed,
+      note: json['Note'] ?? json['Description'] ?? '',
       items: items,
-      createdAt: json['CreatedAt'],
-      staffName: json['StaffName'],
+      createdAt:
+          json['CreatedAt'] ??
+          json['created_at'] ??
+          DateTime.now().toIso8601String(),
+      staffName: json['StaffName'] ?? json['OperatorID']?.toString() ?? '',
     );
   }
 
