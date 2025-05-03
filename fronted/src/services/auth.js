@@ -23,7 +23,11 @@ export default {
       const userData = await this.getProfile()
       if (userData) {
         console.log('从后端获取的用户信息:', userData)
-        localStorage.setItem('user', JSON.stringify(userData))
+        try {
+          localStorage.setItem('user', JSON.stringify(userData))
+        } catch (parseError) {
+          console.error('存储用户信息失败:', parseError)
+        }
         return userData
       }
       return null
@@ -112,7 +116,9 @@ export default {
       localStorage.setItem('token', response.token)
       localStorage.setItem('refreshToken', response.refresh_token)
       localStorage.setItem('tokenExpires', response.expires_at)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user))
+      }
 
       return true
     } catch (error) {
@@ -123,8 +129,13 @@ export default {
 
   // 获取当前用户
   getCurrentUser() {
-    const userJson = localStorage.getItem('user')
-    return userJson ? JSON.parse(userJson) : null
+    try {
+      const userJson = localStorage.getItem('user')
+      return userJson ? JSON.parse(userJson) : null
+    } catch (error) {
+      console.error('解析用户信息失败:', error)
+      return null
+    }
   },
 
   // 获取认证令牌
@@ -138,7 +149,16 @@ export default {
     localStorage.setItem('token', response.token)
     localStorage.setItem('refreshToken', response.refresh_token)
     localStorage.setItem('tokenExpires', response.expires_at)
-    localStorage.setItem('user', JSON.stringify(response.user))
-    console.log('已保存用户信息到本地存储:', response.user)
+
+    if (response.user) {
+      try {
+        localStorage.setItem('user', JSON.stringify(response.user))
+        console.log('已保存用户信息到本地存储:', response.user)
+      } catch (error) {
+        console.error('保存用户信息失败:', error)
+      }
+    } else {
+      console.warn('登录响应中没有用户信息')
+    }
   }
 }

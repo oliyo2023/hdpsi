@@ -8,11 +8,16 @@
           </template>
           返回
         </n-button>
-        <h1 class="page-title">{{ dictionary.Name }} - 字典项管理</h1>
+        <h1 class="page-title">{{ dictionary.name || dictionary.Name || '' }} - 字典项管理</h1>
       </div>
-      <n-button type="primary" @click="handleAddItem">
-        添加字典项
-      </n-button>
+      <div class="header-right">
+        <n-button @click="toggleDebug" type="warning" class="mr-2">
+          {{ showDebug ? '隐藏调试' : '显示调试' }}
+        </n-button>
+        <n-button type="primary" @click="handleAddItem">
+          添加字典项
+        </n-button>
+      </div>
     </div>
 
     <div class="page-content">
@@ -22,11 +27,26 @@
         :data="items"
         :loading="loading"
         :pagination="pagination"
-        :row-key="row => row.ID"
+        :row-key="row => row.id || row.ID"
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       />
     </div>
+
+    <!-- 调试信息区域 -->
+    <n-collapse v-if="showDebug">
+      <n-collapse-item title="调试信息" name="debug">
+        <n-card title="原始字典信息">
+          <pre>{{ JSON.stringify(rawDictionary, null, 2) }}</pre>
+        </n-card>
+        <n-card title="原始字典项数据" class="mt-4">
+          <pre>{{ JSON.stringify(rawItems, null, 2) }}</pre>
+        </n-card>
+        <n-card title="处理后的字典项数据" class="mt-4">
+          <pre>{{ JSON.stringify(items, null, 2) }}</pre>
+        </n-card>
+      </n-collapse-item>
+    </n-collapse>
 
     <!-- 字典项表单对话框 -->
     <n-modal
@@ -56,7 +76,7 @@
           <n-input v-model:value="formData.value" placeholder="请输入字典项值" />
         </n-form-item>
 
-        <n-form-item label="颜色" path="color" v-if="dictionary.code === 'color'">
+        <n-form-item label="颜色" path="color" v-if="dictionaryCode === 'color'">
           <n-color-picker v-model:value="formData.color" />
         </n-form-item>
 
@@ -88,7 +108,7 @@ import { ref, reactive, onMounted, h, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NButton, NDataTable, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch,
-  NSpace, NTag, NIcon, NColorPicker, useMessage
+  NSpace, NTag, NIcon, NColorPicker, useMessage, NCollapse, NCollapseItem, NCard
 } from 'naive-ui'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import dictionaryService from '../services/dictionary'
@@ -105,11 +125,14 @@ const dictionaryCode = route.params.code
 const loading = ref(false)
 const saving = ref(false)
 const dictionary = ref({})
+const rawDictionary = ref({}) // 原始字典数据
 const items = ref([])
+const rawItems = ref([]) // 原始字典项数据
 const showItemModal = ref(false)
 const isEditing = ref(false)
 const formRef = ref(null)
 const currentItemId = ref(null)
+const showDebug = ref(true) // 显示调试信息
 
 // 分页
 const pagination = reactive({
@@ -153,48 +176,67 @@ const columns = computed(() => {
   const cols = [
     {
       title: 'ID',
-      key: 'ID',
-      width: 80
+      key: 'id',
+      width: 80,
+      render(row) {
+        return row.id || row.ID || '-'
+      }
     },
     {
       title: '编码',
-      key: 'Code',
-      width: 120
+      key: 'code',
+      width: 120,
+      render(row) {
+        return row.code || row.Code || '-'
+      }
     },
     {
       title: '名称',
-      key: 'Name',
-      width: 120
+      key: 'name',
+      width: 120,
+      render(row) {
+        return row.name || row.Name || '-'
+      }
     },
     {
       title: '值',
-      key: 'Value',
-      width: 120
+      key: 'value',
+      width: 120,
+      render(row) {
+        return row.value || row.Value || '-'
+      }
     },
     {
       title: '排序',
-      key: 'Sort',
-      width: 80
+      key: 'sort',
+      width: 80,
+      render(row) {
+        return row.sort !== undefined ? row.sort : (row.Sort !== undefined ? row.Sort : '-')
+      }
     },
     {
       title: '状态',
-      key: 'Status',
+      key: 'status',
       width: 80,
       render(row) {
+        const status = row.status !== undefined ? row.status : (row.Status !== undefined ? row.Status : false)
         return h(
           NTag,
           {
-            type: row.Status ? 'success' : 'error',
+            type: status ? 'success' : 'error',
             size: 'small'
           },
-          { default: () => row.Status ? '启用' : '禁用' }
+          { default: () => status ? '启用' : '禁用' }
         )
       }
     },
     {
       title: '描述',
-      key: 'Description',
-      width: 200
+      key: 'description',
+      width: 200,
+      render(row) {
+        return row.description || row.Description || '-'
+      }
     },
     {
       title: '操作',
@@ -229,17 +271,18 @@ const columns = computed(() => {
   ]
 
   // 如果是颜色字典，添加颜色列
-  if (dictionary.value.Code === 'color') {
+  if (dictionaryCode === 'color') {
     cols.splice(4, 0, {
       title: '颜色',
-      key: 'Color',
+      key: 'color',
       width: 100,
       render(row) {
+        const colorValue = row.color || row.Color || '#fff'
         return h('div', {
           style: {
             width: '20px',
             height: '20px',
-            backgroundColor: row.Color || '#fff',
+            backgroundColor: colorValue,
             border: '1px solid var(--border-color-base)',
             borderRadius: '4px'
           }
@@ -251,17 +294,54 @@ const columns = computed(() => {
   return cols
 })
 
+// 切换调试信息显示
+const toggleDebug = () => {
+  showDebug.value = !showDebug.value
+}
+
 // 方法
 const loadDictionary = async () => {
   loading.value = true
   try {
     // 获取字典类型信息
-    dictionary.value = await dictionaryService.getDictionary(dictionaryCode)
+    const dictResponse = await dictionaryService.getDictionary(dictionaryCode)
+    rawDictionary.value = dictResponse
+    console.log('原始字典数据:', dictResponse)
+    
+    // 处理字典数据，确保字段名称一致
+    dictionary.value = {
+      ...dictResponse,
+      code: dictResponse.Code || dictResponse.code || '',
+      name: dictResponse.Name || dictResponse.name || '',
+      description: dictResponse.Description || dictResponse.description || '',
+      sort: dictResponse.Sort !== undefined ? dictResponse.Sort : (dictResponse.sort !== undefined ? dictResponse.sort : 0),
+      status: dictResponse.Status !== undefined ? dictResponse.Status : (dictResponse.status !== undefined ? dictResponse.status : false)
+    }
+    
+    console.log('处理后的字典数据:', dictionary.value)
 
     // 获取字典项列表
-    const response = await dictionaryService.getDictionaryItems(dictionaryCode)
-    items.value = response
-    pagination.itemCount = response.length
+    const itemsResponse = await dictionaryService.getDictionaryItems(dictionaryCode)
+    rawItems.value = itemsResponse
+    console.log('原始字典项数据:', itemsResponse)
+    
+    // 处理字典项数据，确保字段名称一致
+    items.value = itemsResponse.map(item => {
+      return {
+        ...item,
+        id: item.ID || item.id || 0,
+        code: item.Code || item.code || '',
+        name: item.Name || item.name || '',
+        value: item.Value || item.value || '',
+        color: item.Color || item.color || '',
+        sort: item.Sort !== undefined ? item.Sort : (item.sort !== undefined ? item.sort : 0),
+        status: item.Status !== undefined ? item.Status : (item.status !== undefined ? item.status : false),
+        description: item.Description || item.description || ''
+      }
+    })
+    
+    pagination.itemCount = items.value.length
+    console.log('处理后的字典项数据:', items.value)
   } catch (error) {
     console.error('加载字典数据失败:', error)
     message.error('加载字典数据失败: ' + (error.response?.data?.error || '未知错误'))
@@ -299,21 +379,29 @@ const handleAddItem = () => {
 
 const handleEdit = (row) => {
   isEditing.value = true
-  currentItemId.value = row.ID
-  formData.code = row.Code
-  formData.name = row.Name
-  formData.value = row.Value
-  formData.color = row.Color
-  formData.sort = row.Sort
-  formData.status = row.Status
-  formData.description = row.Description
+  currentItemId.value = row.id || row.ID
+  formData.code = row.code || row.Code || ''
+  formData.name = row.name || row.Name || ''
+  formData.value = row.value || row.Value || ''
+  formData.color = row.color || row.Color || ''
+  formData.sort = row.sort !== undefined ? row.sort : (row.Sort !== undefined ? row.Sort : 0)
+  formData.status = row.status !== undefined ? row.status : (row.Status !== undefined ? row.Status : false)
+  formData.description = row.description || row.Description || ''
   showItemModal.value = true
 }
 
 const handleDelete = async (row) => {
-  if (confirm(`确定要删除字典项 ${row.Name} 吗？`)) {
+  const id = row.id || row.ID
+  const name = row.name || row.Name || row.code || row.Code
+  
+  if (!id) {
+    message.error('字典项ID无效，无法删除')
+    return
+  }
+  
+  if (confirm(`确定要删除字典项 ${name} 吗？`)) {
     try {
-      await dictionaryService.deleteDictionaryItem(dictionaryCode, row.ID)
+      await dictionaryService.deleteDictionaryItem(dictionaryCode, id)
       message.success('删除成功')
       loadDictionary()
     } catch (error) {
@@ -378,6 +466,11 @@ onMounted(() => {
   align-items: center;
 }
 
+.header-right {
+  display: flex;
+  gap: 8px;
+}
+
 .btn-back {
   margin-right: 16px;
 }
@@ -397,5 +490,13 @@ onMounted(() => {
 
 .dark .page-content {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mr-2 {
+  margin-right: 8px;
 }
 </style>

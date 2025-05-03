@@ -28,6 +28,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 	name := c.Query("name")
 	sku := c.Query("sku")
 	category := c.Query("category")
+	categoryID := c.Query("category_id") // 添加对category_id参数的支持
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 
@@ -36,6 +37,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		logger.F("name", name),
 		logger.F("sku", sku),
 		logger.F("category", category),
+		logger.F("category_id", categoryID),
 		logger.F("page", page),
 		logger.F("pageSize", pageSize),
 	)
@@ -50,7 +52,10 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 	if sku != "" {
 		query = query.Where("sku LIKE ?", "%"+sku+"%")
 	}
-	if category != "" {
+	// 优先使用category_id参数，如果没有再使用category参数
+	if categoryID != "" {
+		query = query.Where("category_id = ?", categoryID)
+	} else if category != "" {
 		query = query.Where("category_id = ?", category)
 	}
 
@@ -622,4 +627,165 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		logger.F("sku", product.SKU))
 
 	c.JSON(http.StatusOK, gin.H{"message": "商品删除成功"})
+}
+
+// ListDeletedProducts 获取已删除的商品列表
+func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+	log.Info("获取已删除商品列表")
+
+	// 获取查询参数
+	name := c.Query("name")
+	sku := c.Query("sku")
+	category := c.Query("category")
+	categoryID := c.Query("category_id") // 添加对category_id参数的支持
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
+	// 记录查询参数
+	log = log.WithFields(
+		logger.F("name", name),
+		logger.F("sku", sku),
+		logger.F("category", category),
+		logger.F("category_id", categoryID),
+		logger.F("page", page),
+		logger.F("pageSize", pageSize),
+	)
+
+	// 构建查询 - 使用Unscoped()来包含已删除的记录
+	query := pc.db.Unscoped().Model(&models.Product{}).Where("deleted_at IS NOT NULL")
+
+	// 添加过滤条件
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+	if sku != "" {
+		query = query.Where("sku LIKE ?", "%"+sku+"%")
+	}
+	// 优先使用category_id参数，如果没有再使用category参数
+	if categoryID != "" {
+		query = query.Where("category_id = ?", categoryID)
+	} else if category != "" {
+		query = query.Where("category_id = ?", category)
+	}
+
+	// 计算总数
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		log.Error("获取已删除商品总数失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取已删除商品总数失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	var products []models.Product
+	// 使用Preload预加载关联数据
+	if err := query.Preload("Category").Preload("Brand").Offset(offset).Limit(pageSize).Order("deleted_at DESC").Find(&products).Error; err != nil {
+		log.Error("获取已删除商品列表失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取已删除商品列表失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	log.Info("获取已删除商品列表成功",
+		logger.F("total", total),
+		logger.F("count", len(products)))
+
+	c.JSON(http.StatusOK, gin.H{
+		"items":    products,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	})
+}
+
+// RestoreProduct 恢复已删除的商品
+func (pc *ProductController) RestoreProduct(c *gin.Context) {
+	// 创建请求日志
+	log := logger.WithContext(c)
+
+	id := c.Param("id")
+	log.Info("恢复已删除商品", logger.F("product_id", id))
+
+	// 检查商品是否存在且已被删除
+	var product models.Product
+	if err := pc.db.Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&product).Error; err != nil {
+		log.Warn("已删除商品不存在", logger.F("product_id", id), logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrNotFound).
+			WithDetails("已删除商品不存在").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 检查SKU是否已被其他商品使用
+	var existingProduct models.Product
+	if err := pc.db.Where("sku = ? AND id != ?", product.SKU, id).First(&existingProduct).Error; err == nil {
+		log.Warn("SKU已被其他商品使用",
+			logger.F("sku", product.SKU),
+			logger.F("existing_product_id", existingProduct.ID))
+		appErr := errors.New(errors.ErrConflict).
+			WithDetails("商品SKU已被其他商品使用，无法恢复").
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 开始事务
+	tx := pc.db.Begin()
+
+	// 恢复商品
+	if err := tx.Unscoped().Model(&models.Product{}).Where("id = ?", id).Update("deleted_at", nil).Error; err != nil {
+		tx.Rollback()
+		log.Error("恢复商品失败",
+			logger.F("product_id", id),
+			logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseUpdate).
+			WithDetails("恢复商品失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 恢复商品变体
+	if err := tx.Unscoped().Model(&models.ProductVariant{}).Where("product_id = ?", id).Update("deleted_at", nil).Error; err != nil {
+		tx.Rollback()
+		log.Error("恢复商品变体失败",
+			logger.F("product_id", id),
+			logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseUpdate).
+			WithDetails("恢复商品变体失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		log.Error("提交事务失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseUpdate).
+			WithDetails("提交事务失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	log.Info("恢复商品成功",
+		logger.F("product_id", id),
+		logger.F("sku", product.SKU))
+
+	c.JSON(http.StatusOK, gin.H{"message": "商品恢复成功"})
 }

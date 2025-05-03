@@ -17,6 +17,12 @@ type Config struct {
 	JWT      JWTConfig
 	Log      LogConfig
 	CORS     CORSConfig
+	Wechat   WechatConfig // Add WechatConfig
+}
+
+// WechatConfig 微信配置
+type WechatConfig struct {
+	Token string // 微信公众号 Token
 }
 
 // ServerConfig 服务器配置
@@ -174,6 +180,9 @@ func setDefaultConfig() {
 	viper.SetDefault("cors.exposed_headers", []string{"Content-Length"})
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", 86400)
+
+	// 微信配置
+	viper.SetDefault("wechat.token", "your_wechat_token") // Set a default WeChat Token
 }
 
 // GetDBConfig 获取数据库连接配置
@@ -268,4 +277,13 @@ func GetCORSConfig() CORSConfig {
 	}
 
 	return AppConfig.CORS
+}
+
+// GetWechatToken 获取微信公众号 Token
+func GetWechatToken() string {
+	// 如果配置未初始化，则初始化配置
+	if AppConfig.Wechat.Token == "" {
+		InitConfig()
+	}
+	return AppConfig.Wechat.Token
 }

@@ -7,6 +7,7 @@ import ProductList from '../views/ProductList.vue'
 import ProductCreate from '../views/ProductCreate.vue'
 import ProductEdit from '../views/ProductEdit.vue'
 import ProductFormNew from '../views/ProductFormNew.vue'
+import ProductDeletedList from '../views/ProductDeletedList.vue'
 import InventoryList from '../views/InventoryList.vue'
 import MemberList from '../views/MemberList.vue'
 import MemberCreate from '../views/MemberCreate.vue'
@@ -66,6 +67,12 @@ const routes = [
     name: 'ProductEdit',
     component: ProductFormNew,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/products/deleted',
+    name: 'ProductDeletedList',
+    component: ProductDeletedList,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/inventory',
@@ -179,8 +186,16 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const userJson = localStorage.getItem('user') || '{}'
-  const userInfo = JSON.parse(userJson)
+  let userInfo = {}
+  try {
+    const userJson = localStorage.getItem('user')
+    if (userJson) {
+      userInfo = JSON.parse(userJson)
+    }
+  } catch (error) {
+    console.error('解析用户信息失败:', error)
+    // 如果解析失败，使用空对象作为默认值
+  }
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
 

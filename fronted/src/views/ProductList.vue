@@ -2,9 +2,14 @@
   <div class="product-list">
     <div class="page-header">
       <h1 class="page-title">商品管理</h1>
-      <n-button type="primary" @click="handleAddProduct">
-        添加商品
-      </n-button>
+      <div class="page-actions">
+        <n-button @click="viewDeletedProducts" type="info">
+          查看已删除商品
+        </n-button>
+        <n-button type="primary" @click="handleAddProduct">
+          添加商品
+        </n-button>
+      </div>
     </div>
 
     <div class="page-content">
@@ -77,9 +82,11 @@ import { ref, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NButton, NDataTable, NInput, NSelect, NSpace, useMessage,
-  NCollapse, NCollapseItem, NCard
+  NCollapse, NCollapseItem, NCard, NPopconfirm, NIcon
 } from 'naive-ui'
+import { RefreshOutline } from '@vicons/ionicons5'
 import productService from '../services/product'
+import { convertBackendFields } from '../utils/fieldConverter'
 
 // 路由和消息
 const router = useRouter()
@@ -89,7 +96,7 @@ const message = useMessage()
 const loading = ref(false)
 const products = ref([])
 const rawResponse = ref(null) // 原始响应数据
-const showDebug = ref(false) // 默认不显示调试信息
+const showDebug = ref(true) // 显示调试信息
 
 const pagination = reactive({
   page: 1,
@@ -110,21 +117,50 @@ const searchForm = reactive({
 })
 
 // 类别选项
-const categoryOptions = [
-  { label: '外套', value: '外套' },
-  { label: '裤装', value: '裤装' },
-  { label: '衬衫', value: '衬衫' },
-  { label: 'T恤', value: 'T恤' },
-  { label: '内衣', value: '内衣' },
-  { label: '配饰', value: '配饰' }
-]
+const categoryOptions = ref([])
+
+// 加载字典数据
+const loadDictionaryItems = async (code, options) => {
+  try {
+    const dictionaryService = (await import('../services/dictionary')).default
+    const items = await dictionaryService.getDictionaryItems(code)
+    console.log(`原始字典项数据: ${code}`, items)
+
+    // 检查字典项数据结构
+    if (items && items.length > 0) {
+      console.log('字典项第一项字段:', Object.keys(items[0]))
+    }
+
+    // 构建选项
+    options.value = items.map(item => {
+      // 处理字段名称不一致的情况
+      const name = item.Name || item.name || ''
+      const id = item.ID || item.id || 0
+      const status = item.Status !== undefined ? item.Status : (item.status !== undefined ? item.status : true)
+
+      return {
+        label: name,
+        value: id,
+        disabled: !status // 根据状态设置是否禁用
+      }
+    })
+
+    console.log(`字典项加载成功: ${code}`, options.value)
+  } catch (error) {
+    console.error(`加载${code}字典数据失败:`, error)
+    message.error(`加载${code}字典数据失败: ${error.message || '未知错误'}`)
+  }
+}
 
 // 表格列定义
 const columns = [
   {
     title: 'ID',
     key: 'id',
-    width: 80
+    width: 80,
+    render(row) {
+      return row.id || '-'
+    }
   },
   {
     title: 'SKU',
@@ -200,13 +236,23 @@ const columns = [
             { default: () => '编辑' }
           ),
           h(
-            NButton,
+            NPopconfirm,
             {
-              size: 'small',
-              type: 'error',
-              onClick: () => handleDelete(row)
+              onPositiveClick: () => handleDelete(row),
+              negativeText: '取消',
+              positiveText: '确定'
             },
-            { default: () => '删除' }
+            {
+              trigger: () => h(
+                NButton,
+                {
+                  size: 'small',
+                  type: 'error'
+                },
+                { default: () => '删除' }
+              ),
+              default: () => `确定要删除商品 ${row.name || 'ID: ' + row.id} 吗？`
+            }
           )
         ]
       })
@@ -227,6 +273,14 @@ const loadProducts = async () => {
       category: searchForm.category || undefined
     }
 
+    // 将参数转换为后端需要的格式（首字母大写）
+    if (params.category) {
+      params.category_id = params.category
+      delete params.category
+    }
+
+    console.log('查询参数:', params)
+
     // 调用API获取商品数据
     const response = await productService.getProducts(params)
 
@@ -238,80 +292,44 @@ const loadProducts = async () => {
 
     // 处理响应数据
     if (response.items && response.total !== undefined) {
-      // 如果返回的是分页数据结构
-      // 将字段名称转换为小写并处理关联对象
-      products.value = response.items.map(item => ({
-        id: item.ID,
-        sku: item.SKU,
-        name: item.Name,
-        category: item.Category?.Name || '-',
-        color: item.Color?.Name || '-',
-        size: item.Size?.Name || '-',
-        season: item.Season?.Name || '-',
-        costPrice: item.CostPrice,
-        retailPrice: item.RetailPrice,
-        image: item.Image
-      }))
+      console.log('原始响应数据:', JSON.stringify(response.items, null, 2))
+
+      // 确保每个商品都有必要的字段
+      products.value = response.items.map(item => {
+        // 检查原始字段名称
+        console.log('单个商品原始数据:', item)
+        console.log('商品字段名称:', Object.keys(item))
+
+        // 使用原始字段名称或转换后的字段名称
+        const id = item.ID !== undefined ? item.ID : (item.id || 0)
+        const sku = item.SKU !== undefined ? item.SKU : (item.sku || '')
+
+        return {
+          ...item,
+          // 确保必要字段存在，避免空值错误
+          id: id,
+          sku: sku,
+          name: item.Name || item.name || '',
+          category: item.Category?.Name || (item.category?.name) || '-',
+          color: item.Color?.Name || (item.color?.name) || '-',
+          size: item.Size?.Name || (item.size?.name) || '-',
+          season: item.Season?.Name || (item.season?.name) || '-',
+          costPrice: item.CostPrice || item.costPrice || 0,
+          retailPrice: item.RetailPrice || item.retailPrice || 0
+        }
+      })
+
       pagination.itemCount = response.total
-      console.log('处理后的商品数据:', JSON.stringify(products.value, null, 2))
+      console.log('处理后的商品数据:', products.value)
     } else {
-      // 如果返回的是简单数组
-      // 将字段名称转换为小写并处理关联对象
-      products.value = Array.isArray(response) ? response.map(item => ({
-        id: item.ID,
-        sku: item.SKU,
-        name: item.Name,
-        category: item.Category?.Name || '-',
-        color: item.Color?.Name || '-',
-        size: item.Size?.Name || '-',
-        season: item.Season?.Name || '-',
-        costPrice: item.CostPrice,
-        retailPrice: item.RetailPrice,
-        image: item.Image
-      })) : []
-      pagination.itemCount = products.value.length
-      console.log('处理后的商品数据:', JSON.stringify(products.value, null, 2))
+      products.value = []
+      pagination.itemCount = 0
     }
   } catch (error) {
     console.error('加载商品列表失败:', error)
     message.error('加载商品列表失败: ' + (error.response?.data?.error || '未知错误'))
-    // 如果API调用失败，使用模拟数据以便于测试
-    products.value = [
-      {
-        id: 1,
-        sku: 'MS001',
-        name: '男士休闲衬衫',
-        category: '衬衫',
-        color: '白色',
-        size: 'L',
-        season: '春季',
-        costPrice: 89.00,
-        retailPrice: 199.00
-      },
-      {
-        id: 2,
-        sku: 'WD001',
-        name: '女士连衣裙',
-        category: '裤装',
-        color: '蓝色',
-        size: 'M',
-        season: '夏季',
-        costPrice: 120.00,
-        retailPrice: 299.00
-      },
-      {
-        id: 3,
-        sku: 'MT001',
-        name: '男士T恤',
-        category: 'T恤',
-        color: '黑色',
-        size: 'XL',
-        season: '夏季',
-        costPrice: 45.00,
-        retailPrice: 99.00
-      }
-    ]
-    pagination.itemCount = products.value.length
+    products.value = []
+    pagination.itemCount = 0
   } finally {
     loading.value = false
   }
@@ -359,21 +377,28 @@ const handleEdit = (row) => {
 }
 
 const handleDelete = (row) => {
-  if (confirm(`确定要删除商品 ${row.name} 吗？`)) {
-    productService.deleteProduct(row.id)
-      .then(() => {
-        message.success('删除成功')
-        loadProducts()
-      })
-      .catch(error => {
-        console.error('删除商品失败:', error)
-        message.error('删除失败: ' + (error.response?.data?.error || '未知错误'))
-      })
-  }
+  loading.value = true
+  productService.deleteProduct(row.id)
+    .then(() => {
+      message.success('删除成功')
+      loadProducts()
+    })
+    .catch(error => {
+      console.error('删除商品失败:', error)
+      message.error('删除失败: ' + (error.response?.data?.error || '未知错误'))
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+const viewDeletedProducts = () => {
+  router.push('/products/deleted')
 }
 
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
+  await loadDictionaryItems('category', categoryOptions)
   loadProducts()
 })
 </script>
@@ -390,6 +415,11 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
+.page-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .page-title {
   margin: 0;
   font-size: 20px;
@@ -403,5 +433,9 @@ onMounted(() => {
 .table-search {
   display: flex;
   gap: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
 }
 </style>

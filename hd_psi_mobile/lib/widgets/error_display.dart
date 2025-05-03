@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+
+class ErrorDisplay extends StatelessWidget {
+  final String error;
+  final VoidCallback? onRetry;
+
+  const ErrorDisplay({super.key, required this.error, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 60),
+            const SizedBox(height: 16),
+            Text(
+              error,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: ElevatedButton(
+                  onPressed: onRetry,
+                  child: const Text('重试'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

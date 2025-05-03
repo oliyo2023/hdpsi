@@ -39,6 +39,7 @@ const (
 
 type Member struct {
 	ID               uint   `gorm:"primaryKey"`
+	OpenID           string `gorm:"size:50;uniqueIndex"` // 微信 OpenID
 	Name             string `gorm:"size:50;not null"`
 	Phone            string `gorm:"size:20;uniqueIndex"`
 	Gender           string `gorm:"size:10"`
