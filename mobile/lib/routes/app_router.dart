@@ -12,6 +12,8 @@ import '../screens/member_add_screen.dart';
 import '../screens/member_detail_screen.dart';
 import '../screens/member_edit_screen.dart';
 import '../screens/member_transactions_screen.dart';
+import '../screens/inventory_list_screen.dart';
+import '../screens/settings_screen.dart';
 
 /// 应用路由配置
 class AppRouter {
@@ -29,6 +31,8 @@ class AppRouter {
   static const String memberDetail = '/members/detail';
   static const String memberEdit = '/members/edit';
   static const String memberTransactions = '/members/transactions';
+  static const String inventory = '/inventory';
+  static const String settings = '/settings';
 
   /// 获取应用路由表
   static Map<String, WidgetBuilder> get routes => {
@@ -40,6 +44,8 @@ class AppRouter {
     scanCheckout: (context) => const ScanCheckoutScreen(),
     members: (context) => const MemberListScreen(),
     memberAdd: (context) => const MemberAddScreen(),
+    inventory: (context) => const InventoryListScreen(),
+    settings: (context) => const SettingsScreen(),
   };
 
   /// 处理需要参数的路由

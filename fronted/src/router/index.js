@@ -9,6 +9,9 @@ import ProductEdit from '../views/ProductEdit.vue'
 import ProductFormNew from '../views/ProductFormNew.vue'
 import ProductDeletedList from '../views/ProductDeletedList.vue'
 import InventoryList from '../views/InventoryList.vue'
+import InventoryCheckList from '../views/InventoryCheckList.vue'
+import InventoryCheckDetail from '../views/InventoryCheckDetail.vue'
+import InventoryCheckCreate from '../views/InventoryCheckCreate.vue'
 import MemberList from '../views/MemberList.vue'
 import MemberCreate from '../views/MemberCreate.vue'
 import MemberEdit from '../views/MemberEdit.vue'
@@ -78,6 +81,24 @@ const routes = [
     path: '/inventory',
     name: 'InventoryList',
     component: InventoryList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory-checks',
+    name: 'InventoryCheckList',
+    component: InventoryCheckList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory-checks/create',
+    name: 'InventoryCheckCreate',
+    component: InventoryCheckCreate,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory-checks/:id',
+    name: 'InventoryCheckDetail',
+    component: InventoryCheckDetail,
     meta: { requiresAuth: true }
   },
   {
