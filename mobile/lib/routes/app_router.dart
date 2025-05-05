@@ -14,6 +14,7 @@ import '../screens/member_edit_screen.dart';
 import '../screens/member_transactions_screen.dart';
 import '../screens/inventory_list_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/sku_generator_screen.dart';
 
 /// 应用路由配置
 class AppRouter {
@@ -33,6 +34,7 @@ class AppRouter {
   static const String memberTransactions = '/members/transactions';
   static const String inventory = '/inventory';
   static const String settings = '/settings';
+  static const String skuGenerator = '/sku-generator';
 
   /// 获取应用路由表
   static Map<String, WidgetBuilder> get routes => {
@@ -46,6 +48,7 @@ class AppRouter {
     memberAdd: (context) => const MemberAddScreen(),
     inventory: (context) => const InventoryListScreen(),
     settings: (context) => const SettingsScreen(),
+    skuGenerator: (context) => const SkuGeneratorScreen(),
   };
 
   /// 处理需要参数的路由
