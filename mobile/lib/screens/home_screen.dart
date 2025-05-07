@@ -145,6 +145,16 @@ class HomeScreen extends StatelessWidget {
                                     context,
                                   ).pushNamed('/inventory'),
                             ),
+                            _buildQuickAction(
+                              context,
+                              icon: Icons.qr_code,
+                              title: 'SKU生成',
+                              color: Colors.purple,
+                              onTap:
+                                  () => Navigator.of(
+                                    context,
+                                  ).pushNamed('/sku-generator'),
+                            ),
                           ],
                         ),
                       ],
@@ -195,6 +205,14 @@ class HomeScreen extends StatelessWidget {
                         Colors.amber.shade800,
                         '查看销售数据和报表',
                         () {},
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        'SKU生成器',
+                        Icons.qr_code,
+                        Colors.purple,
+                        '生成商品SKU编码',
+                        () => Navigator.of(context).pushNamed('/sku-generator'),
                       ),
                     ]),
                   ),

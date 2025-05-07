@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import '../models/product.dart';
 import '../utils/config.dart';
+import '../utils/logger.dart';
 import 'api_service.dart';
 
 class ProductService {
@@ -59,6 +60,7 @@ class ProductService {
     try {
       final response = await _apiService.get('${AppConfig.productsPath}/$id');
 
+      Logger.d('ProductService', 'Raw API response for product $id: $response');
       return Product.fromJson(response['product']);
     } catch (e) {
       rethrow;

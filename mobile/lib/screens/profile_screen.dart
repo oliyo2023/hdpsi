@@ -168,6 +168,14 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         _buildSettingItem(
                           context,
+                          icon: Icons.settings,
+                          title: '系统设置',
+                          onTap: () {
+                            Navigator.of(context).pushNamed('/settings');
+                          },
+                        ),
+                        _buildSettingItem(
+                          context,
                           icon: Icons.info,
                           title: '关于我们',
                           onTap: () {

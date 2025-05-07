@@ -507,35 +507,107 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	// 删除旧的变体
-	if err := tx.Where("product_id = ?", product.ID).Delete(&models.ProductVariant{}).Error; err != nil {
+	// Fetch existing variants
+	var existingVariants []models.ProductVariant
+	if err := tx.Where("product_id = ?", product.ID).Find(&existingVariants).Error; err != nil {
 		tx.Rollback()
-		log.Error("删除旧变体失败",
+		log.Error("获取现有变体失败",
 			logger.F("product_id", product.ID),
 			logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseDelete).
-			WithDetails("删除旧变体失败").
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取现有变体失败").
 			WithError(err).
 			WithRequestID(c.GetString("request_id"))
 		c.Error(appErr)
 		return
 	}
 
-	// 创建新的变体
+	// Map existing variants by ID for quick lookup
+	existingVariantsMap := make(map[uint]models.ProductVariant)
+	for _, variant := range existingVariants {
+		existingVariantsMap[variant.ID] = variant
+	}
+
+	// Map incoming variant IDs to track which ones are still present
+	incomingVariantIDs := make(map[uint]bool)
+
+	// Process incoming variants (update or create)
 	for i := range input.Variants {
-		input.Variants[i].ProductID = product.ID
-		if err := tx.Create(&input.Variants[i]).Error; err != nil {
-			tx.Rollback()
-			log.Error("创建商品变体失败",
-				logger.F("product_id", product.ID),
-				logger.F("variant_index", i),
-				logger.F("error", err.Error()))
-			appErr := errors.New(errors.ErrDatabaseInsert).
-				WithDetails("创建商品变体失败").
-				WithError(err).
-				WithRequestID(c.GetString("request_id"))
-			c.Error(appErr)
-			return
+		variant := &input.Variants[i]  // Use pointer to modify in place
+		variant.ProductID = product.ID // Ensure ProductID is set
+
+		if variant.ID != 0 { // If variant has an ID, check if it exists
+			if _, exists := existingVariantsMap[variant.ID]; exists {
+				// Variant exists, update it
+				if err := tx.Save(variant).Error; err != nil {
+					tx.Rollback()
+					log.Error("更新商品变体失败",
+						logger.F("product_id", product.ID),
+						logger.F("variant_id", variant.ID),
+						logger.F("error", err.Error()))
+					appErr := errors.New(errors.ErrDatabaseUpdate).
+						WithDetails("更新商品变体失败").
+						WithError(err).
+						WithRequestID(c.GetString("request_id"))
+					c.Error(appErr)
+					return
+				}
+				incomingVariantIDs[variant.ID] = true // Mark as processed
+			} else {
+				// Variant has an ID but doesn't exist (shouldn't happen if frontend sends correct data, but handle defensively)
+				// Treat as new variant
+				variant.ID = 0 // Reset ID to let GORM create a new one
+				if err := tx.Create(variant).Error; err != nil {
+					tx.Rollback()
+					log.Error("创建商品变体失败 (ID不存在)",
+						logger.F("product_id", product.ID),
+						logger.F("variant_index", i),
+						logger.F("error", err.Error()))
+					appErr := errors.New(errors.ErrDatabaseInsert).
+						WithDetails("创建商品变体失败").
+						WithError(err).
+						WithRequestID(c.GetString("request_id"))
+					c.Error(appErr)
+					return
+				}
+				incomingVariantIDs[variant.ID] = true // Mark as processed with new ID
+			}
+		} else {
+			// New variant (no ID provided)
+			if err := tx.Create(variant).Error; err != nil {
+				tx.Rollback()
+				log.Error("创建商品变体失败",
+					logger.F("product_id", product.ID),
+					logger.F("variant_index", i),
+					logger.F("error", err.Error()))
+				appErr := errors.New(errors.ErrDatabaseInsert).
+					WithDetails("创建商品变体失败").
+					WithError(err).
+					WithRequestID(c.GetString("request_id"))
+				c.Error(appErr)
+				return
+			}
+			incomingVariantIDs[variant.ID] = true // Mark as processed with new ID
+		}
+	}
+
+	// Delete variants that are no longer in the input
+	for variantID, existingVariant := range existingVariantsMap {
+		if _, exists := incomingVariantIDs[variantID]; !exists {
+			// Variant exists in DB but not in incoming list, delete it
+			if err := tx.Delete(&existingVariant).Error; err != nil {
+				tx.Rollback()
+				log.Error("删除商品变体失败",
+					logger.F("product_id", product.ID),
+					logger.F("variant_id", variantID),
+					logger.F("error", err.Error()))
+				appErr := errors.New(errors.ErrDatabaseDelete).
+					WithDetails("删除商品变体失败").
+					WithError(err).
+					WithRequestID(c.GetString("request_id"))
+				c.Error(appErr)
+				return
+			}
 		}
 	}
 

@@ -27,7 +27,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   bool _isPricingExpanded = false;
   bool _isVariantsExpanded = false;
   bool _isImagesExpanded = false;
-  bool _isLoaded = false;
 
   @override
   void initState() {
@@ -48,6 +47,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
 
     final product = productProvider.selectedProduct;
     if (product != null && mounted) {
+      print('Product object after fromJson: $product');
       // 初始化变体列表
       if (product.variants != null) {
         setState(() {
@@ -76,20 +76,16 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       }
 
       // 初始化表单数据
-      _formKey.currentState?.patchValue({
-        'name': product.name,
-        'sku': product.sku,
-        'categoryId': product.categoryId,
-        'brandId': product.brandId,
-        'description': product.description,
-        'costPrice': product.costPrice.toString(),
-        'retailPrice': product.retailPrice.toString(),
-        'status': product.status,
-      });
-
-      setState(() {
-        _isLoaded = true;
-      });
+      print('Data used to patch form: {');
+      print('  name: ${product.name},');
+      print('  sku: ${product.sku},');
+      print('  categoryId: ${product.categoryId},');
+      print('  brandId: ${product.brandId},');
+      print('  description: ${product.description},');
+      print('  costPrice: ${product.costPrice.toString()},');
+      print('  retailPrice: ${product.retailPrice.toString()},');
+      print('  status: ${product.status},');
+      print('}');
     }
   }
 
@@ -99,11 +95,11 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       appBar: AppBar(title: const Text('编辑商品')),
       body: Consumer<ProductProvider>(
         builder: (context, productProvider, child) {
-          if (productProvider.isLoading && !_isLoaded) {
+          if (productProvider.isLoading) {
             return const LoadingIndicator(message: '加载商品详情中...');
           }
 
-          if (productProvider.error != null && !_isLoaded) {
+          if (productProvider.error != null) {
             return ErrorDisplay(
               error: productProvider.error!,
               onRetry: _loadProductDetails,
@@ -111,14 +107,25 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
           }
 
           final product = productProvider.selectedProduct;
-          if (product == null && !_isLoaded) {
+          if (product == null) {
             return const Center(child: Text('商品不存在或已被删除'));
           }
 
+          // Data is loaded, build the form
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: FormBuilder(
               key: _formKey,
+              initialValue: {
+                'name': product.name,
+                'sku': product.sku,
+                'categoryId': product.categoryId,
+                'brandId': product.brandId,
+                'description': product.description,
+                'costPrice': product.costPrice.toString(),
+                'retailPrice': product.retailPrice.toString(),
+                'status': product.status,
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -265,7 +272,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                     },
                     children: [
                       // 现有图片预览
-                      if (product != null && product.images.isNotEmpty)
+                      if (product.images.isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -427,7 +434,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   const SizedBox(height: 24.0),
 
                   // 错误信息
-                  if (productProvider.error != null && _isLoaded)
+                  if (productProvider.error != null) // Removed _isLoaded check
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: Text(
@@ -444,7 +451,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                       onPressed:
                           productProvider.isLoading
                               ? null
-                              : () => _submitForm(product!),
+                              : () => _submitForm(
+                                product,
+                              ), // product is guaranteed non-null here
                       child:
                           productProvider.isLoading
                               ? const SizedBox(
@@ -797,8 +806,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         id: product.id,
         sku: formData['sku'],
         name: formData['name'],
-        categoryId: formData['categoryId'],
-        brandId: formData['brandId'],
+        categoryId: int.tryParse(formData['categoryId']?.toString() ?? ''),
+        brandId: int.tryParse(formData['brandId']?.toString() ?? ''),
         image: product.image,
         images: product.images,
         description: formData['description'] ?? '',
@@ -806,7 +815,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         retailPrice: retailPrice,
         status: formData['status'] ?? true,
         createdAt: product.createdAt,
-        updatedAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
       );
 
       // 创建变体列表

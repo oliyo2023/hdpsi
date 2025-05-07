@@ -106,18 +106,15 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		}
 
 		// 库存管理路由
-		// TODO: 实现库存管理控制器
-		/*
-			inventoryController := controllers.NewInventoryController(db)
-			inventoryGroup := apiAuth.Group("/inventory")
-			{
-				inventoryGroup.GET("", inventoryController.ListInventories)
-				inventoryGroup.GET("/:id", inventoryController.GetInventory)
-				inventoryGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
-				inventoryGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
-				inventoryGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryController.DeleteInventory)
-			}
-		*/
+		inventoryController := controllers.NewInventoryController(db)
+		inventoryGroup := apiAuth.Group("/inventory")
+		{
+			inventoryGroup.GET("", inventoryController.ListInventories)
+			inventoryGroup.GET("/:id", inventoryController.GetInventory)
+			inventoryGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
+			inventoryGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
+			inventoryGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryController.DeleteInventory)
+		}
 
 		// 供应商管理路由
 		supplierController := controllers.NewSupplierController(db)

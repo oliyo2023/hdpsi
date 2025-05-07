@@ -218,7 +218,18 @@ const menuOptions = computed(() => {
       label: '库存管理',
       key: 'inventory',
       icon: StorefrontOutline,
-      path: '/inventory'
+      children: [
+        {
+          label: '库存列表',
+          key: 'inventory-list',
+          path: '/inventory'
+        },
+        {
+          label: '库存盘点',
+          key: 'inventory-check',
+          path: '/inventory-checks'
+        }
+      ]
     },
     {
       label: '采购管理',
@@ -357,6 +368,8 @@ const getPageTitle = () => {
     '/dashboard': '仪表盘',
     '/products': '商品管理',
     '/inventory': '库存管理',
+    '/inventory-checks': '库存盘点',
+    '/inventory-checks/create': '创建盘点单',
     '/members': '会员管理',
     '/purchases': '采购管理',
     '/suppliers': '供应商管理',
@@ -377,6 +390,13 @@ const getPageTitle = () => {
 
   if (path.startsWith('/suppliers/')) {
     return '供应商详情'
+  }
+
+  if (path.startsWith('/inventory-checks/')) {
+    if (path.includes('create')) {
+      return '创建盘点单'
+    }
+    return '盘点单详情'
   }
 
   return pageTitles[path] || '服装进销存系统'

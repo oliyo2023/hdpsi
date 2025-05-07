@@ -1,6 +1,29 @@
 class AppConfig {
-  // API基础URL
-  static const String apiBaseUrl = 'http://192.168.1.4:8081';
+  // API基础URL - 默认值，可以通过setApiBaseUrl方法修改
+  static String _apiBaseUrl = 'http://localhost:8080';
+
+  // 获取当前API基础URL
+  static String get apiBaseUrl => _apiBaseUrl;
+
+  // 设置API基础URL
+  static void setApiBaseUrl(String url) {
+    _apiBaseUrl = url;
+  }
+
+  // 预定义的环境配置
+  static const Map<String, String> environments = {
+    'local': 'http://localhost:8080',
+    'dev': 'http://192.168.1.7:8081',
+    'test': 'http://test-api.example.com',
+    'prod': 'https://api.example.com',
+  };
+
+  // 设置预定义环境
+  static void setEnvironment(String env) {
+    if (environments.containsKey(env)) {
+      _apiBaseUrl = environments[env]!;
+    }
+  }
 
   // API路径
   static const String loginPath = '/api/auth/login';

@@ -9,7 +9,7 @@ class Inventory {
   final String updatedAt;
   final Map<String, dynamic>? store;
   final Map<String, dynamic>? productVariant;
-  
+
   Inventory({
     required this.id,
     required this.storeId,
@@ -22,22 +22,38 @@ class Inventory {
     this.store,
     this.productVariant,
   });
-  
+
   factory Inventory.fromJson(Map<String, dynamic> json) {
     return Inventory(
-      id: json['ID'],
-      storeId: json['StoreID'],
-      productVariantId: json['ProductVariantID'],
-      quantity: json['Quantity'],
-      alertQuantity: json['AlertQuantity'],
-      lastCheckTime: json['LastCheckTime'],
-      createdAt: json['CreatedAt'],
-      updatedAt: json['UpdatedAt'],
-      store: json['Store'],
-      productVariant: json['ProductVariant'],
+      id: json['ID'] ?? json['id'] ?? 0,
+      storeId: json['StoreID'] ?? json['storeId'] ?? json['store_id'] ?? 0,
+      productVariantId:
+          json['ProductVariantID'] ??
+          json['productVariantId'] ??
+          json['product_variant_id'] ??
+          0,
+      quantity: json['Quantity'] ?? json['quantity'] ?? 0,
+      alertQuantity:
+          json['AlertQuantity'] ??
+          json['alertQuantity'] ??
+          json['alert_quantity'] ??
+          0,
+      lastCheckTime:
+          json['LastCheckTime'] ??
+          json['lastCheckTime'] ??
+          json['last_check_time'],
+      createdAt:
+          json['CreatedAt'] ?? json['createdAt'] ?? json['created_at'] ?? '',
+      updatedAt:
+          json['UpdatedAt'] ?? json['updatedAt'] ?? json['updated_at'] ?? '',
+      store: json['Store'] ?? json['store'],
+      productVariant:
+          json['ProductVariant'] ??
+          json['productVariant'] ??
+          json['product_variant'],
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'ID': id,
@@ -68,7 +84,7 @@ class InventoryTransaction {
   final String note;
   final String createdAt;
   final String updatedAt;
-  
+
   InventoryTransaction({
     required this.id,
     required this.transactionType,
@@ -84,25 +100,44 @@ class InventoryTransaction {
     required this.createdAt,
     required this.updatedAt,
   });
-  
+
   factory InventoryTransaction.fromJson(Map<String, dynamic> json) {
     return InventoryTransaction(
-      id: json['ID'],
-      transactionType: json['TransactionType'],
-      productVariantId: json['ProductVariantID'],
-      storeId: json['StoreID'],
-      quantity: json['Quantity'],
-      batchNumber: json['BatchNumber'],
-      sourceStoreId: json['SourceStoreID'],
-      referenceId: json['ReferenceID'],
-      referenceType: json['ReferenceType'],
-      operatorId: json['OperatorID'],
-      note: json['Note'] ?? '',
-      createdAt: json['CreatedAt'],
-      updatedAt: json['UpdatedAt'],
+      id: json['ID'] ?? json['id'] ?? 0,
+      transactionType:
+          json['TransactionType'] ??
+          json['transactionType'] ??
+          json['transaction_type'] ??
+          '',
+      productVariantId:
+          json['ProductVariantID'] ??
+          json['productVariantId'] ??
+          json['product_variant_id'] ??
+          0,
+      storeId: json['StoreID'] ?? json['storeId'] ?? json['store_id'] ?? 0,
+      quantity: json['Quantity'] ?? json['quantity'] ?? 0,
+      batchNumber:
+          json['BatchNumber'] ?? json['batchNumber'] ?? json['batch_number'],
+      sourceStoreId:
+          json['SourceStoreID'] ??
+          json['sourceStoreId'] ??
+          json['source_store_id'],
+      referenceId:
+          json['ReferenceID'] ?? json['referenceId'] ?? json['reference_id'],
+      referenceType:
+          json['ReferenceType'] ??
+          json['referenceType'] ??
+          json['reference_type'],
+      operatorId:
+          json['OperatorID'] ?? json['operatorId'] ?? json['operator_id'] ?? 0,
+      note: json['Note'] ?? json['note'] ?? '',
+      createdAt:
+          json['CreatedAt'] ?? json['createdAt'] ?? json['created_at'] ?? '',
+      updatedAt:
+          json['UpdatedAt'] ?? json['updatedAt'] ?? json['updated_at'] ?? '',
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'ID': id,

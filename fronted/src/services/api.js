@@ -84,29 +84,34 @@ api.interceptors.response.use(
         try {
           // 尝试使用刷新令牌获取新的访问令牌
           const refreshToken = localStorage.getItem('refreshToken')
-          if (refreshToken) {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true'
-
-            // 引入auth服务
-            const auth = await import('./auth').then(module => module.default)
-
-            // 尝试刷新令牌
-            const response = await auth.refreshToken(refreshToken, rememberMe)
-
-            // 更新本地存储
-            localStorage.setItem('token', response.token)
-            localStorage.setItem('refreshToken', response.refresh_token)
-            localStorage.setItem('tokenExpires', response.expires_at)
-            if (response.user) {
-              localStorage.setItem('user', JSON.stringify(response.user))
-            }
-
-            // 更新原始请求的认证信息
-            originalRequest.headers['Authorization'] = `Bearer ${response.token}`
-
-            // 重新发送原始请求
-            return axios(originalRequest)
+          if (!refreshToken || refreshToken === 'undefined') {
+            // 如果没有刷新令牌或值为undefined，直接跳转到登录页
+            console.error('刷新令牌不存在或无效:', refreshToken)
+            throw new Error('刷新令牌不存在或无效')
           }
+
+          const rememberMe = localStorage.getItem('rememberMe') === 'true'
+
+          // 引入auth服务
+          const auth = await import('./auth').then(module => module.default)
+
+          // 尝试刷新令牌
+          console.log('尝试刷新令牌:', refreshToken)
+          const response = await auth.refreshToken(refreshToken, rememberMe)
+
+          // 更新本地存储
+          localStorage.setItem('token', response.token)
+          localStorage.setItem('refreshToken', response.refresh_token)
+          localStorage.setItem('tokenExpires', response.expires_at)
+          if (response.user) {
+            localStorage.setItem('user', JSON.stringify(response.user))
+          }
+
+          // 更新原始请求的认证信息
+          originalRequest.headers['Authorization'] = `Bearer ${response.token}`
+
+          // 重新发送原始请求
+          return axios(originalRequest)
         } catch (refreshError) {
           console.error('刷新令牌失败:', refreshError)
 
@@ -115,12 +120,23 @@ api.interceptors.response.use(
           localStorage.removeItem('refreshToken')
           localStorage.removeItem('tokenExpires')
           localStorage.removeItem('user')
+          localStorage.removeItem('rememberMe')
+
+          // 显示错误提示
+          handleError('登录已过期，请重新登录')
 
           // 重定向到登录页
           const currentPath = window.location.pathname
           if (currentPath !== '/login') {
-            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+            console.log('重定向到登录页面...')
+            // 使用延迟确保错误消息能够显示
+            setTimeout(() => {
+              window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+            }, 1000)
           }
+
+          // 中断Promise链，防止继续处理
+          return Promise.reject(new Error('登录已过期，请重新登录'))
         }
       } else if (status === 401) {
         // 如果已经尝试过刷新令牌依然失败，清除信息并重定向
@@ -128,12 +144,23 @@ api.interceptors.response.use(
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('tokenExpires')
         localStorage.removeItem('user')
+        localStorage.removeItem('rememberMe')
+
+        // 显示错误提示
+        handleError('登录已过期或无效，请重新登录')
 
         // 重定向到登录页
         const currentPath = window.location.pathname
         if (currentPath !== '/login') {
-          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+          console.log('重定向到登录页面...')
+          // 使用延迟确保错误消息能够显示
+          setTimeout(() => {
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+          }, 1000)
         }
+
+        // 中断Promise链
+        return Promise.reject(new Error('登录已过期或无效，请重新登录'))
       }
     }
 
