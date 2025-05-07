@@ -15,6 +15,10 @@ import '../screens/member_transactions_screen.dart';
 import '../screens/inventory_list_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/sku_generator_screen.dart';
+import '../screens/supplier_list_screen.dart';
+import '../screens/supplier_detail_screen.dart';
+import '../screens/supplier_edit_screen.dart';
+import '../models/supplier.dart'; // Import Supplier model
 
 /// 应用路由配置
 class AppRouter {
@@ -35,6 +39,10 @@ class AppRouter {
   static const String inventory = '/inventory';
   static const String settings = '/settings';
   static const String skuGenerator = '/sku-generator';
+  static const String suppliers = '/suppliers';
+  static const String supplierDetail = '/suppliers/detail';
+  static const String supplierEdit = '/suppliers/edit';
+  static const String supplierAdd = '/suppliers/add';
 
   /// 获取应用路由表
   static Map<String, WidgetBuilder> get routes => {
@@ -49,6 +57,9 @@ class AppRouter {
     inventory: (context) => const InventoryListScreen(),
     settings: (context) => const SettingsScreen(),
     skuGenerator: (context) => const SkuGeneratorScreen(),
+    suppliers: (context) => const SupplierListScreen(),
+    supplierAdd:
+        (context) => const SupplierEditScreen(), // Use edit screen for add
   };
 
   /// 处理需要参数的路由
@@ -78,6 +89,16 @@ class AppRouter {
         final memberId = settings.arguments as int;
         return MaterialPageRoute(
           builder: (context) => MemberTransactionsScreen(memberId: memberId),
+        );
+      case supplierDetail:
+        final supplierId = settings.arguments as int;
+        return MaterialPageRoute(
+          builder: (context) => SupplierDetailScreen(supplierId: supplierId),
+        );
+      case supplierEdit:
+        final supplier = settings.arguments as Supplier;
+        return MaterialPageRoute(
+          builder: (context) => SupplierEditScreen(supplier: supplier),
         );
       default:
         return null;

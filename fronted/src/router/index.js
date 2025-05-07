@@ -205,8 +205,12 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  // 获取认证信息
   const token = localStorage.getItem('token')
+  const refreshToken = localStorage.getItem('refreshToken')
+  const tokenExpires = localStorage.getItem('tokenExpires')
+
   let userInfo = {}
   try {
     const userJson = localStorage.getItem('user')
@@ -217,13 +221,33 @@ router.beforeEach((to, from, next) => {
     console.error('解析用户信息失败:', error)
     // 如果解析失败，使用空对象作为默认值
   }
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
 
   console.log('路由守卫中的用户信息:', userInfo)
 
-  // 如果需要认证且没有token，重定向到登录页
-  if (requiresAuth && !token) {
+  // 检查token是否有效
+  const isTokenValid = token && tokenExpires && new Date(tokenExpires) > new Date()
+
+  // 如果token即将过期，尝试刷新
+  if (token && tokenExpires && new Date(tokenExpires) - new Date() < 5 * 60 * 1000) {
+    console.log('Token即将过期，尝试刷新')
+    try {
+      // 动态导入auth服务
+      const authModule = await import('../services/auth')
+      const authService = authModule.default
+
+      // 尝试刷新token
+      await authService.tryRefreshToken()
+    } catch (error) {
+      console.error('刷新token失败:', error)
+    }
+  }
+
+  // 如果需要认证但没有有效token
+  if (requiresAuth && !isTokenValid) {
+    console.log('需要认证但没有有效token，重定向到登录页')
     next({ path: '/login', query: { redirect: to.fullPath } })
   }
   // 如果需要管理员权限但用户不是管理员
@@ -232,7 +256,8 @@ router.beforeEach((to, from, next) => {
     next({ path: '/dashboard' })
   }
   // 如果已登录且访问登录页，重定向到首页
-  else if (to.path === '/login' && token) {
+  else if (to.path === '/login' && isTokenValid) {
+    console.log('已登录，从登录页重定向到仪表盘')
     next({ path: '/dashboard' })
   }
   // 其他情况正常导航

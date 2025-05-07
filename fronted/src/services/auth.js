@@ -52,10 +52,17 @@ export default {
 
   // 刷新令牌
   refreshToken(refreshToken, rememberMe = false) {
+    // 验证刷新令牌是否有效
+    if (!refreshToken || refreshToken === 'undefined') {
+      return Promise.reject(new Error('刷新令牌不存在或无效'));
+    }
+
+    console.log('发送刷新令牌请求:', { refresh_token: refreshToken, remember_me: rememberMe });
+
     return api.post('/api/auth/refresh-token', {
       refresh_token: refreshToken,
       remember_me: rememberMe
-    })
+    });
   },
 
   // 忘记密码
@@ -73,10 +80,9 @@ export default {
 
   // 用户登出
   logout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('tokenExpires')
-    localStorage.removeItem('user')
+    // 使用统一的方法清除认证数据
+    this.clearAuthData()
+    console.log('用户登出，重定向到登录页面')
     window.location.href = '/login'
   },
 
@@ -104,12 +110,15 @@ export default {
   // 尝试刷新令牌
   async tryRefreshToken() {
     const refreshToken = localStorage.getItem('refreshToken')
-    if (!refreshToken) {
+    if (!refreshToken || refreshToken === 'undefined') {
+      console.error('刷新令牌不存在或无效:', refreshToken)
+      this.clearAuthData()
       return false
     }
 
     try {
       const rememberMe = localStorage.getItem('rememberMe') === 'true'
+      console.log('尝试刷新令牌:', { refreshToken, rememberMe })
       const response = await this.refreshToken(refreshToken, rememberMe)
 
       // 更新本地存储
@@ -120,11 +129,34 @@ export default {
         localStorage.setItem('user', JSON.stringify(response.user))
       }
 
+      console.log('刷新令牌成功')
       return true
     } catch (error) {
       console.error('刷新令牌失败:', error)
+      // 清除所有认证数据
+      this.clearAuthData()
+
+      // 如果不在登录页，重定向到登录页
+      const currentPath = window.location.pathname
+      if (currentPath !== '/login') {
+        console.log('重定向到登录页面...')
+        setTimeout(() => {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+        }, 1000)
+      }
+
       return false
     }
+  },
+
+  // 清除所有认证数据
+  clearAuthData() {
+    console.log('清除所有认证数据')
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('tokenExpires')
+    localStorage.removeItem('user')
+    localStorage.removeItem('rememberMe')
   },
 
   // 获取当前用户

@@ -249,8 +249,35 @@ const loadSuppliers = async () => {
 
     // 处理响应数据
     if (response && response.items) {
-      suppliers.value = response.items
+      // 转换字段名称以匹配前端期望的格式
+      suppliers.value = response.items.map(item => {
+        // 打印原始数据，用于调试
+        console.log('原始供应商数据:', item)
+
+        return {
+          id: item.ID || item.id,
+          code: item.Code || item.code,
+          name: item.Name || item.name,
+          type: item.Type || item.type,
+          contactPerson: item.ContactPerson || item.contactPerson || item.contact_person,
+          contactPhone: item.ContactPhone || item.contactPhone || item.contact_phone,
+          email: item.Email || item.email,
+          address: item.Address || item.address,
+          city: item.City || item.city,
+          rating: item.Rating || item.rating,
+          qualification: item.Qualification || item.qualification,
+          paymentTerms: item.PaymentTerms || item.paymentTerms || item.payment_terms,
+          deliveryTerms: item.DeliveryTerms || item.deliveryTerms || item.delivery_terms,
+          status: item.Status !== undefined ? item.Status : (item.status !== undefined ? item.status : true),
+          note: item.Note || item.note,
+          createdAt: item.CreatedAt || item.createdAt,
+          updatedAt: item.UpdatedAt || item.updatedAt
+        }
+      })
       pagination.itemCount = response.total || 0
+
+      // 打印转换后的数据，用于调试
+      console.log('转换后的供应商数据:', suppliers.value)
     } else {
       suppliers.value = []
       pagination.itemCount = 0

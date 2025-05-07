@@ -61,6 +61,13 @@ class CustomBottomNavigation extends StatelessWidget {
               label: '会员',
             ),
             BottomNavigationBarItem(
+              icon: Icon(
+                Icons.people_outline,
+              ), // Using people icon for suppliers
+              activeIcon: Icon(Icons.people),
+              label: '供应商',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
               label: '我的',

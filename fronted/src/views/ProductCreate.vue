@@ -40,7 +40,15 @@
         >
           <n-grid :cols="24" :x-gap="24">
             <n-form-item-gi :span="8" label="SKU" path="sku">
-              <n-input v-model:value="formData.sku" placeholder="请输入商品SKU" />
+              <n-input-group>
+                <n-input v-model:value="formData.sku" placeholder="请输入商品SKU" />
+                <n-button type="primary" @click="generateSKU" :disabled="!formData.categoryId || !formData.brandId">
+                  生成SKU
+                </n-button>
+              </n-input-group>
+              <n-text depth="3" style="font-size: 12px;">
+                提示: 选择类别和品牌后可自动生成SKU
+              </n-text>
             </n-form-item-gi>
 
             <n-form-item-gi :span="16" label="商品名称" path="name">
@@ -203,13 +211,14 @@ import { useRouter } from 'vue-router'
 import {
   NButton, NCard, NForm, NFormItem, NFormItemGi, NGrid, NInput,
   NInputNumber, NSelect, NSpace, NIcon, useMessage, NTag,
-  NDataTable, NModal, NAlert
+  NDataTable, NModal, NAlert, NInputGroup, NText
 } from 'naive-ui'
 import {
   AddCircleOutline, ArrowBackOutline, SaveOutline
 } from '@vicons/ionicons5'
 import productService from '../services/product'
 import dictionaryService from '../services/dictionary'
+import { generateSKU as genSKU, generateVariantSKU as genVariantSKU } from '../utils/skuGenerator'
 
 // 路由
 const router = useRouter()
@@ -345,6 +354,13 @@ const renderColorLabel = (option) => {
 // 变体表格列定义
 const variantColumns = [
   {
+    title: 'SKU',
+    key: 'sku',
+    render(row) {
+      return row.sku || '未生成'
+    }
+  },
+  {
     title: '颜色',
     key: 'color',
     render(row) {
@@ -430,6 +446,71 @@ const goBack = () => {
   router.push('/products')
 }
 
+// 生成SKU
+const generateSKU = async () => {
+  if (!formData.categoryId || !formData.brandId) {
+    message.warning('请先选择商品类别和品牌')
+    return
+  }
+
+  try {
+    // 获取类别和品牌信息
+    const category = categoryOptions.value.find(item => item.value === formData.categoryId)
+    const brand = brandOptions.value.find(item => item.value === formData.brandId)
+
+    // 获取当前商品序列号
+    const response = await productService.getProducts({
+      pageSize: 1,
+      categoryId: formData.categoryId,
+      brandId: formData.brandId
+    })
+
+    // 计算序列号
+    let sequence = 1
+    if (response && response.total > 0) {
+      // 尝试从现有SKU中提取序列号
+      const existingSKUs = response.items.map(item => item.sku)
+      const maxSequence = existingSKUs.reduce((max, sku) => {
+        const parts = sku.split('-')
+        if (parts.length >= 4) {
+          const seq = parseInt(parts[3])
+          return seq > max ? seq : max
+        }
+        return max
+      }, 0)
+      sequence = maxSequence + 1
+    }
+
+    // 生成SKU
+    const sku = genSKU({
+      category,
+      brand,
+      sequence,
+      date: new Date()
+    })
+
+    // 更新表单
+    formData.sku = sku
+    message.success('SKU生成成功')
+  } catch (error) {
+    console.error('生成SKU失败:', error)
+    message.error('生成SKU失败: ' + (error.message || '未知错误'))
+  }
+}
+
+// 生成变体SKU
+const generateVariantSKU = (variant) => {
+  if (!formData.sku) {
+    message.warning('请先生成商品基础SKU')
+    return ''
+  }
+
+  const color = colorOptions.value.find(item => item.value === variant.colorId)
+  const size = sizeOptions.value.find(item => item.value === variant.sizeId)
+
+  return genVariantSKU(formData.sku, { color, size })
+}
+
 const addVariant = () => {
   // 重置变体表单
   variantForm.colorId = null
@@ -459,9 +540,23 @@ const handleAddVariant = () => {
       return
     }
 
+    // 创建变体对象
+    const variant = { ...variantForm }
+
+    // 自动生成变体SKU
+    if (formData.sku) {
+      try {
+        const variantSku = generateVariantSKU(variant)
+        variant.sku = variantSku
+      } catch (error) {
+        console.error('生成变体SKU失败:', error)
+      }
+    }
+
     // 添加到变体列表
-    variants.value.push({ ...variantForm })
+    variants.value.push(variant)
     showVariantModal.value = false
+    message.success('变体添加成功')
   })
 }
 
@@ -489,6 +584,7 @@ const handleSave = () => {
         Image: formData.image,
         Status: formData.status,
         Variants: variants.value.map(v => ({
+          SKU: v.sku || `${formData.sku}-${Math.random().toString(36).substring(2, 6)}`, // 确保每个变体都有SKU
           ColorID: v.colorId,
           SizeID: v.sizeId,
           SeasonID: v.seasonId,

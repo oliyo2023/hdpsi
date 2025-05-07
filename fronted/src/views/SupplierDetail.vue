@@ -406,7 +406,30 @@ const loadSupplier = async () => {
     // 从 API 获取供应商详情
     const response = await supplierService.getSupplier(id)
     if (response) {
-      supplier.value = response
+      // 转换字段名称以匹配前端期望的格式
+      console.log('原始供应商详情数据:', response)
+
+      supplier.value = {
+        id: response.ID || response.id,
+        code: response.Code || response.code,
+        name: response.Name || response.name,
+        type: response.Type || response.type,
+        contactPerson: response.ContactPerson || response.contactPerson || response.contact_person,
+        contactPhone: response.ContactPhone || response.contactPhone || response.contact_phone,
+        email: response.Email || response.email,
+        address: response.Address || response.address,
+        city: response.City || response.city,
+        rating: response.Rating || response.rating,
+        qualification: response.Qualification || response.qualification,
+        paymentTerms: response.PaymentTerms || response.paymentTerms || response.payment_terms,
+        deliveryTerms: response.DeliveryTerms || response.deliveryTerms || response.delivery_terms,
+        status: response.Status !== undefined ? response.Status : (response.status !== undefined ? response.status : true),
+        note: response.Note || response.note,
+        createdAt: response.CreatedAt || response.createdAt,
+        updatedAt: response.UpdatedAt || response.updatedAt
+      }
+
+      console.log('转换后的供应商详情数据:', supplier.value)
 
       // 复制数据到表单
       Object.keys(formData).forEach(key => {

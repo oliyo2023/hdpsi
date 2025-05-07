@@ -21,7 +21,6 @@
       <n-form
         ref="formRef"
         :model="formData"
-        :rules="rules"
         label-placement="left"
         label-width="auto"
         require-mark-placement="right-hanging"
@@ -29,7 +28,15 @@
         <n-card title="商品信息" class="mb-4">
           <n-grid :cols="2" :x-gap="24">
             <n-form-item-gi label="SKU" path="sku">
-              <n-input v-model:value="formData.sku" placeholder="请输入商品SKU" />
+              <n-input-group>
+                <n-input v-model:value="formData.sku" placeholder="请输入商品SKU" />
+                <n-button type="primary" @click="generateSKU" :disabled="!formData.category || !formData.brand">
+                  生成SKU
+                </n-button>
+              </n-input-group>
+              <n-text depth="3" style="font-size: 12px;">
+                提示: 选择类别和品牌后可自动生成SKU
+              </n-text>
             </n-form-item-gi>
             <n-form-item-gi label="商品名称" path="name">
               <n-input v-model:value="formData.name" placeholder="请输入商品名称" />
@@ -173,10 +180,11 @@ import { useRouter, useRoute } from 'vue-router'
 import {
   NButton, NForm, NFormItem, NFormItemGi, NInput, NInputNumber, NSelect,
   NUpload, NCard, NGrid, NSpace, NIcon, NText, NP, useMessage,
-  NCollapse, NCollapseItem
+  NCollapse, NCollapseItem, NInputGroup
 } from 'naive-ui'
 import { ArrowBackOutline, CloudUploadOutline } from '@vicons/ionicons5'
 import productService from '../services/product'
+import { generateSKU as genSKU, generateVariantSKU } from '../utils/skuGenerator'
 
 // 路由和消息
 const router = useRouter()
@@ -209,24 +217,8 @@ const formData = reactive({
   description: ''
 })
 
-// 表单验证规则
-const rules = {
-  sku: {
-    required: true,
-    message: '请输入商品SKU',
-    trigger: 'blur'
-  },
-  name: {
-    required: true,
-    message: '请输入商品名称',
-    trigger: 'blur'
-  },
-  category: {
-    required: true,
-    message: '请选择商品类别',
-    trigger: 'change'
-  }
-}
+// 移除表单验证规则，改为手动验证
+const rules = {}
 
 // 选项数据
 const categoryOptions = ref([])
@@ -305,36 +297,57 @@ const loadProduct = async () => {
     // 处理关联字段 - 现在使用ID作为选择器的值
     if (product.category) {
       // 使用ID作为选择器的值
-      formData.category = product.category.id || null
+      const categoryId = product.category.id || (typeof product.category === 'number' ? product.category : null);
+      formData.category = categoryId;
       console.log('设置类别ID:', formData.category, '类别对象:', product.category)
+    } else if (product.categoryId) {
+      // 直接使用categoryId字段（如果存在）
+      formData.category = product.categoryId;
+      console.log('使用categoryId字段:', formData.category)
     } else {
       formData.category = null
     }
 
     if (product.brand) {
-      formData.brand = product.brand.id || null
+      const brandId = product.brand.id || (typeof product.brand === 'number' ? product.brand : null);
+      formData.brand = brandId;
       console.log('设置品牌ID:', formData.brand, '品牌对象:', product.brand)
+    } else if (product.brandId) {
+      formData.brand = product.brandId;
+      console.log('使用brandId字段:', formData.brand)
     } else {
       formData.brand = null
     }
 
     if (product.color) {
-      formData.color = product.color.id || null
+      const colorId = product.color.id || (typeof product.color === 'number' ? product.color : null);
+      formData.color = colorId;
       console.log('设置颜色ID:', formData.color, '颜色对象:', product.color)
+    } else if (product.colorId) {
+      formData.color = product.colorId;
+      console.log('使用colorId字段:', formData.color)
     } else {
       formData.color = null
     }
 
     if (product.size) {
-      formData.size = product.size.id || null
+      const sizeId = product.size.id || (typeof product.size === 'number' ? product.size : null);
+      formData.size = sizeId;
       console.log('设置尺码ID:', formData.size, '尺码对象:', product.size)
+    } else if (product.sizeId) {
+      formData.size = product.sizeId;
+      console.log('使用sizeId字段:', formData.size)
     } else {
       formData.size = null
     }
 
     if (product.season) {
-      formData.season = product.season.id || null
+      const seasonId = product.season.id || (typeof product.season === 'number' ? product.season : null);
+      formData.season = seasonId;
       console.log('设置季节ID:', formData.season, '季节对象:', product.season)
+    } else if (product.seasonId) {
+      formData.season = product.seasonId;
+      console.log('使用seasonId字段:', formData.season)
     } else {
       formData.season = null
     }
@@ -362,6 +375,58 @@ const goBack = () => {
   router.push('/products')
 }
 
+// 生成SKU
+const generateSKU = async () => {
+  if (!formData.category || !formData.brand) {
+    message.warning('请先选择商品类别和品牌')
+    return
+  }
+
+  try {
+    // 获取类别和品牌信息
+    const category = categoryOptions.value.find(item => item.value === formData.category)
+    const brand = brandOptions.value.find(item => item.value === formData.brand)
+
+    // 获取当前商品序列号
+    const response = await productService.getProducts({
+      pageSize: 1,
+      categoryId: formData.category,
+      brandId: formData.brand
+    })
+
+    // 计算序列号
+    let sequence = 1
+    if (response && response.total > 0) {
+      // 尝试从现有SKU中提取序列号
+      const existingSKUs = response.items.map(item => item.sku)
+      const maxSequence = existingSKUs.reduce((max, sku) => {
+        const parts = sku.split('-')
+        if (parts.length >= 4) {
+          const seq = parseInt(parts[3])
+          return seq > max ? seq : max
+        }
+        return max
+      }, 0)
+      sequence = maxSequence + 1
+    }
+
+    // 生成SKU
+    const sku = genSKU({
+      category,
+      brand,
+      sequence,
+      date: new Date()
+    })
+
+    // 更新表单
+    formData.sku = sku
+    message.success('SKU生成成功')
+  } catch (error) {
+    console.error('生成SKU失败:', error)
+    message.error('生成SKU失败: ' + (error.message || '未知错误'))
+  }
+}
+
 // 上传相关方法
 const beforeUpload = (data) => {
   console.log('准备上传:', data)
@@ -373,51 +438,82 @@ const handleUploadChange = (options) => {
 }
 
 // 保存商品
-const handleSave = () => {
-  formRef.value?.validate(async (errors) => {
-    if (errors) {
-      return
+const handleSave = async () => {
+  // 手动验证必填字段
+  let hasError = false;
+
+  // 验证SKU
+  if (!formData.sku) {
+    message.error('请输入商品SKU');
+    hasError = true;
+  }
+
+  // 验证商品名称
+  if (!formData.name) {
+    message.error('请输入商品名称');
+    hasError = true;
+  }
+
+  // 验证商品类别
+  if (!formData.category) {
+    message.error('请选择商品类别');
+    hasError = true;
+  }
+
+  // 如果有错误，不继续执行
+  if (hasError) {
+    return;
+  }
+
+  // 开始保存
+  saving.value = true;
+  try {
+    // 打印表单数据，确保所有必填字段都有值
+    console.log('准备保存的表单数据:', {
+      id: formData.id,
+      sku: formData.sku,
+      name: formData.name,
+      category: formData.category,
+      brand: formData.brand,
+      color: formData.color,
+      size: formData.size,
+      season: formData.season
+    });
+
+    // 将字段名称转换为大写，以匹配后端模型
+    const productData = {
+      id: productId.value,
+      sku: formData.sku,
+      name: formData.name,
+      categoryID: getCategoryID(formData.category),
+      brandID: getBrandID(formData.brand),
+      colorID: getColorID(formData.color),
+      sizeID: getSizeID(formData.size),
+      seasonID: getSeasonID(formData.season),
+      costPrice: formData.costPrice,
+      retailPrice: formData.retailPrice,
+      image: formData.image,
+      description: formData.description
     }
 
-    saving.value = true
-    try {
-      // 将字段名称转换为大写，以匹配后端模型
-      // 注意：convertFrontendFields 函数会自动将字段名称转换为大写
-      // 所以这里可以直接使用小写字段名
-      const productData = {
-        id: productId.value,
-        sku: formData.sku,
-        name: formData.name,
-        categoryID: getCategoryID(formData.category),
-        brandID: getBrandID(formData.brand),
-        colorID: getColorID(formData.color),
-        sizeID: getSizeID(formData.size),
-        seasonID: getSeasonID(formData.season),
-        costPrice: formData.costPrice,
-        retailPrice: formData.retailPrice,
-        image: formData.image,
-        description: formData.description
-      }
+    // 调试输出
+    console.log('发送到后端的数据:', productData)
 
-      // 调试输出
-      console.log('发送到后端的数据:', productData)
-
-      if (isEditing.value) {
-        await productService.updateProduct(productId.value, productData)
-        message.success('商品更新成功')
-      } else {
-        const result = await productService.createProduct(productData)
-        message.success('商品添加成功')
-      }
-
-      router.push('/products')
-    } catch (error) {
-      console.error('保存商品失败:', error)
-      message.error('保存失败: ' + (error.response?.data?.error || '未知错误'))
-    } finally {
-      saving.value = false
+    if (isEditing.value) {
+      await productService.updateProduct(productId.value, productData)
+      message.success('商品更新成功')
+    } else {
+      const result = await productService.createProduct(productData)
+      message.success('商品添加成功')
     }
-  })
+
+    router.push('/products')
+  } catch (error) {
+    console.error('保存商品失败:', error)
+    message.error('保存失败: ' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    saving.value = false
+  }
 }
 
 // 生命周期钩子

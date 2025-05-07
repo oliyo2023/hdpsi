@@ -244,7 +244,7 @@ const handleLogin = (e) => {
         auth.saveLoginResponse(response)
 
         // 如果选择了记住我，保存记住我标志
-        localStorage.setItem('rememberMe', formValue.rememberMe)
+        localStorage.setItem('rememberMe', formValue.rememberMe.toString())
 
         message.success('登录成功')
 
