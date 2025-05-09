@@ -51,21 +51,56 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
             return const Center(child: Text('没有供应商数据'));
           } else {
             return ListView.builder(
+              padding: const EdgeInsets.all(8.0), // Add padding around the list
               itemCount: supplierProvider.suppliers.length,
               itemBuilder: (context, index) {
                 final supplier = supplierProvider.suppliers[index];
-                return ListTile(
-                  title: Text(supplier.name),
-                  subtitle: Text(supplier.contactPerson ?? ''),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                SupplierDetailScreen(supplierId: supplier.id),
+                return Card(
+                  elevation: 2.0, // Add a slight shadow
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 4.0,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).primaryColorLight,
+                      child: Text(
+                        supplier.name.isNotEmpty
+                            ? supplier.name[0].toUpperCase()
+                            : 'S',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColorDark,
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                    title: Text(
+                      supplier.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (supplier.contactPerson != null &&
+                            supplier.contactPerson!.isNotEmpty)
+                          Text('联系人: ${supplier.contactPerson}'),
+                        if (supplier.code != null &&
+                            supplier
+                                .code!
+                                .isNotEmpty) // Assuming supplier model has a 'code' field
+                          Text('编码: ${supplier.code}'),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16.0),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  SupplierDetailScreen(supplierId: supplier.id),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             );
