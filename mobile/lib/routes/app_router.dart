@@ -9,7 +9,6 @@ import '../screens/product_edit_screen.dart';
 import '../screens/scan_checkout_screen.dart';
 import '../screens/scan_checkin_screen.dart';
 import '../screens/inventory_detail_screen.dart';
-import '../screens/inventory_adjustment_screen.dart';
 import '../screens/member_list_screen.dart';
 import '../screens/member_add_screen.dart';
 import '../screens/member_detail_screen.dart';

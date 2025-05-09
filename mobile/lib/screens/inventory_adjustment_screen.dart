@@ -90,6 +90,9 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
         listen: false,
       );
 
+      // 保存BuildContext的引用
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
       await inventoryProvider.createTransaction({
         'TransactionType': 'adjustment',
         'ProductVariantID': widget.inventory.productVariantId,
@@ -100,9 +103,7 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('库存调整成功')));
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('库存调整成功')));
         Navigator.of(context).pop(true); // 返回并传递成功标志
       }
     } catch (e) {

@@ -1,4 +1,24 @@
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
+
+class NumericInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // 只允许输入数字
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    if (int.tryParse(newValue.text) == null) {
+      return oldValue;
+    }
+
+    return newValue;
+  }
+}
 
 class Formatters {
   // 格式化日期

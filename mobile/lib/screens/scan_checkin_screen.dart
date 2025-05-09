@@ -15,9 +15,11 @@ class ScanCheckinScreen extends StatefulWidget {
 }
 
 class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
-  final TextEditingController _quantityController = TextEditingController(text: '1');
+  final TextEditingController _quantityController = TextEditingController(
+    text: '1',
+  );
   final TextEditingController _noteController = TextEditingController();
-  int _selectedStoreId = 1; // 默认店铺ID，实际应该从配置或用户选择获取
+  final int _selectedStoreId = 1; // 默认店铺ID，实际应该从配置或用户选择获取
 
   @override
   void dispose() {
@@ -142,12 +144,12 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
                   const SizedBox(height: 24.0),
                   ElevatedButton(
                     onPressed: _submitCheckin,
-                    child: const Text('确认入库'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                     ),
+                    child: const Text('确认入库'),
                   ),
                 ],
               ],
@@ -191,10 +193,7 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
       children: [
         const Text(
           '入库信息',
-          style: TextStyle(
-            fontSize: 16.0,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16.0),
         TextField(

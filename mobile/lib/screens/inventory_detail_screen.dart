@@ -3,7 +3,6 @@ import '../models/inventory.dart';
 import '../services/inventory_service.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
-import '../utils/app_theme.dart';
 import 'scan_checkin_screen.dart';
 import 'scan_checkout_screen.dart';
 import 'inventory_adjustment_screen.dart';
