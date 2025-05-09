@@ -6,6 +6,7 @@ import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import '../widgets/empty_data.dart';
 import '../utils/app_theme.dart';
+import 'inventory_detail_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
   const InventoryListScreen({super.key});
@@ -185,7 +186,14 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
-                          // TODO: 导航到库存详情页面
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => InventoryDetailScreen(
+                                    inventoryId: inventory.id,
+                                  ),
+                            ),
+                          );
                         },
                       ),
                     );

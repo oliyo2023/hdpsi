@@ -7,6 +7,9 @@ import '../screens/product_add_screen.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/product_edit_screen.dart';
 import '../screens/scan_checkout_screen.dart';
+import '../screens/scan_checkin_screen.dart';
+import '../screens/inventory_detail_screen.dart';
+import '../screens/inventory_adjustment_screen.dart';
 import '../screens/member_list_screen.dart';
 import '../screens/member_add_screen.dart';
 import '../screens/member_detail_screen.dart';
@@ -31,12 +34,15 @@ class AppRouter {
   static const String productDetail = '/products/detail';
   static const String productEdit = '/products/edit';
   static const String scanCheckout = '/scan-checkout';
+  static const String scanCheckin = '/scan-checkin';
   static const String members = '/members';
   static const String memberAdd = '/members/add';
   static const String memberDetail = '/members/detail';
   static const String memberEdit = '/members/edit';
   static const String memberTransactions = '/members/transactions';
   static const String inventory = '/inventory';
+  static const String inventoryDetail = '/inventory/detail';
+  static const String inventoryAdjustment = '/inventory/adjustment';
   static const String settings = '/settings';
   static const String skuGenerator = '/sku-generator';
   static const String suppliers = '/suppliers';
@@ -52,6 +58,7 @@ class AppRouter {
     products: (context) => const ProductListScreen(),
     productAdd: (context) => const ProductAddScreen(),
     scanCheckout: (context) => const ScanCheckoutScreen(),
+    scanCheckin: (context) => const ScanCheckinScreen(),
     members: (context) => const MemberListScreen(),
     memberAdd: (context) => const MemberAddScreen(),
     inventory: (context) => const InventoryListScreen(),
@@ -99,6 +106,11 @@ class AppRouter {
         final supplier = settings.arguments as Supplier;
         return MaterialPageRoute(
           builder: (context) => SupplierEditScreen(supplier: supplier),
+        );
+      case inventoryDetail:
+        final inventoryId = settings.arguments as int;
+        return MaterialPageRoute(
+          builder: (context) => InventoryDetailScreen(inventoryId: inventoryId),
         );
       default:
         return null;

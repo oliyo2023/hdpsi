@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -47,7 +48,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
 
     final product = productProvider.selectedProduct;
     if (product != null && mounted) {
-      print('Product object after fromJson: $product');
+      Logger.d('ProductEdit', 'Product object after fromJson: $product');
       // 初始化变体列表
       if (product.variants != null) {
         setState(() {
@@ -74,18 +75,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
           }
         });
       }
-
-      // 初始化表单数据
-      print('Data used to patch form: {');
-      print('  name: ${product.name},');
-      print('  sku: ${product.sku},');
-      print('  categoryId: ${product.categoryId},');
-      print('  brandId: ${product.brandId},');
-      print('  description: ${product.description},');
-      print('  costPrice: ${product.costPrice.toString()},');
-      print('  retailPrice: ${product.retailPrice.toString()},');
-      print('  status: ${product.status},');
-      print('}');
     }
   }
 

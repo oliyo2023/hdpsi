@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
+import 'supplier_detail_screen.dart';
+import 'supplier_edit_screen.dart';
 
 class SupplierListScreen extends StatefulWidget {
   const SupplierListScreen({super.key});
 
   @override
-  _SupplierListScreenState createState() => _SupplierListScreenState();
+  State<SupplierListScreen> createState() => _SupplierListScreenState();
 }
 
 class _SupplierListScreenState extends State<SupplierListScreen> {
@@ -28,7 +30,11 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // TODO: Navigate to Add Supplier Screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SupplierEditScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -50,7 +56,13 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                   title: Text(supplier.name),
                   subtitle: Text(supplier.contactPerson ?? ''),
                   onTap: () {
-                    // TODO: Navigate to Supplier Detail Screen
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                SupplierDetailScreen(supplierId: supplier.id),
+                      ),
+                    );
                   },
                 );
               },

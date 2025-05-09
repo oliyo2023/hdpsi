@@ -63,5 +63,19 @@ class SupplierProvider with ChangeNotifier {
     }
   }
 
-  // TODO: Add method for deleting suppliers
+  Future<void> deleteSupplier(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _supplierService.deleteSupplier(id);
+      // 删除成功后刷新列表
+      fetchSuppliers();
+    } catch (e) {
+      _errorMessage = '删除供应商失败: ${e.toString()}';
+      _isLoading = false; // 出错时停止加载
+      notifyListeners();
+    }
+  }
 }

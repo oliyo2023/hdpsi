@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
 import '../providers/supplier_provider.dart';
 import '../models/supplier.dart';
+import '../utils/logger.dart';
 
 class SupplierEditScreen extends StatefulWidget {
   final Supplier? supplier;
@@ -191,8 +192,12 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
           Navigator.of(context).pop(); // Go back after saving
         }
       } catch (e) {
-        // TODO: Show error message
-        print('保存供应商失败: $e');
+        Logger.e('SupplierEditScreen', '保存供应商失败: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('保存供应商失败: ${e.toString()}')));
+        }
       }
     }
   }

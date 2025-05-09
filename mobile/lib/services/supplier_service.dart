@@ -24,10 +24,13 @@ class SupplierService {
         'limit': limit,
       },
     );
-    // TODO: Handle pagination and total count from response
-    return (response['items'] as List)
-        .map((json) => Supplier.fromJson(json))
-        .toList();
+    final suppliers =
+        (response['items'] as List)
+            .map((json) => Supplier.fromJson(json))
+            .toList();
+
+    // 返回供应商列表
+    return suppliers;
   }
 
   // 获取供应商详情
