@@ -17,8 +17,10 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
   @override
   void initState() {
     super.initState();
-    // 在这里触发加载供应商列表的动作
-    Provider.of<SupplierProvider>(context, listen: false).fetchSuppliers();
+    // 使用 addPostFrameCallback 确保在构建完成后再加载数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SupplierProvider>(context, listen: false).fetchSuppliers();
+    });
   }
 
   @override

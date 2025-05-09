@@ -7,6 +7,8 @@ import 'providers/product_provider.dart';
 import 'providers/member_provider.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/supplier_provider.dart';
+import 'services/supplier_service.dart';
 
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
@@ -28,6 +30,9 @@ void main() {
         ChangeNotifierProvider(create: (_) => MemberProvider()),
         ChangeNotifierProvider(create: (_) => InventoryProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SupplierProvider(SupplierService()),
+        ),
       ],
       child: const MyApp(),
     ),

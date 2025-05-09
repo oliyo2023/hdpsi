@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/supplier.dart';
 import '../services/supplier_service.dart';
+import '../utils/logger.dart';
 
 class SupplierProvider with ChangeNotifier {
   final SupplierService _supplierService;
@@ -23,8 +24,10 @@ class SupplierProvider with ChangeNotifier {
 
     try {
       _suppliers = await _supplierService.getSuppliers();
+      Logger.i('SupplierProvider', '成功获取 ${_suppliers.length} 个供应商');
     } catch (e) {
-      _errorMessage = 'Failed to fetch suppliers: ${e.toString()}';
+      _errorMessage = '获取供应商失败: ${e.toString()}';
+      Logger.e('SupplierProvider', '获取供应商失败: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

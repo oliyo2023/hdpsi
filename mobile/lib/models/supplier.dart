@@ -9,6 +9,8 @@ enum SupplierType {
   distributor,
   @JsonValue('retailer')
   retailer,
+  @JsonValue('wholesaler')
+  wholesaler,
   @JsonValue('other')
   other,
 }
@@ -22,6 +24,8 @@ extension SupplierTypeExtension on SupplierType {
         return 'distributor';
       case SupplierType.retailer:
         return 'retailer';
+      case SupplierType.wholesaler:
+        return 'wholesaler';
       case SupplierType.other:
         return 'other';
     }
@@ -29,6 +33,8 @@ extension SupplierTypeExtension on SupplierType {
 }
 
 enum SupplierRating {
+  @JsonValue('S')
+  S,
   @JsonValue('A')
   A,
   @JsonValue('B')
@@ -41,24 +47,39 @@ enum SupplierRating {
 
 @JsonSerializable()
 class Supplier {
+  @JsonKey(name: 'ID')
   final int id;
+  @JsonKey(name: 'Name')
   final String name;
+  @JsonKey(name: 'Code')
   final String code;
+  @JsonKey(name: 'Type')
   final SupplierType type;
+  @JsonKey(name: 'ContactPerson')
   final String? contactPerson;
+  @JsonKey(name: 'ContactPhone')
   final String? contactPhone;
+  @JsonKey(name: 'Email')
   final String? email;
+  @JsonKey(name: 'Address')
   final String? address;
+  @JsonKey(name: 'City')
   final String? city;
+  @JsonKey(name: 'Rating')
   final SupplierRating? rating;
+  @JsonKey(name: 'Qualification')
   final String? qualification;
+  @JsonKey(name: 'PaymentTerms')
   final String? paymentTerms;
+  @JsonKey(name: 'DeliveryTerms')
   final String? deliveryTerms;
+  @JsonKey(name: 'Status')
   final bool status;
+  @JsonKey(name: 'Note')
   final String? note;
-  @JsonKey(name: 'created_at')
+  @JsonKey(name: 'CreatedAt')
   final DateTime createdAt;
-  @JsonKey(name: 'updated_at')
+  @JsonKey(name: 'UpdatedAt')
   final DateTime updatedAt;
 
   Supplier({

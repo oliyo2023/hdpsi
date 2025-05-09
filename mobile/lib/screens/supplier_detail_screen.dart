@@ -258,6 +258,8 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
         return '生产厂商';
       case SupplierType.distributor:
         return '批发商';
+      case SupplierType.wholesaler:
+        return '批发商';
       case SupplierType.retailer:
         return '零售商';
       case SupplierType.other:
