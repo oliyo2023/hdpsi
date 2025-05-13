@@ -108,7 +108,7 @@ class HomeScreen extends StatelessWidget {
                             _buildQuickAction(
                               context,
                               icon: Icons.add_shopping_cart,
-                              title: '添加商品',
+                              title: '商品管理',
                               color: AppTheme.primaryColor,
                               onTap:
                                   () => Navigator.of(
@@ -128,7 +128,7 @@ class HomeScreen extends StatelessWidget {
                             _buildQuickAction(
                               context,
                               icon: Icons.person_add,
-                              title: '添加会员',
+                              title: '会员管理',
                               color: Colors.green,
                               onTap:
                                   () => Navigator.of(
@@ -138,12 +138,12 @@ class HomeScreen extends StatelessWidget {
                             _buildQuickAction(
                               context,
                               icon: Icons.business_center,
-                              title: '添加供应商',
+                              title: '供应商管理',
                               color: Colors.blue,
                               onTap:
                                   () => Navigator.of(
                                     context,
-                                  ).pushNamed('/suppliers/add'),
+                                  ).pushNamed('/suppliers'),
                             ),
                             _buildQuickAction(
                               context,
