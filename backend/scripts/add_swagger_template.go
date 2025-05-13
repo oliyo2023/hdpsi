@@ -1,11 +1,12 @@
+//go:build template
+// +build template
+
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 )
 
 // 控制器方法模板
@@ -97,8 +98,8 @@ func main() {
 	// 控制器目录
 	controllersDir := "controllers"
 
-	// 获取所有控制器文件
-	files, err := ioutil.ReadDir(controllersDir)
+	// 检查控制器目录是否存在
+	_, err := ioutil.ReadDir(controllersDir)
 	if err != nil {
 		fmt.Printf("读取控制器目录失败: %v\n", err)
 		return

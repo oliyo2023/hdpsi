@@ -1,3 +1,6 @@
+//go:build comments
+// +build comments
+
 package main
 
 import (
@@ -15,27 +18,27 @@ var funcRegex = regexp.MustCompile(`func \(\w+ \*(\w+)\) (\w+)\(c \*gin\.Context
 
 // 路由路径映射
 var routePathMap = map[string]string{
-	"AuthController":                   "/auth",
-	"DashboardController":              "/dashboard",
-	"DictionaryController":             "/dictionaries",
-	"FileController":                   "/files",
-	"FittingController":                "/fitting",
-	"InventoryAlertController":         "/inventory-alerts",
-	"InventoryCheckController":         "/inventory-checks",
-	"InventoryController":              "/inventory",
-	"InventoryThresholdController":     "/inventory-thresholds",
-	"InventoryTransactionController":   "/inventory-transactions",
-	"MemberController":                 "/members",
-	"MemberPointsController":           "/members/{id}/points",
-	"ProductController":                "/products",
-	"PurchaseController":               "/purchases",
-	"PurchaseOrderController":          "/purchases",
-	"PurchaseReceivingController":      "/purchase-receivings",
-	"SalesController":                  "/sales",
-	"StoreController":                  "/stores",
-	"SupplierController":               "/suppliers",
-	"SystemSettingController":          "/settings",
-	"WechatController":                 "/wechat",
+	"AuthController":                 "/auth",
+	"DashboardController":            "/dashboard",
+	"DictionaryController":           "/dictionaries",
+	"FileController":                 "/files",
+	"FittingController":              "/fitting",
+	"InventoryAlertController":       "/inventory-alerts",
+	"InventoryCheckController":       "/inventory-checks",
+	"InventoryController":            "/inventory",
+	"InventoryThresholdController":   "/inventory-thresholds",
+	"InventoryTransactionController": "/inventory-transactions",
+	"MemberController":               "/members",
+	"MemberPointsController":         "/members/{id}/points",
+	"ProductController":              "/products",
+	"PurchaseController":             "/purchases",
+	"PurchaseOrderController":        "/purchases",
+	"PurchaseReceivingController":    "/purchase-receivings",
+	"SalesController":                "/sales",
+	"StoreController":                "/stores",
+	"SupplierController":             "/suppliers",
+	"SystemSettingController":        "/settings",
+	"WechatController":               "/wechat",
 }
 
 // 方法名到HTTP方法的映射
@@ -54,27 +57,27 @@ var methodMap = map[string]string{
 
 // 方法名到标签的映射
 var tagMap = map[string]string{
-	"AuthController":                   "认证管理",
-	"DashboardController":              "仪表盘",
-	"DictionaryController":             "字典管理",
-	"FileController":                   "文件管理",
-	"FittingController":                "试衣管理",
-	"InventoryAlertController":         "库存预警",
-	"InventoryCheckController":         "库存盘点",
-	"InventoryController":              "库存管理",
-	"InventoryThresholdController":     "库存阈值",
-	"InventoryTransactionController":   "库存交易",
-	"MemberController":                 "会员管理",
-	"MemberPointsController":           "会员积分",
-	"ProductController":                "商品管理",
-	"PurchaseController":               "采购管理",
-	"PurchaseOrderController":          "采购订单",
-	"PurchaseReceivingController":      "采购入库",
-	"SalesController":                  "销售管理",
-	"StoreController":                  "店铺管理",
-	"SupplierController":               "供应商管理",
-	"SystemSettingController":          "系统设置",
-	"WechatController":                 "微信管理",
+	"AuthController":                 "认证管理",
+	"DashboardController":            "仪表盘",
+	"DictionaryController":           "字典管理",
+	"FileController":                 "文件管理",
+	"FittingController":              "试衣管理",
+	"InventoryAlertController":       "库存预警",
+	"InventoryCheckController":       "库存盘点",
+	"InventoryController":            "库存管理",
+	"InventoryThresholdController":   "库存阈值",
+	"InventoryTransactionController": "库存交易",
+	"MemberController":               "会员管理",
+	"MemberPointsController":         "会员积分",
+	"ProductController":              "商品管理",
+	"PurchaseController":             "采购管理",
+	"PurchaseOrderController":        "采购订单",
+	"PurchaseReceivingController":    "采购入库",
+	"SalesController":                "销售管理",
+	"StoreController":                "店铺管理",
+	"SupplierController":             "供应商管理",
+	"SystemSettingController":        "系统设置",
+	"WechatController":               "微信管理",
 }
 
 func main() {
