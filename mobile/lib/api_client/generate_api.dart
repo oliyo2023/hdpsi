@@ -1,8 +1,5 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:openapi_generator_annotations/openapi_generator_annotations.dart';
-import 'openapi_config.dart';
 
 /// 生成API客户端
 ///
