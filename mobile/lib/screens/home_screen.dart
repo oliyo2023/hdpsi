@@ -137,6 +137,16 @@ class HomeScreen extends StatelessWidget {
                             ),
                             _buildQuickAction(
                               context,
+                              icon: Icons.business_center,
+                              title: '添加供应商',
+                              color: Colors.blue,
+                              onTap:
+                                  () => Navigator.of(
+                                    context,
+                                  ).pushNamed('/suppliers/add'),
+                            ),
+                            _buildQuickAction(
+                              context,
                               icon: Icons.search,
                               title: '库存查询',
                               color: Colors.orange,
@@ -144,16 +154,6 @@ class HomeScreen extends StatelessWidget {
                                   () => Navigator.of(
                                     context,
                                   ).pushNamed('/inventory'),
-                            ),
-                            _buildQuickAction(
-                              context,
-                              icon: Icons.qr_code,
-                              title: 'SKU生成',
-                              color: Colors.purple,
-                              onTap:
-                                  () => Navigator.of(
-                                    context,
-                                  ).pushNamed('/sku-generator'),
                             ),
                           ],
                         ),
@@ -189,6 +189,14 @@ class HomeScreen extends StatelessWidget {
                         Colors.purple,
                         '管理会员信息和积分',
                         () => Navigator.of(context).pushNamed('/members'),
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        '供应商管理',
+                        Icons.business,
+                        Colors.blue,
+                        '管理供应商信息和采购',
+                        () => Navigator.of(context).pushNamed('/suppliers'),
                       ),
                       _buildFeatureCard(
                         context,

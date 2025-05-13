@@ -67,10 +67,15 @@ func main() {
 	log.Info("数据库连接池配置完成",
 		logger.F("max_idle_conns", config.AppConfig.Database.MaxIdleConns),
 		logger.F("max_open_conns", config.AppConfig.Database.MaxOpenConns),
-		logger.F("conn_max_lifetime", config.AppConfig.Database.ConnMaxLifetime))
+		logger.F("conn_max_lifetime", config.AppConfig.Database.ConnMaxLifetime),
+		logger.F("auto_migrate", config.AppConfig.Database.AutoMigrate))
 
 	// 根据配置决定是否自动迁移数据模型
-	if config.AppConfig.Database.AutoMigrate {
+	// 确保从配置中读取最新的 AutoMigrate 值
+	autoMigrate := config.AppConfig.Database.AutoMigrate
+	log.Info("自动迁移设置", logger.F("auto_migrate", autoMigrate))
+
+	if autoMigrate {
 		// 禁用外键约束检查
 		db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 		log.Info("开始自动迁移数据模型")

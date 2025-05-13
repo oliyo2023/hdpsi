@@ -5,7 +5,6 @@ import 'product_list_screen.dart';
 import 'scan_checkout_screen.dart';
 import 'member_list_screen.dart';
 import 'profile_screen.dart';
-import 'supplier_list_screen.dart'; // Import the supplier list screen
 
 class MainContainer extends StatefulWidget {
   const MainContainer({super.key});
@@ -23,7 +22,6 @@ class _MainContainerState extends State<MainContainer> {
     const ProductListScreen(),
     const ScanCheckoutScreen(),
     const MemberListScreen(),
-    const SupplierListScreen(), // Add the supplier list screen
     const ProfileScreen(),
   ];
 
@@ -65,8 +63,7 @@ class _MainContainerState extends State<MainContainer> {
           _pages[1],
           Container(), // 扫码页面占位，实际上不会显示
           _pages[3],
-          _pages[4], // Add the supplier list screen page
-          _pages[5], // Add the profile screen page
+          _pages[4], // Profile screen page
         ],
       ),
       bottomNavigationBar: CustomBottomNavigation(
@@ -75,18 +72,13 @@ class _MainContainerState extends State<MainContainer> {
       ),
       floatingActionButton:
           _currentIndex == 1 ||
-                  _currentIndex == 3 ||
-                  _currentIndex ==
-                      4 // Add index 4 for suppliers
+                  _currentIndex == 3
               ? FloatingActionButton(
                 onPressed: () {
                   if (_currentIndex == 1) {
                     Navigator.of(context).pushNamed('/products/add');
                   } else if (_currentIndex == 3) {
                     Navigator.of(context).pushNamed('/members/add');
-                  } else if (_currentIndex == 4) {
-                    // Handle add for suppliers
-                    Navigator.of(context).pushNamed('/suppliers/add');
                   }
                 },
                 child: const Icon(Icons.add),

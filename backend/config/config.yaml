@@ -25,7 +25,7 @@ database:
   max_idle_conns: 10
   max_open_conns: 100
   conn_max_lifetime: 3600  # 连接最大生命周期（秒）
-  auto_migrate: false      # 是否自动迁移数据库模型
+  auto_migrate: true      # 是否自动迁移数据库模型
 
 # JWT配置
 jwt:
@@ -35,6 +35,14 @@ jwt:
     remember_me: 604800 # 记住我令牌过期时间（秒）- 7天
     refresh: 2592000    # 刷新令牌过期时间（秒）- 30天
     reset: 3600         # 密码重置令牌过期时间（秒）- 1小时
+
+# 微信公众号配置
+wechat_official_account:
+  appid: your_appid
+  appsecret: your_appsecret
+  redirect_uri: "http://your_backend_domain/api/v1/auth/wechat_callback" # 授权回调地址，需要与公众号后台配置一致
+  scope: "snsapi_userinfo" # 获取用户基本信息
+  verify_token: your_wechat_verify_token # 新增：用于公众号服务器配置的Token，需要与公众号后台配置一致
 
 # 日志配置
 log:
