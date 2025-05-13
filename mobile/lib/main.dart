@@ -8,7 +8,7 @@ import 'providers/member_provider.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/supplier_provider.dart';
-import 'services/supplier_service.dart';
+import 'services/supplier_service_adapter.dart';
 
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
@@ -30,8 +30,9 @@ void main() {
         ChangeNotifierProvider(create: (_) => MemberProvider()),
         ChangeNotifierProvider(create: (_) => InventoryProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        // 使用新的供应商服务适配器
         ChangeNotifierProvider(
-          create: (_) => SupplierProvider(SupplierService()),
+          create: (_) => SupplierProvider(SupplierServiceAdapter()),
         ),
       ],
       child: const MyApp(),

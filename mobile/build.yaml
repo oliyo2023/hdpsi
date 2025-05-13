@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      openapi_generator_annotations:openapi_generator:
+        enabled: true
+        options:
+          input_directory: lib/api_client
+          output_directory: lib/api_client/generated

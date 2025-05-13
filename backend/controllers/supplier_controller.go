@@ -33,6 +33,23 @@ type SuppliersResponse struct {
 }
 
 // ListSuppliers 获取供应商列表
+// @Summary 获取供应商列表
+// @Description 获取供应商列表，支持按名称、编码、类型和状态筛选，并支持分页
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param name query string false "供应商名称（模糊查询）" example:"宏达"
+// @Param code query string false "供应商编码（模糊查询）" example:"SUP001"
+// @Param type query string false "供应商类型" Enums(manufacturer,distributor,retailer,wholesaler,other) example:"wholesaler"
+// @Param status query string false "状态" Enums(active,inactive) example:"active"
+// @Param page query int false "页码，默认1" minimum(1) example:"1"
+// @Param limit query int false "每页数量，默认10" minimum(1) maximum(100) example:"10"
+// @Success 200 {object} models.PaginatedResponse{items=[]models.Supplier} "成功获取供应商列表"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /suppliers [get]
+// @Security BearerAuth
 func (sc *SupplierController) ListSuppliers(c *gin.Context) {
 	var query ListSuppliersQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
@@ -80,6 +97,18 @@ func (sc *SupplierController) ListSuppliers(c *gin.Context) {
 }
 
 // GetSupplier 获取供应商详情
+// @Summary 获取供应商详情
+// @Description 根据ID获取供应商的详细信息，包括基本信息、联系方式、评级等
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param id path int true "供应商ID" example:"1"
+// @Success 200 {object} models.Supplier "成功获取供应商详情"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "供应商不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /suppliers/{id} [get]
+// @Security BearerAuth
 func (sc *SupplierController) GetSupplier(c *gin.Context) {
 	id := c.Param("id")
 	var supplier models.Supplier
@@ -111,6 +140,36 @@ type CreateSupplierRequest struct {
 }
 
 // CreateSupplier 创建供应商
+// @Summary 创建供应商
+// @Description 创建新的供应商，需提供必要的供应商信息
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param supplier body CreateSupplierRequest true "供应商信息"
+// @Success 201 {object} models.Supplier "创建成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误或供应商编码已存在"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /suppliers [post]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "宏达服饰供应商",
+//	  "code": "SUP001",
+//	  "type": "wholesaler",
+//	  "contact_person": "张三",
+//	  "contact_phone": "13800138000",
+//	  "email": "supplier@example.com",
+//	  "address": "北京市朝阳区",
+//	  "city": "北京市",
+//	  "rating": "S",
+//	  "qualification": "ISO9001认证",
+//	  "payment_terms": "月结30天",
+//	  "delivery_terms": "送货上门",
+//	  "status": true,
+//	  "note": "优质供应商"
+//	}
 func (sc *SupplierController) CreateSupplier(c *gin.Context) {
 	var request CreateSupplierRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -152,6 +211,38 @@ func (sc *SupplierController) CreateSupplier(c *gin.Context) {
 }
 
 // UpdateSupplier 更新供应商
+// @Summary 更新供应商
+// @Description 更新现有供应商的信息，需提供完整的供应商信息
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param id path int true "供应商ID" example:"1"
+// @Param supplier body CreateSupplierRequest true "供应商信息"
+// @Success 200 {object} models.Supplier "更新成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误或供应商编码已被其他供应商使用"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "供应商不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /suppliers/{id} [put]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "宏达服饰供应商（更新）",
+//	  "code": "SUP001",
+//	  "type": "wholesaler",
+//	  "contact_person": "李四",
+//	  "contact_phone": "13900139000",
+//	  "email": "supplier_updated@example.com",
+//	  "address": "北京市海淀区",
+//	  "city": "北京市",
+//	  "rating": "A",
+//	  "qualification": "ISO9001认证,ISO14001认证",
+//	  "payment_terms": "月结45天",
+//	  "delivery_terms": "送货上门，包安装",
+//	  "status": true,
+//	  "note": "长期合作伙伴"
+//	}
 func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
 	id := c.Param("id")
 	var supplier models.Supplier
@@ -202,6 +293,19 @@ func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
 }
 
 // DeleteSupplier 删除供应商
+// @Summary 删除供应商
+// @Description 删除指定ID的供应商，如果供应商已被采购单引用则无法删除
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param id path int true "供应商ID" example:"1"
+// @Success 200 {object} models.APIResponse "删除成功"
+// @Failure 400 {object} models.ErrorResponse "供应商已被采购单引用，无法删除"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "供应商不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /suppliers/{id} [delete]
+// @Security BearerAuth
 func (sc *SupplierController) DeleteSupplier(c *gin.Context) {
 	id := c.Param("id")
 

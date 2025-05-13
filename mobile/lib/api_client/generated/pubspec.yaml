@@ -1,0 +1,16 @@
+#
+# AUTO-GENERATED FILE, DO NOT MODIFY!
+#
+
+name: 'hd_psi_api'
+version: '1.0.0'
+description: '宏达服装进销存系统API客户端'
+homepage: 'https://github.com/example/hd_psi'
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+dependencies:
+  http: '>=0.13.0 <0.14.0'
+  intl: '^0.17.0'
+  meta: '^1.1.8'
+dev_dependencies:
+  test: '>=1.16.0 <1.18.0'

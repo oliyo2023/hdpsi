@@ -18,6 +18,23 @@ func NewMemberController(db *gorm.DB) *MemberController {
 	return &MemberController{db: db}
 }
 
+// ListMembers godoc
+// @Summary 获取会员列表
+// @Description 获取会员列表，支持按名称、手机号和等级筛选，并支持分页
+// @Tags 会员管理
+// @Accept json
+// @Produce json
+// @Param name query string false "会员名称（模糊查询）" example:"张三"
+// @Param phone query string false "手机号码（模糊查询）" example:"1380013"
+// @Param level query string false "会员等级" Enums(regular,silver,gold,platinum,diamond) example:"gold"
+// @Param page query int false "页码，默认1" minimum(1) example:"1"
+// @Param pageSize query int false "每页数量，默认10" minimum(1) maximum(100) example:"10"
+// @Success 200 {object} models.PaginatedResponse{items=[]models.Member} "成功获取会员列表"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /members [get]
+// @Security BearerAuth
 func (mc *MemberController) ListMembers(c *gin.Context) {
 	// 获取查询参数
 	name := c.Query("name")
@@ -63,6 +80,19 @@ func (mc *MemberController) ListMembers(c *gin.Context) {
 	})
 }
 
+// GetMember godoc
+// @Summary 获取会员详情
+// @Description 根据ID获取会员的详细信息，包括基本信息、等级、积分等
+// @Tags 会员管理
+// @Accept json
+// @Produce json
+// @Param id path int true "会员ID" example:"1"
+// @Success 200 {object} models.Member "成功获取会员详情"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "会员不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /members/{id} [get]
+// @Security BearerAuth
 func (mc *MemberController) GetMember(c *gin.Context) {
 	id := c.Param("id")
 	var member models.Member
@@ -73,6 +103,34 @@ func (mc *MemberController) GetMember(c *gin.Context) {
 	c.JSON(http.StatusOK, member)
 }
 
+// CreateMember godoc
+// @Summary 创建会员
+// @Description 创建新的会员，需提供必要的会员信息
+// @Tags 会员管理
+// @Accept json
+// @Produce json
+// @Param member body models.Member true "会员信息"
+// @Success 201 {object} models.APIResponse{data=models.Member} "创建成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误或手机号已被注册"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /members [post]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "张三",
+//	  "phone": "13800138000",
+//	  "gender": "male",
+//	  "birthday": "1990-01-01",
+//	  "email": "zhangsan@example.com",
+//	  "address": "北京市朝阳区",
+//	  "level": "gold",
+//	  "points": 1000,
+//	  "style_preference": "casual",
+//	  "consumption_level": "medium",
+//	  "note": "重要客户"
+//	}
 func (mc *MemberController) CreateMember(c *gin.Context) {
 	var member models.Member
 	if err := c.ShouldBindJSON(&member); err != nil {
@@ -110,6 +168,36 @@ func (mc *MemberController) CreateMember(c *gin.Context) {
 	})
 }
 
+// UpdateMember godoc
+// @Summary 更新会员
+// @Description 更新现有会员的信息，需提供完整的会员信息
+// @Tags 会员管理
+// @Accept json
+// @Produce json
+// @Param id path int true "会员ID" example:"1"
+// @Param member body models.Member true "会员信息"
+// @Success 200 {object} models.Member "更新成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "会员不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /members/{id} [put]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "张三（更新）",
+//	  "phone": "13900139000",
+//	  "gender": "male",
+//	  "birthday": "1990-01-01",
+//	  "email": "zhangsan_updated@example.com",
+//	  "address": "北京市海淀区",
+//	  "level": "platinum",
+//	  "points": 2000,
+//	  "style_preference": "business",
+//	  "consumption_level": "high",
+//	  "note": "VIP客户"
+//	}
 func (mc *MemberController) UpdateMember(c *gin.Context) {
 	id := c.Param("id")
 	var member models.Member
@@ -130,6 +218,19 @@ func (mc *MemberController) UpdateMember(c *gin.Context) {
 	c.JSON(http.StatusOK, member)
 }
 
+// DeleteMember godoc
+// @Summary 删除会员
+// @Description 删除指定ID的会员，此操作不可逆
+// @Tags 会员管理
+// @Accept json
+// @Produce json
+// @Param id path int true "会员ID" example:"1"
+// @Success 200 {object} models.APIResponse "删除成功"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "会员不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /members/{id} [delete]
+// @Security BearerAuth
 func (mc *MemberController) DeleteMember(c *gin.Context) {
 	id := c.Param("id")
 	if err := mc.db.Delete(&models.Member{}, id).Error; err != nil {

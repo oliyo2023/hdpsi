@@ -125,7 +125,12 @@ class ApiService {
   // POST请求
   Future<dynamic> post(String path, {dynamic data}) async {
     try {
+      Logger.i('ApiService', '发送POST请求: $path, 数据: $data');
       final response = await _dio.post(path, data: data);
+      Logger.i(
+        'ApiService',
+        '收到POST响应: ${response.statusCode}, 数据: ${response.data}',
+      );
       return response.data;
     } on DioException catch (e) {
       _handleError(e);
@@ -136,7 +141,12 @@ class ApiService {
   // PUT请求
   Future<dynamic> put(String path, {dynamic data}) async {
     try {
+      Logger.i('ApiService', '发送PUT请求: $path, 数据: $data');
       final response = await _dio.put(path, data: data);
+      Logger.i(
+        'ApiService',
+        '收到PUT响应: ${response.statusCode}, 数据: ${response.data}',
+      );
       return response.data;
     } on DioException catch (e) {
       _handleError(e);

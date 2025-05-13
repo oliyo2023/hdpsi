@@ -13,11 +13,19 @@ import (
 // Config 全局配置结构体
 type Config struct {
 	Server   ServerConfig
+	API      APIConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Log      LogConfig
 	CORS     CORSConfig
 	Wechat   WechatConfig // Add WechatConfig
+}
+
+// APIConfig API配置
+type APIConfig struct {
+	Version             string // API版本，如 v1
+	Prefix              string // API前缀，如 /api
+	EnableVersionPrefix bool   // 是否启用版本前缀，如 /api/v1
 }
 
 // WechatConfig 微信配置
@@ -45,6 +53,7 @@ type DatabaseConfig struct {
 	MaxIdleConns    int
 	MaxOpenConns    int
 	ConnMaxLifetime int
+	AutoMigrate     bool // 是否自动迁移数据库模型
 }
 
 // JWTConfig JWT配置
@@ -142,6 +151,11 @@ func setDefaultConfig() {
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("server.timeout", 30)
 
+	// API配置
+	viper.SetDefault("api.version", "v1")
+	viper.SetDefault("api.prefix", "/api")
+	viper.SetDefault("api.enable_version_prefix", true)
+
 	// 数据库配置
 	viper.SetDefault("database.host", "192.168.1.5")
 	viper.SetDefault("database.port", "3306")
@@ -154,6 +168,7 @@ func setDefaultConfig() {
 	viper.SetDefault("database.max_idle_conns", 10)
 	viper.SetDefault("database.max_open_conns", 100)
 	viper.SetDefault("database.conn_max_lifetime", 3600)
+	viper.SetDefault("database.auto_migrate", false) // 默认不自动迁移
 
 	// JWT配置
 	viper.SetDefault("jwt.secret", "hd_psi_secret_key")
@@ -286,4 +301,26 @@ func GetWechatToken() string {
 		InitConfig()
 	}
 	return AppConfig.Wechat.Token
+}
+
+// GetAPIBasePath 获取API基础路径
+func GetAPIBasePath() string {
+	// 如果配置未初始化，则初始化配置
+	if AppConfig.API.Prefix == "" {
+		InitConfig()
+	}
+
+	if AppConfig.API.EnableVersionPrefix {
+		return fmt.Sprintf("%s/%s", AppConfig.API.Prefix, AppConfig.API.Version)
+	}
+	return AppConfig.API.Prefix
+}
+
+// GetAPIVersion 获取API版本
+func GetAPIVersion() string {
+	// 如果配置未初始化，则初始化配置
+	if AppConfig.API.Version == "" {
+		InitConfig()
+	}
+	return AppConfig.API.Version
 }

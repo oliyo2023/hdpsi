@@ -80,18 +80,58 @@ class SupplierService {
 
   // 创建供应商
   Future<Supplier> createSupplier(Supplier supplier) async {
+    // 将 Supplier 对象转换为 JSON，并确保字段名称正确
+    final Map<String, dynamic> data = {
+      'name': supplier.name,
+      'code': supplier.code,
+      'type': supplier.type.toJson(),
+      'contact_person': supplier.contactPerson,
+      'contact_phone': supplier.contactPhone,
+      'email': supplier.email,
+      'address': supplier.address,
+      'city': supplier.city,
+      'rating': supplier.rating?.toString().split('.').last,
+      'qualification': supplier.qualification,
+      'payment_terms': supplier.paymentTerms,
+      'delivery_terms': supplier.deliveryTerms,
+      'status': supplier.status,
+      'note': supplier.note,
+    };
+
+    Logger.i('SupplierService', '创建供应商数据: $data');
+
     final response = await _apiService.post(
       AppConfig.suppliersPath,
-      data: supplier.toJson(),
+      data: data,
     );
     return Supplier.fromJson(response);
   }
 
   // 更新供应商
   Future<Supplier> updateSupplier(Supplier supplier) async {
+    // 将 Supplier 对象转换为 JSON，并确保字段名称正确
+    final Map<String, dynamic> data = {
+      'name': supplier.name,
+      'code': supplier.code,
+      'type': supplier.type.toJson(),
+      'contact_person': supplier.contactPerson,
+      'contact_phone': supplier.contactPhone,
+      'email': supplier.email,
+      'address': supplier.address,
+      'city': supplier.city,
+      'rating': supplier.rating?.toString().split('.').last,
+      'qualification': supplier.qualification,
+      'payment_terms': supplier.paymentTerms,
+      'delivery_terms': supplier.deliveryTerms,
+      'status': supplier.status,
+      'note': supplier.note,
+    };
+
+    Logger.i('SupplierService', '更新供应商数据: $data');
+
     final response = await _apiService.put(
       '${AppConfig.suppliersPath}/${supplier.id}',
-      data: supplier.toJson(),
+      data: data,
     );
     return Supplier.fromJson(response);
   }

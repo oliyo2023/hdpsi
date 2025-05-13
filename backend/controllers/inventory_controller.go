@@ -21,7 +21,22 @@ func NewInventoryController(db *gorm.DB) *InventoryController {
 	return &InventoryController{db: db}
 }
 
-// ListInventories 获取库存列表
+// ListInventories godoc
+// @Summary 获取库存列表
+// @Description 获取库存列表，支持按产品变体和店铺筛选，并支持分页
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Param product_variant_id query int false "产品变体ID" example:"1"
+// @Param store_id query int false "店铺ID" example:"1"
+// @Param page query int false "页码，默认1" minimum(1) example:"1"
+// @Param pageSize query int false "每页数量，默认10" minimum(1) maximum(100) example:"10"
+// @Success 200 {object} models.PaginatedResponse{items=[]models.Inventory} "成功获取库存列表"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /inventory [get]
+// @Security BearerAuth
 func (ic *InventoryController) ListInventories(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -81,7 +96,19 @@ func (ic *InventoryController) ListInventories(c *gin.Context) {
 	})
 }
 
-// GetInventory 获取库存详情
+// GetInventory godoc
+// @Summary 获取库存详情
+// @Description 根据ID获取库存的详细信息，包括产品变体和店铺信息
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Param id path int true "库存ID" example:"1"
+// @Success 200 {object} models.Inventory "成功获取库存详情"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "库存不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /inventory/{id} [get]
+// @Security BearerAuth
 func (ic *InventoryController) GetInventory(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -109,7 +136,28 @@ func (ic *InventoryController) GetInventory(c *gin.Context) {
 	c.JSON(http.StatusOK, inventory)
 }
 
-// CreateInventory 创建库存
+// CreateInventory godoc
+// @Summary 创建库存
+// @Description 创建新的库存记录，需提供产品变体ID、店铺ID和库存数量
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Param inventory body models.Inventory true "库存信息"
+// @Success 201 {object} models.Inventory "创建成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "产品变体或店铺不存在"
+// @Failure 409 {object} models.ErrorResponse "库存记录已存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /inventory [post]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "product_variant_id": 1,
+//	  "store_id": 1,
+//	  "quantity": 100
+//	}
 func (ic *InventoryController) CreateInventory(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -189,7 +237,27 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 	c.JSON(http.StatusCreated, inventory)
 }
 
-// UpdateInventory 更新库存
+// UpdateInventory godoc
+// @Summary 更新库存
+// @Description 更新现有库存记录，可以修改库存数量并提供更新原因
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Param id path int true "库存ID" example:"1"
+// @Param inventory body object true "库存信息"
+// @Success 200 {object} models.Inventory "更新成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "库存不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /inventory/{id} [put]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "quantity": 120,
+//	  "reason": "补货入库"
+//	}
 func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -256,7 +324,19 @@ func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 	c.JSON(http.StatusOK, existingInventory)
 }
 
-// DeleteInventory 删除库存
+// DeleteInventory godoc
+// @Summary 删除库存
+// @Description 删除指定ID的库存记录，此操作不可逆
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Param id path int true "库存ID" example:"1"
+// @Success 200 {object} models.APIResponse "删除成功"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "库存不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /inventory/{id} [delete]
+// @Security BearerAuth
 func (ic *InventoryController) DeleteInventory(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
