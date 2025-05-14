@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/animated_header.dart';
+import '../widgets/chinese_style_header.dart';
 import '../utils/app_theme.dart';
+import '../theme/app_colors.dart';
+import '../widgets/chinese_style_action.dart';
+import '../widgets/chinese_pattern_painter.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,8 +18,8 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          // 动画顶部
-          const AnimatedHeader(title: '服装进销存系统', height: 160.0),
+          // 中国风格动画顶部
+          const ChineseStyleHeader(title: '服装进销存系统', height: 180.0),
 
           // 内容区域
           Expanded(
@@ -105,51 +108,51 @@ class HomeScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildQuickAction(
-                              context,
+                            ChineseStyleAction(
                               icon: Icons.add_shopping_cart,
-                              title: '商品管理',
+                              title: '添加商品',
                               color: AppTheme.primaryColor,
+                              shapeType: ShapeType.seal,
                               onTap:
                                   () => Navigator.of(
                                     context,
                                   ).pushNamed('/products/add'),
                             ),
-                            _buildQuickAction(
-                              context,
+                            ChineseStyleAction(
                               icon: Icons.qr_code_scanner,
                               title: '扫码出库',
                               color: AppTheme.accentColor,
+                              shapeType: ShapeType.circle,
                               onTap:
                                   () => Navigator.of(
                                     context,
                                   ).pushNamed('/scan-checkout'),
                             ),
-                            _buildQuickAction(
-                              context,
+                            ChineseStyleAction(
                               icon: Icons.person_add,
-                              title: '会员管理',
-                              color: Colors.green,
+                              title: '添加会员',
+                              color: AppColors.chineseJade,
+                              shapeType: ShapeType.seal,
                               onTap:
                                   () => Navigator.of(
                                     context,
                                   ).pushNamed('/members/add'),
                             ),
-                            _buildQuickAction(
-                              context,
+                            ChineseStyleAction(
                               icon: Icons.business_center,
-                              title: '供应商管理',
-                              color: Colors.blue,
+                              title: '供应商',
+                              color: AppColors.chinesePorcelain,
+                              shapeType: ShapeType.circle,
                               onTap:
                                   () => Navigator.of(
                                     context,
                                   ).pushNamed('/suppliers'),
                             ),
-                            _buildQuickAction(
-                              context,
+                            ChineseStyleAction(
                               icon: Icons.search,
                               title: '库存查询',
-                              color: Colors.orange,
+                              color: AppColors.chineseLotus,
+                              shapeType: ShapeType.seal,
                               onTap:
                                   () => Navigator.of(
                                     context,
@@ -186,7 +189,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         '会员管理',
                         Icons.people,
-                        Colors.purple,
+                        AppColors.chineseJade,
                         '管理会员信息和积分',
                         () => Navigator.of(context).pushNamed('/members'),
                       ),
@@ -194,7 +197,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         '供应商管理',
                         Icons.business,
-                        Colors.blue,
+                        AppColors.chinesePorcelain,
                         '管理供应商信息和采购',
                         () => Navigator.of(context).pushNamed('/suppliers'),
                       ),
@@ -202,7 +205,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         '库存管理',
                         Icons.inventory_2,
-                        Colors.teal,
+                        AppTheme.accentColor,
                         '管理商品库存和出入库',
                         () => Navigator.of(context).pushNamed('/inventory'),
                       ),
@@ -210,7 +213,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         '销售统计',
                         Icons.bar_chart,
-                        Colors.amber.shade800,
+                        AppColors.chineseLotus,
                         '查看销售数据和报表',
                         () {},
                       ),
@@ -218,7 +221,7 @@ class HomeScreen extends StatelessWidget {
                         context,
                         'SKU生成器',
                         Icons.qr_code,
-                        Colors.purple,
+                        AppTheme.primaryDarkColor,
                         '生成商品SKU编码',
                         () => Navigator.of(context).pushNamed('/sku-generator'),
                       ),
@@ -296,39 +299,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickAction(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withAlpha(25),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 28, color: color),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeNormal,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFeatureCard(
     BuildContext context,
     String title,
@@ -341,41 +311,64 @@ class HomeScreen extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        side: BorderSide(color: color.withAlpha(50), width: 1),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(25),
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-                ),
-                child: Icon(icon, size: 28, color: color),
-              ),
-              const SizedBox(height: AppTheme.spacing),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: AppTheme.fontSizeMedium,
-                  fontWeight: FontWeight.bold,
+        child: Stack(
+          children: [
+            // 中国传统图案背景
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Opacity(
+                opacity: 0.05,
+                child: CustomPaint(
+                  size: const Size(60, 60),
+                  painter: ChinesePatternPainter(color: color),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: AppTheme.fontSizeSmall,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                ),
+            ),
+
+            // 内容
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(25),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadius,
+                      ),
+                      border: Border.all(color: color.withAlpha(50), width: 1),
+                    ),
+                    child: Icon(icon, size: 28, color: color),
+                  ),
+                  const SizedBox(height: AppTheme.spacing),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSizeMedium,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSizeSmall,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
