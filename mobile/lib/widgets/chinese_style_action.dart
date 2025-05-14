@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import 'dart:math' as math;
 
 /// 中国风格的快捷操作按钮
 class ChineseStyleAction extends StatelessWidget {
@@ -28,11 +29,7 @@ class ChineseStyleAction extends StatelessWidget {
       width: size,
       height: size,
       decoration: _getDecoration(),
-      child: Icon(
-        icon,
-        size: size * 0.5,
-        color: color,
-      ),
+      child: Icon(icon, size: size * 0.5, color: color),
     );
 
     return Column(
@@ -41,17 +38,14 @@ class ChineseStyleAction extends StatelessWidget {
         // 图标部分
         useInkEffect
             ? Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onTap,
-                  borderRadius: _getBorderRadius(),
-                  child: iconContainer,
-                ),
-              )
-            : GestureDetector(
+              color: Colors.transparent,
+              child: InkWell(
                 onTap: onTap,
+                borderRadius: _getBorderRadius(),
                 child: iconContainer,
               ),
+            )
+            : GestureDetector(onTap: onTap, child: iconContainer),
         const SizedBox(height: 8),
         // 标题部分
         Text(
@@ -74,38 +68,26 @@ class ChineseStyleAction extends StatelessWidget {
         return BoxDecoration(
           color: color.withAlpha(20),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: color.withAlpha(50),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withAlpha(50), width: 1.5),
         );
       case ShapeType.square:
         return BoxDecoration(
           color: color.withAlpha(20),
           borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-          border: Border.all(
-            color: color.withAlpha(50),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withAlpha(50), width: 1.5),
         );
       case ShapeType.octagon:
         return BoxDecoration(
           color: color.withAlpha(20),
           borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-          border: Border.all(
-            color: color.withAlpha(50),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withAlpha(50), width: 1.5),
           shape: BoxShape.rectangle,
         );
       case ShapeType.seal:
         return BoxDecoration(
           color: color.withAlpha(20),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: color.withAlpha(50),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withAlpha(50), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: color.withAlpha(30),
@@ -132,10 +114,10 @@ class ChineseStyleAction extends StatelessWidget {
 
 /// 形状类型
 enum ShapeType {
-  circle,  // 圆形
-  square,  // 方形
+  circle, // 圆形
+  square, // 方形
   octagon, // 八边形
-  seal,    // 印章
+  seal, // 印章
 }
 
 /// 中国风格的功能卡片
@@ -163,10 +145,7 @@ class ChineseStyleFeatureCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-        side: BorderSide(
-          color: color.withAlpha(50),
-          width: 1,
-        ),
+        side: BorderSide(color: color.withAlpha(50), width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -185,7 +164,7 @@ class ChineseStyleFeatureCard extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // 内容
             Padding(
               padding: const EdgeInsets.all(AppTheme.spacingMedium),
@@ -197,16 +176,15 @@ class ChineseStyleFeatureCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: color.withAlpha(25),
-                      borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-                      border: Border.all(
-                        color: color.withAlpha(50),
-                        width: 1,
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadius,
                       ),
+                      border: Border.all(color: color.withAlpha(50), width: 1),
                     ),
                     child: Icon(icon, size: 28, color: color),
                   ),
                   const SizedBox(height: AppTheme.spacing),
-                  
+
                   // 标题
                   Text(
                     title,
@@ -217,7 +195,7 @@ class ChineseStyleFeatureCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  
+
                   // 描述
                   Text(
                     description,
@@ -251,9 +229,9 @@ class ChineseStyleFeatureCard extends StatelessWidget {
 
 /// 图案类型
 enum PatternType {
-  cloud,   // 云纹
-  flower,  // 花纹
-  wave,    // 水纹
+  cloud, // 云纹
+  flower, // 花纹
+  wave, // 水纹
   lattice, // 格纹
 }
 
@@ -261,36 +239,43 @@ enum PatternType {
 class ChineseCloudPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
     final path = Path();
-    
+
     // 绘制中国传统云纹
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final radius = size.width / 3;
-    
+
     // 第一个云纹
     path.moveTo(centerX - radius, centerY);
     path.cubicTo(
-      centerX - radius, centerY - radius / 2,
-      centerX - radius / 2, centerY - radius / 2,
-      centerX, centerY
+      centerX - radius,
+      centerY - radius / 2,
+      centerX - radius / 2,
+      centerY - radius / 2,
+      centerX,
+      centerY,
     );
-    
+
     // 第二个云纹
     path.cubicTo(
-      centerX + radius / 2, centerY + radius / 2,
-      centerX + radius, centerY + radius / 2,
-      centerX + radius, centerY
+      centerX + radius / 2,
+      centerY + radius / 2,
+      centerX + radius,
+      centerY + radius / 2,
+      centerX + radius,
+      centerY,
     );
-    
+
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -299,41 +284,44 @@ class ChineseCloudPatternPainter extends CustomPainter {
 class ChineseFlowerPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final radius = size.width / 4;
-    
+
     // 绘制花朵中心
     canvas.drawCircle(Offset(centerX, centerY), radius / 4, paint);
-    
+
     // 绘制花瓣
     for (int i = 0; i < 4; i++) {
       final angle = i * math.pi / 2;
       final x1 = centerX + radius * math.cos(angle);
       final y1 = centerY + radius * math.sin(angle);
-      
+
       final path = Path();
       path.moveTo(centerX, centerY);
       path.quadraticBezierTo(
         centerX + radius * 0.8 * math.cos(angle + math.pi / 8),
         centerY + radius * 0.8 * math.sin(angle + math.pi / 8),
-        x1, y1
+        x1,
+        y1,
       );
       path.quadraticBezierTo(
         centerX + radius * 0.8 * math.cos(angle - math.pi / 8),
         centerY + radius * 0.8 * math.sin(angle - math.pi / 8),
-        centerX, centerY
+        centerX,
+        centerY,
       );
-      
+
       canvas.drawPath(path, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -342,41 +330,36 @@ class ChineseFlowerPatternPainter extends CustomPainter {
 class ChineseWavePatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
     final waveHeight = size.height / 6;
     final waveWidth = size.width / 3;
-    
+
     for (int i = 0; i < 3; i++) {
       final y = size.height * 0.2 + i * waveHeight * 2;
-      
+
       final path = Path();
       path.moveTo(0, y);
-      
+
       for (int j = 0; j < 6; j++) {
         final x1 = j * waveWidth / 2;
         final x2 = (j + 1) * waveWidth / 2;
-        
+
         if (j % 2 == 0) {
-          path.quadraticBezierTo(
-            (x1 + x2) / 2, y - waveHeight,
-            x2, y
-          );
+          path.quadraticBezierTo((x1 + x2) / 2, y - waveHeight, x2, y);
         } else {
-          path.quadraticBezierTo(
-            (x1 + x2) / 2, y + waveHeight,
-            x2, y
-          );
+          path.quadraticBezierTo((x1 + x2) / 2, y + waveHeight, x2, y);
         }
       }
-      
+
       canvas.drawPath(path, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -385,35 +368,33 @@ class ChineseWavePatternPainter extends CustomPainter {
 class ChineseLatticePatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
     final cellSize = size.width / 4;
-    
+
     // 绘制横线
     for (int i = 0; i <= 4; i++) {
       canvas.drawLine(
         Offset(0, i * cellSize),
         Offset(size.width, i * cellSize),
-        paint
+        paint,
       );
     }
-    
+
     // 绘制竖线
     for (int i = 0; i <= 4; i++) {
       canvas.drawLine(
         Offset(i * cellSize, 0),
         Offset(i * cellSize, size.height),
-        paint
+        paint,
       );
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-// 导入math库
-import 'dart:math' as math;

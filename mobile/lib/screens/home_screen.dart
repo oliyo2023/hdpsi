@@ -6,6 +6,7 @@ import '../utils/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../widgets/chinese_style_action.dart';
 import '../widgets/chinese_pattern_painter.dart';
+import '../widgets/chinese_style_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -165,9 +166,43 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // 主要功能
+                // 主要功能标题
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppTheme.spacingMedium,
+                      right: AppTheme.spacingMedium,
+                      top: AppTheme.spacingLarge,
+                      bottom: AppTheme.spacingSmall,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '主要功能',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 主要功能卡片
                 SliverPadding(
-                  padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMedium,
+                  ),
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -177,52 +212,58 @@ class HomeScreen extends StatelessWidget {
                           mainAxisSpacing: AppTheme.spacingMedium,
                         ),
                     delegate: SliverChildListDelegate([
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         '商品管理',
                         Icons.inventory,
                         AppTheme.primaryColor,
                         '管理所有商品信息',
+                        PatternType.cloud,
                         () => Navigator.of(context).pushNamed('/products'),
                       ),
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         '会员管理',
                         Icons.people,
                         AppColors.chineseJade,
                         '管理会员信息和积分',
+                        PatternType.flower,
                         () => Navigator.of(context).pushNamed('/members'),
                       ),
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         '供应商管理',
                         Icons.business,
                         AppColors.chinesePorcelain,
                         '管理供应商信息和采购',
+                        PatternType.wave,
                         () => Navigator.of(context).pushNamed('/suppliers'),
                       ),
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         '库存管理',
                         Icons.inventory_2,
                         AppTheme.accentColor,
                         '管理商品库存和出入库',
+                        PatternType.lattice,
                         () => Navigator.of(context).pushNamed('/inventory'),
                       ),
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         '销售统计',
                         Icons.bar_chart,
                         AppColors.chineseLotus,
                         '查看销售数据和报表',
+                        PatternType.flower,
                         () {},
                       ),
-                      _buildFeatureCard(
+                      _buildChineseStyleFeatureCard(
                         context,
                         'SKU生成器',
                         Icons.qr_code,
                         AppTheme.primaryDarkColor,
                         '生成商品SKU编码',
+                        PatternType.cloud,
                         () => Navigator.of(context).pushNamed('/sku-generator'),
                       ),
                     ]),

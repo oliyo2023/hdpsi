@@ -83,10 +83,9 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                         if (supplier.contactPerson != null &&
                             supplier.contactPerson!.isNotEmpty)
                           Text('联系人: ${supplier.contactPerson}'),
-                        if (supplier.code != null &&
-                            supplier
-                                .code!
-                                .isNotEmpty) // Assuming supplier model has a 'code' field
+                        if (supplier
+                            .code
+                            .isNotEmpty) // Assuming supplier model has a 'code' field
                           Text('编码: ${supplier.code}'),
                       ],
                     ),

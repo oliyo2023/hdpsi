@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import 'dart:math' as math;
 
 /// 中国风格卡片组件
 class ChineseStyleCard extends StatelessWidget {
@@ -28,7 +29,8 @@ class ChineseStyleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(AppTheme.borderRadius);
+    final effectiveBorderRadius =
+        borderRadius ?? BorderRadius.circular(AppTheme.borderRadius);
     final effectiveBackgroundColor = backgroundColor ?? AppTheme.cardColor;
     final effectiveBorderColor = borderColor ?? AppTheme.borderColor;
 
@@ -43,10 +45,7 @@ class ChineseStyleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: effectiveBackgroundColor,
             borderRadius: effectiveBorderRadius,
-            border: Border.all(
-              color: effectiveBorderColor,
-              width: 1.0,
-            ),
+            border: Border.all(color: effectiveBorderColor, width: 1.0),
           ),
           child: Stack(
             children: [
@@ -68,12 +67,9 @@ class ChineseStyleCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              
+
               // 卡片内容
-              Padding(
-                padding: padding,
-                child: child,
-              ),
+              Padding(padding: padding, child: child),
             ],
           ),
         ),
@@ -97,9 +93,9 @@ class ChineseStyleCard extends StatelessWidget {
 
 /// 中国传统图案类型
 enum PatternType {
-  cloud,   // 云纹
-  flower,  // 花纹
-  wave,    // 水纹
+  cloud, // 云纹
+  flower, // 花纹
+  wave, // 水纹
   lattice, // 格纹
 }
 
@@ -107,50 +103,63 @@ enum PatternType {
 class ChineseCloudPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
+
     final path = Path();
-    
+
     // 绘制中国传统云纹
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final radius = size.width / 3;
-    
+
     // 第一个云纹
     path.moveTo(centerX - radius, centerY);
     path.cubicTo(
-      centerX - radius, centerY - radius / 2,
-      centerX - radius / 2, centerY - radius / 2,
-      centerX, centerY
+      centerX - radius,
+      centerY - radius / 2,
+      centerX - radius / 2,
+      centerY - radius / 2,
+      centerX,
+      centerY,
     );
-    
+
     // 第二个云纹
     path.cubicTo(
-      centerX + radius / 2, centerY + radius / 2,
-      centerX + radius, centerY + radius / 2,
-      centerX + radius, centerY
+      centerX + radius / 2,
+      centerY + radius / 2,
+      centerX + radius,
+      centerY + radius / 2,
+      centerX + radius,
+      centerY,
     );
-    
+
     // 第三个云纹
     path.cubicTo(
-      centerX + radius, centerY - radius / 2,
-      centerX + radius / 2, centerY - radius,
-      centerX, centerY - radius
+      centerX + radius,
+      centerY - radius / 2,
+      centerX + radius / 2,
+      centerY - radius,
+      centerX,
+      centerY - radius,
     );
-    
+
     // 第四个云纹
     path.cubicTo(
-      centerX - radius / 2, centerY - radius,
-      centerX - radius, centerY - radius / 2,
-      centerX - radius, centerY
+      centerX - radius / 2,
+      centerY - radius,
+      centerX - radius,
+      centerY - radius / 2,
+      centerX - radius,
+      centerY,
     );
-    
+
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -159,41 +168,44 @@ class ChineseCloudPatternPainter extends CustomPainter {
 class ChineseFlowerPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
+
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final radius = size.width / 4;
-    
+
     // 绘制花朵中心
     canvas.drawCircle(Offset(centerX, centerY), radius / 4, paint);
-    
+
     // 绘制花瓣
     for (int i = 0; i < 8; i++) {
       final angle = i * math.pi / 4;
       final x1 = centerX + radius * math.cos(angle);
       final y1 = centerY + radius * math.sin(angle);
-      
+
       final path = Path();
       path.moveTo(centerX, centerY);
       path.quadraticBezierTo(
         centerX + radius * 0.8 * math.cos(angle + math.pi / 8),
         centerY + radius * 0.8 * math.sin(angle + math.pi / 8),
-        x1, y1
+        x1,
+        y1,
       );
       path.quadraticBezierTo(
         centerX + radius * 0.8 * math.cos(angle - math.pi / 8),
         centerY + radius * 0.8 * math.sin(angle - math.pi / 8),
-        centerX, centerY
+        centerX,
+        centerY,
       );
-      
+
       canvas.drawPath(path, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -202,41 +214,36 @@ class ChineseFlowerPatternPainter extends CustomPainter {
 class ChineseWavePatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
+
     final waveHeight = size.height / 6;
     final waveWidth = size.width / 3;
-    
+
     for (int i = 0; i < 3; i++) {
       final y = size.height * 0.2 + i * waveHeight * 2;
-      
+
       final path = Path();
       path.moveTo(0, y);
-      
+
       for (int j = 0; j < 6; j++) {
         final x1 = j * waveWidth / 2;
         final x2 = (j + 1) * waveWidth / 2;
-        
+
         if (j % 2 == 0) {
-          path.quadraticBezierTo(
-            (x1 + x2) / 2, y - waveHeight,
-            x2, y
-          );
+          path.quadraticBezierTo((x1 + x2) / 2, y - waveHeight, x2, y);
         } else {
-          path.quadraticBezierTo(
-            (x1 + x2) / 2, y + waveHeight,
-            x2, y
-          );
+          path.quadraticBezierTo((x1 + x2) / 2, y + waveHeight, x2, y);
         }
       }
-      
+
       canvas.drawPath(path, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -245,52 +252,50 @@ class ChineseWavePatternPainter extends CustomPainter {
 class ChineseLatticePatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
     final cellSize = size.width / 4;
-    
+
     // 绘制横线
     for (int i = 0; i <= 4; i++) {
       canvas.drawLine(
         Offset(0, i * cellSize),
         Offset(size.width, i * cellSize),
-        paint
+        paint,
       );
     }
-    
+
     // 绘制竖线
     for (int i = 0; i <= 4; i++) {
       canvas.drawLine(
         Offset(i * cellSize, 0),
         Offset(i * cellSize, size.height),
-        paint
+        paint,
       );
     }
-    
+
     // 绘制对角线
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         canvas.drawLine(
           Offset(i * cellSize, j * cellSize),
           Offset((i + 1) * cellSize, (j + 1) * cellSize),
-          paint
+          paint,
         );
-        
+
         canvas.drawLine(
           Offset((i + 1) * cellSize, j * cellSize),
           Offset(i * cellSize, (j + 1) * cellSize),
-          paint
+          paint,
         );
       }
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-// 导入math库
-import 'dart:math' as math;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../utils/error_handler.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -30,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = user;
       }
     } catch (e) {
-      _error = '加载用户信息失败: ${e.toString()}';
+      _error = ErrorHandler.getFriendlyMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -47,7 +48,8 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = await _authService.login(username, password);
       return true;
     } catch (e) {
-      _error = '登录失败: ${e.toString()}';
+      // 使用错误处理工具获取友好的错误消息
+      _error = ErrorHandler.getFriendlyMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -65,7 +67,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = null;
       _error = null;
     } catch (e) {
-      _error = '登出失败: ${e.toString()}';
+      _error = ErrorHandler.getFriendlyMessage(e);
     } finally {
       _isLoading = false;
       notifyListeners();
