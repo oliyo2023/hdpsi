@@ -1,5 +1,5 @@
 import 'api_adapter.dart';
-import 'generated/lib/api.dart' as api;
+import 'package:hd_psi_mobile/api_client/generated/lib/api.dart' as api;
 
 /// 库存API适配器
 class InventoryApiAdapter extends BaseApiAdapter {
@@ -21,12 +21,14 @@ class InventoryApiAdapter extends BaseApiAdapter {
     try {
       // 构建查询参数
       final queryParams = <api.QueryParam>[];
-      if (productVariantId != null)
+      if (productVariantId != null) {
         queryParams.add(
           api.QueryParam('product_variant_id', productVariantId.toString()),
         );
-      if (storeId != null)
+      }
+      if (storeId != null) {
         queryParams.add(api.QueryParam('store_id', storeId.toString()));
+      }
       queryParams.add(api.QueryParam('page', page.toString()));
       queryParams.add(api.QueryParam('pageSize', pageSize.toString()));
 

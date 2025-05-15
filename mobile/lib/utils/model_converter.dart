@@ -1,4 +1,4 @@
-import '../api_client/generated/lib/api.dart' as api;
+import 'package:hd_psi_mobile/api_client/generated/lib/api.dart' as api;
 import '../models/supplier.dart';
 
 /// 模型转换器
@@ -86,8 +86,6 @@ class ModelConverter {
       case SupplierType.distributor:
         return api.ModelsSupplierType.SupplierWholesaler; // 最接近的匹配
       case SupplierType.other:
-      // 所有其他情况
-      default:
         return api.ModelsSupplierType.SupplierOther;
     }
   }

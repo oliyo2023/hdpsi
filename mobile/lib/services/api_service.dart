@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/config.dart';
 import '../utils/logger.dart';
-import '../utils/error_handler.dart';
 import 'error_interceptor.dart';
 
 class ApiService {

@@ -73,9 +73,14 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
     });
 
     try {
-      // 获取当前用户
+      // 获取当前用户和库存提供者（在异步操作前）
       final user =
           Provider.of<AuthProvider>(context, listen: false).currentUser;
+      final inventoryProvider = Provider.of<InventoryProvider>(
+        context,
+        listen: false,
+      );
+
       if (user == null) throw Exception('用户信息获取失败');
 
       // 更新库存
@@ -83,15 +88,6 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
         'quantity': newQuantity,
         'reason': _reasonController.text,
       });
-
-      // 创建库存调整记录
-      final inventoryProvider = Provider.of<InventoryProvider>(
-        context,
-        listen: false,
-      );
-
-      // 保存BuildContext的引用
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
 
       await inventoryProvider.createTransaction({
         'TransactionType': 'adjustment',
@@ -102,8 +98,11 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
         'Note': '库存调整: ${_reasonController.text}',
       });
 
+      // 在使用context前检查widget是否仍然挂载在widget树上
       if (mounted) {
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('库存调整成功')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('库存调整成功')));
         Navigator.of(context).pop(true); // 返回并传递成功标志
       }
     } catch (e) {

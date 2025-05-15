@@ -89,7 +89,9 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.primaryColor.withOpacity(0.9),
+            AppTheme.primaryColor.withAlpha(
+              (AppTheme.primaryColor.a * 0.9).round(),
+            ),
             AppTheme.primaryDarkColor,
           ],
         ),
@@ -121,7 +123,7 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
               },
             ),
           ),
-          
+
           // 云纹1
           AnimatedBuilder(
             animation: _cloudAnimation1,
@@ -133,13 +135,17 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
                   opacity: _cloudAnimation1.value * 0.7,
                   child: CustomPaint(
                     size: const Size(100, 40),
-                    painter: CloudPainter(color: Colors.white.withOpacity(0.3)),
+                    painter: CloudPainter(
+                      color: Colors.white.withAlpha(
+                        (Colors.white.a * 0.3).round(),
+                      ),
+                    ),
                   ),
                 ),
               );
             },
           ),
-          
+
           // 云纹2
           AnimatedBuilder(
             animation: _cloudAnimation2,
@@ -151,13 +157,17 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
                   opacity: _cloudAnimation2.value * 0.5,
                   child: CustomPaint(
                     size: const Size(80, 30),
-                    painter: CloudPainter(color: Colors.white.withOpacity(0.2)),
+                    painter: CloudPainter(
+                      color: Colors.white.withAlpha(
+                        (Colors.white.a * 0.2).round(),
+                      ),
+                    ),
                   ),
                 ),
               );
             },
           ),
-          
+
           // 标题
           Positioned(
             bottom: 30,
@@ -178,7 +188,9 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withAlpha(
+                                  (Colors.white.a * 0.6).round(),
+                                ),
                                 width: 1,
                               ),
                               borderRadius: BorderRadius.circular(4),
@@ -210,7 +222,7 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
               },
             ),
           ),
-          
+
           // 返回按钮
           if (widget.showBackButton)
             Positioned(
@@ -256,46 +268,48 @@ class _ChineseStyleHeaderState extends State<ChineseStyleHeader>
 /// 云纹绘制器
 class CloudPainter extends CustomPainter {
   final Color color;
-  
+
   CloudPainter({required this.color});
-  
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    
+    final paint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
+
     final path = Path();
-    
+
     // 绘制中国传统云纹
     path.moveTo(0, size.height * 0.5);
-    
+
     // 第一个云纹
     path.quadraticBezierTo(
-      size.width * 0.2, 0, 
-      size.width * 0.4, size.height * 0.4
+      size.width * 0.2,
+      0,
+      size.width * 0.4,
+      size.height * 0.4,
     );
-    
+
     // 第二个云纹
     path.quadraticBezierTo(
-      size.width * 0.6, size.height * 0.8, 
-      size.width * 0.8, size.height * 0.3
+      size.width * 0.6,
+      size.height * 0.8,
+      size.width * 0.8,
+      size.height * 0.3,
     );
-    
+
     // 第三个云纹
-    path.quadraticBezierTo(
-      size.width * 0.9, 0, 
-      size.width, size.height * 0.5
-    );
-    
+    path.quadraticBezierTo(size.width * 0.9, 0, size.width, size.height * 0.5);
+
     // 闭合路径
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();
-    
+
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -304,58 +318,70 @@ class CloudPainter extends CustomPainter {
 class MountainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-    
+    final paint =
+        Paint()
+          ..color = Colors.black.withAlpha((Colors.black.a * 0.1).round())
+          ..style = PaintingStyle.fill;
+
     final path = Path();
-    
+
     // 远山
     path.moveTo(0, size.height * 0.7);
     path.quadraticBezierTo(
-      size.width * 0.2, size.height * 0.5, 
-      size.width * 0.4, size.height * 0.6
+      size.width * 0.2,
+      size.height * 0.5,
+      size.width * 0.4,
+      size.height * 0.6,
     );
     path.quadraticBezierTo(
-      size.width * 0.6, size.height * 0.7, 
-      size.width * 0.8, size.height * 0.5
+      size.width * 0.6,
+      size.height * 0.7,
+      size.width * 0.8,
+      size.height * 0.5,
     );
     path.quadraticBezierTo(
-      size.width * 0.9, size.height * 0.4, 
-      size.width, size.height * 0.6
+      size.width * 0.9,
+      size.height * 0.4,
+      size.width,
+      size.height * 0.6,
     );
-    
+
     // 闭合路径
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();
-    
+
     canvas.drawPath(path, paint);
-    
+
     // 近山
     final nearPath = Path();
     nearPath.moveTo(0, size.height * 0.8);
     nearPath.quadraticBezierTo(
-      size.width * 0.3, size.height * 0.7, 
-      size.width * 0.5, size.height * 0.8
+      size.width * 0.3,
+      size.height * 0.7,
+      size.width * 0.5,
+      size.height * 0.8,
     );
     nearPath.quadraticBezierTo(
-      size.width * 0.7, size.height * 0.9, 
-      size.width, size.height * 0.75
+      size.width * 0.7,
+      size.height * 0.9,
+      size.width,
+      size.height * 0.75,
     );
-    
+
     // 闭合路径
     nearPath.lineTo(size.width, size.height);
     nearPath.lineTo(0, size.height);
     nearPath.close();
-    
-    final nearPaint = Paint()
-      ..color = Colors.black.withOpacity(0.15)
-      ..style = PaintingStyle.fill;
-    
+
+    final nearPaint =
+        Paint()
+          ..color = Colors.black.withAlpha((Colors.black.a * 0.15).round())
+          ..style = PaintingStyle.fill;
+
     canvas.drawPath(nearPath, nearPaint);
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../api_client/api_adapter.dart';
-import '../api_client/generated/lib/api.dart' as api;
+import 'package:hd_psi_mobile/api_client/generated/lib/api.dart' as api;
 import '../utils/logger.dart';
 
 /// 供应商提供者
-/// 
+///
 /// 使用API适配器获取和管理供应商数据
 class SupplierProvider with ChangeNotifier {
   final SupplierApiAdapter _supplierAdapter = SupplierApiAdapter();

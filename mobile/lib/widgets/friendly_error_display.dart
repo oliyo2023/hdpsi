@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
-import '../utils/app_theme.dart';
 
 /// 友好的错误显示组件
-/// 
+///
 /// 显示用户友好的错误消息，并提供重试选项
 class FriendlyErrorDisplay extends StatelessWidget {
   /// 错误消息
   final String message;
-  
+
   /// 重试回调
   final VoidCallback? onRetry;
-  
+
   /// 图标
   final IconData icon;
-  
+
   /// 图标颜色
   final Color iconColor;
-  
+
   /// 是否显示重试按钮
   final bool showRetryButton;
 
@@ -78,24 +77,17 @@ class FriendlyErrorDisplay extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 错误图标
-            Icon(
-              icon,
-              color: iconColor,
-              size: 64,
-            ),
+            Icon(icon, color: iconColor, size: 64),
             const SizedBox(height: 24),
-            
+
             // 错误消息
             Text(
               message,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+
             // 重试按钮
             if (showRetryButton && onRetry != null)
               ElevatedButton.icon(

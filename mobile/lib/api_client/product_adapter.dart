@@ -26,11 +26,13 @@ class ProductApiAdapter extends BaseApiAdapter {
       final queryParams = <api.QueryParam>[];
       if (name != null) queryParams.add(api.QueryParam('name', name));
       if (code != null) queryParams.add(api.QueryParam('code', code));
-      if (category != null)
+      if (category != null) {
         queryParams.add(api.QueryParam('category', category));
+      }
       if (brand != null) queryParams.add(api.QueryParam('brand', brand));
-      if (status != null)
+      if (status != null) {
         queryParams.add(api.QueryParam('status', status.toString()));
+      }
       queryParams.add(api.QueryParam('page', page.toString()));
       queryParams.add(api.QueryParam('pageSize', pageSize.toString()));
 
