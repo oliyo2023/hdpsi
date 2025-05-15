@@ -896,68 +896,71 @@ const handleSave = () => {
   }
 
   // 打印当前表单数据状态
-  console.log('保存前的表单数据:', formData)
+  console.log('保存前的表单数据:', formData);
 
-  formRef.value?.validate(async (errors) => {
-    if (errors) {
-      console.error('表单验证错误:', errors)
-      return
-    }
+  // 使用 Promise-based validate
+  formRef.value?.validate()
+    .then(async () => { // Validation passed
+      console.log('表单验证成功');
+      saving.value = true;
+      try {
+        // 从编辑器获取最新的HTML内容
+        if (editor.value) {
+          formData.description = editor.value.getHtml();
+        }
 
-    saving.value = true
-    try {
-      // 从编辑器获取最新的HTML内容
-      if (editor.value) {
-        formData.description = editor.value.getHtml()
+        // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
+        const productData = {
+          sku: formData.sku,
+          name: formData.name,
+          // 确保ID字段是数字类型
+          categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
+          brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
+          description: formData.description,
+          costPrice: formData.costPrice,
+          retailPrice: formData.retailPrice,
+          images: formData.images,
+          status: formData.status,
+          variants: variants.value.map(v => ({
+            colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
+            sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
+            seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
+            fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
+            barcode: v.barcode,
+            costPrice: v.costPrice,
+            retailPrice: v.retailPrice
+          }))
+        };
+
+        console.log('发送到后端的数据:', productData);
+
+        // 调用API保存商品数据
+        if (isEdit.value) {
+          productData.id = productId.value;
+          await productService.updateProduct(productId.value, productData);
+          message.success('商品更新成功');
+        } else {
+          await productService.createProduct(productData);
+          message.success('商品添加成功');
+        }
+
+        // 显示成功消息后返回列表页面
+        setTimeout(() => {
+          router.push('/products');
+        }, 500);
+
+      } catch (error) {
+        console.error('保存商品失败:', error);
+        message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'));
+      } finally {
+        saving.value = false;
       }
-
-      // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
-      const productData = {
-        sku: formData.sku,
-        name: formData.name,
-        // 确保ID字段是数字类型
-        categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
-        brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
-        description: formData.description,
-        costPrice: formData.costPrice,
-        retailPrice: formData.retailPrice,
-        images: formData.images,
-        status: formData.status,
-        variants: variants.value.map(v => ({
-          colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
-          sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
-          seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
-          fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
-          barcode: v.barcode,
-          costPrice: v.costPrice,
-          retailPrice: v.retailPrice
-        }))
-      }
-
-      // 调试输出
-      console.log('发送到后端的数据:', productData)
-
-      // 调用API保存商品数据
-      if (isEdit.value) {
-        productData.id = productId.value
-        await productService.updateProduct(productId.value, productData)
-        message.success('商品更新成功')
-      } else {
-        await productService.createProduct(productData)
-        message.success('商品添加成功')
-      }
-
-      // 显示成功消息后返回列表页面
-      setTimeout(() => {
-        router.push('/products')
-      }, 500)
-    } catch (error) {
-      console.error('保存商品失败:', error)
-      message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'))
-    } finally {
-      saving.value = false
-    }
-  })
+    })
+    .catch((errors) => { // Validation failed
+      console.error('表单验证错误:', errors);
+      // Add a user-friendly message for validation errors
+      message.error('表单填写有误，请检查');
+    });
 }
 
 // 生命周期钩子

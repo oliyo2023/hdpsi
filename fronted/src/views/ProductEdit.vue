@@ -442,6 +442,9 @@ const handleSave = async () => {
   // 手动验证必填字段
   let hasError = false;
 
+  // 检查保存时 formData.category 的值
+  console.log('保存时formData.category的值:', formData.category);
+
   // 验证SKU
   if (!formData.sku) {
     message.error('请输入商品SKU');
@@ -454,7 +457,7 @@ const handleSave = async () => {
     hasError = true;
   }
 
-  // 验证商品类别
+  // 验证商���类别
   if (!formData.category) {
     message.error('请选择商品类别');
     hasError = true;
