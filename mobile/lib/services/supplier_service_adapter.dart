@@ -1,8 +1,8 @@
-import '../api_client/api_adapter.dart';
-import '../models/supplier.dart';
-import '../utils/logger.dart';
-import '../utils/model_converter.dart';
-import 'supplier_service.dart';
+import 'package:hd_psi_mobile/api_client/api_adapter.dart';
+import 'package:hd_psi_mobile/models/supplier.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/utils/model_converter.dart';
+import 'package:hd_psi_mobile/services/supplier_service.dart';
 
 /// 供应商服务适配器
 ///

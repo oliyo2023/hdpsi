@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
-import '../models/product.dart';
-import '../utils/config.dart';
-import '../utils/logger.dart';
-import 'api_service.dart';
+import 'package:hd_psi_mobile/models/product.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/services/api_service.dart';
 
 class ProductService {
   final ApiService _apiService = ApiService();
