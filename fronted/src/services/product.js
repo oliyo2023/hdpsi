@@ -33,7 +33,12 @@ export default {
 
   // 更新商品
   async updateProduct(id, productData) {
-    const response = await api.put(`/api/products/${id}`, convertFrontendFields(productData))
+    // 移除可能导致问题的时间字段
+    const cleanData = { ...productData };
+    delete cleanData.createdAt;
+    delete cleanData.updatedAt;
+
+    const response = await api.put(`/api/products/${id}`, convertFrontendFields(cleanData))
     return convertBackendFields(response)
   },
 

@@ -632,7 +632,11 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 
 	// 更新商品
 	input.Product.ID = product.ID
-	if err := tx.Save(&input.Product).Error; err != nil {
+	// 保留原始的创建时间
+	input.Product.CreatedAt = product.CreatedAt
+
+	// 使用Select排除created_at字段，避免更新该字段
+	if err := tx.Model(&product).Omit("created_at").Updates(&input.Product).Error; err != nil {
 		tx.Rollback()
 		log.Error("更新商品失败", logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseUpdate).
@@ -675,7 +679,13 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		if variant.ID != 0 { // If variant has an ID, check if it exists
 			if _, exists := existingVariantsMap[variant.ID]; exists {
 				// Variant exists, update it
-				if err := tx.Save(variant).Error; err != nil {
+				// 获取原始变体数据
+				existingVariant := existingVariantsMap[variant.ID]
+				// 保留原始的创建时间
+				variant.CreatedAt = existingVariant.CreatedAt
+
+				// 使用Omit排除created_at字段，避免更新该字段
+				if err := tx.Model(&existingVariant).Omit("created_at").Updates(variant).Error; err != nil {
 					tx.Rollback()
 					log.Error("更新商品变体失败",
 						logger.F("product_id", product.ID),

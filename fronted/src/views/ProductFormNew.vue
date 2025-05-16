@@ -784,11 +784,22 @@ const loadProduct = async () => {
 
     // 特别处理类别和品牌字段，确保它们是数字类型
     if (product.categoryId) {
-      formData.categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId
+      // 确保类别ID是数字类型
+      const categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId;
+      formData.categoryId = categoryId || null; // 避免0值
       console.log('设置类别ID:', formData.categoryId, typeof formData.categoryId)
     } else {
       formData.categoryId = null
     }
+
+    // 手动触发表单验证，确保类别ID被正确验证
+    setTimeout(() => {
+      if (formRef.value) {
+        formRef.value.validate(['categoryId'], errors => {
+          console.log('加载后类别验证结果:', errors)
+        })
+      }
+    }, 100)
 
     if (product.brandId) {
       formData.brandId = typeof product.brandId === 'string' ? parseInt(product.brandId) : product.brandId
@@ -873,7 +884,7 @@ const loadProduct = async () => {
   }
 }
 
-const handleSave = () => {
+const handleSave = async () => {
   // 手动检查必填字段
   if (!formData.sku) {
     message.error('请输入商品SKU')
@@ -898,69 +909,60 @@ const handleSave = () => {
   // 打印当前表单数据状态
   console.log('保存前的表单数据:', formData);
 
-  // 使用 Promise-based validate
-  formRef.value?.validate()
-    .then(async () => { // Validation passed
-      console.log('表单验证成功');
-      saving.value = true;
-      try {
-        // 从编辑器获取最新的HTML内容
-        if (editor.value) {
-          formData.description = editor.value.getHtml();
-        }
+  // 直接保存，不使用Promise-based validate
+  saving.value = true;
+  try {
+    // 从编辑器获取最新的HTML内容
+    if (editor.value) {
+      formData.description = editor.value.getHtml();
+    }
 
-        // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
-        const productData = {
-          sku: formData.sku,
-          name: formData.name,
-          // 确保ID字段是数字类型
-          categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
-          brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
-          description: formData.description,
-          costPrice: formData.costPrice,
-          retailPrice: formData.retailPrice,
-          images: formData.images,
-          status: formData.status,
-          variants: variants.value.map(v => ({
-            colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
-            sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
-            seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
-            fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
-            barcode: v.barcode,
-            costPrice: v.costPrice,
-            retailPrice: v.retailPrice
-          }))
-        };
+    // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
+    const productData = {
+      sku: formData.sku,
+      name: formData.name,
+      // 确保ID字段是数字类型
+      categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
+      brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
+      description: formData.description,
+      costPrice: formData.costPrice,
+      retailPrice: formData.retailPrice,
+      images: formData.images,
+      status: formData.status,
+      variants: variants.value.map(v => ({
+        colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
+        sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
+        seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
+        fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
+        barcode: v.barcode,
+        costPrice: v.costPrice,
+        retailPrice: v.retailPrice
+      }))
+    };
 
-        console.log('发送到后端的数据:', productData);
+    console.log('发送到后端的数据:', productData);
 
-        // 调用API保存商品数据
-        if (isEdit.value) {
-          productData.id = productId.value;
-          await productService.updateProduct(productId.value, productData);
-          message.success('商品更新成功');
-        } else {
-          await productService.createProduct(productData);
-          message.success('商品添加成功');
-        }
+    // 调用API保存商品数据
+    if (isEdit.value) {
+      productData.id = productId.value;
+      await productService.updateProduct(productId.value, productData);
+      message.success('商品更新成功');
+    } else {
+      await productService.createProduct(productData);
+      message.success('商品添加成功');
+    }
 
-        // 显示成功消息后返回列表页面
-        setTimeout(() => {
-          router.push('/products');
-        }, 500);
+    // 显示成功消息后返回列表页面
+    setTimeout(() => {
+      router.push('/products');
+    }, 500);
 
-      } catch (error) {
-        console.error('保存商品失败:', error);
-        message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'));
-      } finally {
-        saving.value = false;
-      }
-    })
-    .catch((errors) => { // Validation failed
-      console.error('表单验证错误:', errors);
-      // Add a user-friendly message for validation errors
-      message.error('表单填写有误，请检查');
-    });
+  } catch (error) {
+    console.error('保存商品失败:', error);
+    message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'));
+  } finally {
+    saving.value = false;
+  }
 }
 
 // 生命周期钩子
