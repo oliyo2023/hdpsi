@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../utils/logger.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
 
 /// JSON适配器
 ///

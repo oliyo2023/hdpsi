@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/config.dart';
-import '../utils/logger.dart';
-import 'error_interceptor.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/services/error_interceptor.dart';
 
 class ApiService {
   late Dio _dio;

@@ -1,6 +1,6 @@
 import 'dart:convert';
-import '../utils/logger.dart';
-import '../utils/config.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:hd_psi_mobile/api_client/generated/lib/api.dart' as api;
