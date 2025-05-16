@@ -14,10 +14,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	// 添加API版本中间件
 	r.Use(middleware.APIVersionMiddleware())
 	r.Use(middleware.APIVersionHeaderMiddleware())
-	
+
 	// 添加API弃用中间件（如果有弃用的版本）
 	// r.Use(middleware.APIDeprecationMiddleware([]string{"v0"}))
-	
+
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	// 认证路由
@@ -34,7 +34,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 	// 获取API基础路径
 	apiBasePath := config.GetAPIBasePath()
-	
+
 	// API路由组 - 使用版本前缀
 	api := r.Group(apiBasePath)
 
@@ -218,41 +218,5 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			checkGroup.PUT("/adjustments/:adjustmentId/approve", middleware.RoleAuth("admin", "manager"), inventoryCheckController.ApproveAdjustment)
 		}
 
-		// 销售管理路由
-		salesController := controllers.NewSalesController(db)
-		salesGroup := apiAuth.Group("/sales")
-		{
-			// 最近销售路由
-			salesGroup.GET("/recent", salesController.GetRecentSales)
-
-			// 销售订单路由
-			salesGroup.GET("/orders", salesController.ListOrders)
-			salesGroup.GET("/orders/:id", salesController.GetOrder)
-			salesGroup.POST("/orders", middleware.RoleAuth("admin", "manager", "cashier"), salesController.CreateOrder)
-			salesGroup.PUT("/orders/:id/status", middleware.RoleAuth("admin", "manager", "cashier"), salesController.UpdateOrderStatus)
-
-			// 退换货路由
-			salesGroup.POST("/returns", middleware.RoleAuth("admin", "manager", "cashier"), salesController.CreateReturnOrder)
-			salesGroup.PUT("/returns/:id/status", middleware.RoleAuth("admin", "manager"), salesController.UpdateReturnOrderStatus)
-		}
-
-		// 试衣管理路由
-		fittingController := controllers.NewFittingController(db)
-		fittingGroup := apiAuth.Group("/fitting")
-		{
-			// 试衣间路由
-			fittingGroup.GET("/rooms", fittingController.ListFittingRooms)
-			fittingGroup.GET("/rooms/:id", fittingController.GetFittingRoom)
-			fittingGroup.POST("/rooms", middleware.RoleAuth("admin", "manager"), fittingController.CreateFittingRoom)
-			fittingGroup.PUT("/rooms/:id", middleware.RoleAuth("admin", "manager"), fittingController.UpdateFittingRoom)
-			fittingGroup.DELETE("/rooms/:id", middleware.RoleAuth("admin"), fittingController.DeleteFittingRoom)
-
-			// 试衣记录路由
-			fittingGroup.GET("/records", fittingController.ListFittingRecords)
-			fittingGroup.GET("/records/:id", fittingController.GetFittingRecord)
-			fittingGroup.POST("/records", middleware.RoleAuth("admin", "manager", "staff"), fittingController.CreateFittingRecord)
-			fittingGroup.PUT("/records/:id", middleware.RoleAuth("admin", "manager", "staff"), fittingController.UpdateFittingRecord)
-			fittingGroup.PUT("/records/:id/complete", middleware.RoleAuth("admin", "manager", "staff"), fittingController.CompleteFitting)
-		}
 	}
 }

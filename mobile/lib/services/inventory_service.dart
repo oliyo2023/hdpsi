@@ -1,6 +1,6 @@
-import '../models/inventory.dart';
-import '../utils/config.dart';
-import 'api_service.dart';
+import 'package:hd_psi_mobile/models/inventory.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/services/api_service.dart';
 
 class InventoryService {
   final ApiService _apiService = ApiService();

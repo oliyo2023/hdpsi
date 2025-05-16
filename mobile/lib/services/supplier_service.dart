@@ -1,7 +1,7 @@
-import '../models/supplier.dart';
-import '../utils/config.dart';
-import '../utils/logger.dart';
-import 'api_service.dart';
+import 'package:hd_psi_mobile/models/supplier.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/services/api_service.dart';
 
 class SupplierService {
   final ApiService _apiService = ApiService();

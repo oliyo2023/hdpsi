@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'api_service.dart';
-import '../utils/config.dart';
-import '../models/user.dart';
-import '../api_client/api_adapter.dart';
+import 'package:hd_psi_mobile/services/api_service.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/models/user.dart';
+import 'package:hd_psi_mobile/api_client/api_adapter.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();

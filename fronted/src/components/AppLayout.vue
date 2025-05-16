@@ -258,7 +258,18 @@ const menuOptions = computed(() => {
       label: '销售管理',
       key: 'sales',
       icon: CartOutline,
-      path: '/sales'
+      children: [
+        {
+          label: '销售订单',
+          key: 'sales-orders',
+          path: '/sales/orders'
+        },
+        {
+          label: '退换货管理',
+          key: 'sales-returns',
+          path: '/sales/returns'
+        }
+      ]
     }
   ]
 
@@ -373,11 +384,18 @@ const getPageTitle = () => {
     '/members': '会员管理',
     '/purchases': '采购管理',
     '/suppliers': '供应商管理',
-    '/sales': '销售管理',
+    '/sales/orders': '销售订单',
+    '/sales/returns': '退换货管理',
+    '/sales/returns/create': '创建退换货申请',
     '/profile': '个人信息',
     '/settings': '系统设置',
     '/dictionaries': '字典管理',
     '/permissions': '权限管理'
+  }
+
+  // 处理退换货详情页面
+  if (path.startsWith('/sales/returns/') && !path.includes('create')) {
+    return '退换货详情'
   }
 
   // 处理子路径

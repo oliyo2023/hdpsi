@@ -99,13 +99,6 @@ func main() {
 			&models.InventoryCheck{},
 			&models.InventoryCheckItem{},
 			&models.InventoryCheckAdjustment{},
-			&models.SalesOrder{},
-			&models.SalesOrderItem{},
-			&models.NegotiationRecord{},
-			&models.FittingRecord{},
-			&models.ReturnOrder{},
-			&models.ReturnOrderItem{},
-			&models.FittingRoom{},
 			&controllers.PointsTransaction{},
 			&models.SystemSetting{},
 		)

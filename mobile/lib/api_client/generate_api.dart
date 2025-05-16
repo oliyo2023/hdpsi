@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../utils/logger.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
 
 /// 生成API客户端
 ///
