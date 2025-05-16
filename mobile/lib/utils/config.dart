@@ -13,7 +13,7 @@ class AppConfig {
   // 预定义的环境配置
   static const Map<String, String> environments = {
     'local': 'http://localhost:8080',
-    'dev': 'http://192.168.1.7:8081',
+    'dev': 'http://192.168.1.4:8081',
     'test': 'http://test-api.example.com',
     'prod': 'https://api.example.com',
   };
@@ -31,6 +31,7 @@ class AppConfig {
   static const String membersPath = '/api/members';
   static const String inventoryPath = '/api/inventory';
   static const String inventoryTransactionsPath = '/api/inventory-transactions';
+  static const String suppliersPath = '/api/suppliers';
 
   // 应用名称
   static const String appName = '服装进销存系统';

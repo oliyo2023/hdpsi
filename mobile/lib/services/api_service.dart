@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/config.dart';
-import '../utils/logger.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/utils/logger.dart';
+import 'package:hd_psi_mobile/services/error_interceptor.dart';
 
 class ApiService {
   late Dio _dio;
@@ -31,7 +32,8 @@ class ApiService {
     _dio = Dio(options);
 
     // 添加拦截器
-    _dio.interceptors.add(
+    _dio.interceptors.addAll([
+      // 认证拦截器
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // 获取令牌并添加到请求头
@@ -57,7 +59,9 @@ class ApiService {
           return handler.next(e);
         },
       ),
-    );
+      // 错误处理拦截器
+      ErrorInterceptor(),
+    ]);
   }
 
   // 重试请求
@@ -125,7 +129,12 @@ class ApiService {
   // POST请求
   Future<dynamic> post(String path, {dynamic data}) async {
     try {
+      Logger.i('ApiService', '发送POST请求: $path, 数据: $data');
       final response = await _dio.post(path, data: data);
+      Logger.i(
+        'ApiService',
+        '收到POST响应: ${response.statusCode}, 数据: ${response.data}',
+      );
       return response.data;
     } on DioException catch (e) {
       _handleError(e);
@@ -136,7 +145,12 @@ class ApiService {
   // PUT请求
   Future<dynamic> put(String path, {dynamic data}) async {
     try {
+      Logger.i('ApiService', '发送PUT请求: $path, 数据: $data');
       final response = await _dio.put(path, data: data);
+      Logger.i(
+        'ApiService',
+        '收到PUT响应: ${response.statusCode}, 数据: ${response.data}',
+      );
       return response.data;
     } on DioException catch (e) {
       _handleError(e);
@@ -157,25 +171,7 @@ class ApiService {
 
   // 错误处理
   void _handleError(DioException e) {
-    String errorMessage = '未知错误';
-
-    if (e.response != null) {
-      // 服务器返回错误
-      if (e.response!.data is Map && e.response!.data['error'] != null) {
-        errorMessage = e.response!.data['error'];
-      } else {
-        errorMessage = '服务器错误: ${e.response!.statusCode}';
-      }
-    } else if (e.type == DioExceptionType.connectionTimeout) {
-      errorMessage = '连接超时';
-    } else if (e.type == DioExceptionType.receiveTimeout) {
-      errorMessage = '接收超时';
-    } else if (e.type == DioExceptionType.sendTimeout) {
-      errorMessage = '发送超时';
-    } else if (e.type == DioExceptionType.connectionError) {
-      errorMessage = '网络连接错误';
-    }
-
-    Logger.e('ApiService', 'API错误: $errorMessage');
+    // 错误已经由 ErrorInterceptor 处理，这里只记录一个简短的日志
+    Logger.e('ApiService', '请求失败: ${e.requestOptions.path}');
   }
 }

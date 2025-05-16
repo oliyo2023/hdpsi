@@ -50,6 +50,7 @@
                 placeholder="请选择类别"
                 :options="categoryOptions"
                 clearable
+                @update:value="handleCategoryChange"
               />
             </n-form-item-gi>
             <n-form-item-gi label="品牌" path="brand">
@@ -58,6 +59,7 @@
                 placeholder="请选择品牌"
                 :options="brandOptions"
                 clearable
+                @update:value="handleBrandChange"
               />
             </n-form-item-gi>
           </n-grid>
@@ -375,6 +377,22 @@ const goBack = () => {
   router.push('/products')
 }
 
+// 处理类别变更
+const handleCategoryChange = (val) => {
+  console.log('类别选择变更:', val, typeof val);
+  // 确保值是数字类型
+  formData.category = val === null ? null : (typeof val === 'string' ? parseInt(val) : val);
+  console.log('处理后的类别ID:', formData.category, typeof formData.category);
+}
+
+// 处理品牌变更
+const handleBrandChange = (val) => {
+  console.log('品牌选择变更:', val, typeof val);
+  // 确保值是数字类型
+  formData.brand = val === null ? null : (typeof val === 'string' ? parseInt(val) : val);
+  console.log('处理后的品牌ID:', formData.brand, typeof formData.brand);
+}
+
 // 生成SKU
 const generateSKU = async () => {
   if (!formData.category || !formData.brand) {
@@ -442,6 +460,9 @@ const handleSave = async () => {
   // 手动验证必填字段
   let hasError = false;
 
+  // 检查保存时 formData.category 的值
+  console.log('保存时formData.category的值:', formData.category);
+
   // 验证SKU
   if (!formData.sku) {
     message.error('请输入商品SKU');
@@ -455,6 +476,7 @@ const handleSave = async () => {
   }
 
   // 验证商品类别
+  console.log('验证类别时的值:', formData.category, typeof formData.category);
   if (!formData.category) {
     message.error('请选择商品类别');
     hasError = true;
@@ -485,11 +507,11 @@ const handleSave = async () => {
       id: productId.value,
       sku: formData.sku,
       name: formData.name,
-      categoryID: getCategoryID(formData.category),
-      brandID: getBrandID(formData.brand),
-      colorID: getColorID(formData.color),
-      sizeID: getSizeID(formData.size),
-      seasonID: getSeasonID(formData.season),
+      categoryID: formData.category ? Number(formData.category) : null, // 确保类别ID是数字类型
+      brandID: formData.brand ? Number(formData.brand) : null,
+      colorID: formData.color ? Number(formData.color) : null,
+      sizeID: formData.size ? Number(formData.size) : null,
+      seasonID: formData.season ? Number(formData.season) : null,
       costPrice: formData.costPrice,
       retailPrice: formData.retailPrice,
       image: formData.image,

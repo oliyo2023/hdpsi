@@ -6,6 +6,7 @@ import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import '../widgets/empty_data.dart';
 import '../utils/app_theme.dart';
+import 'inventory_detail_screen.dart';
 
 class InventoryListScreen extends StatefulWidget {
   const InventoryListScreen({super.key});
@@ -39,11 +40,18 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        flexibleSpace: const AnimatedHeader(title: '库存管理', height: 120.0),
+        toolbarHeight: 120.0,
+        backgroundColor: Colors.transparent, // 使 AppBar 背景透明，显示 AnimatedHeader
+        elevation: 0, // 移除 AppBar 的阴影
+      ),
       body: Column(
         children: [
-          // 动画顶部
-          const AnimatedHeader(title: '库存管理', height: 120.0),
-
           // 搜索栏
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingMedium),
@@ -185,7 +193,14 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
-                          // TODO: 导航到库存详情页面
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => InventoryDetailScreen(
+                                    inventoryId: inventory.id,
+                                  ),
+                            ),
+                          );
                         },
                       ),
                     );

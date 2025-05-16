@@ -51,7 +51,7 @@ func (wc *WechatController) HandleWechatEvent(c *gin.Context) {
 	echostr := c.Query("echostr") // Only for GET requests
 
 	// 获取配置中的 Token
-	token := config.GetWechatToken()
+	token := config.GetWechatOfficialAccountConfig().VerifyToken
 
 	// 验证签名
 	// 1. 将 token, timestamp, nonce 三个参数进行字典序排序

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/supplier.dart';
 import '../services/supplier_service.dart';
+import '../utils/logger.dart';
 
 class SupplierProvider with ChangeNotifier {
   final SupplierService _supplierService;
@@ -23,8 +24,10 @@ class SupplierProvider with ChangeNotifier {
 
     try {
       _suppliers = await _supplierService.getSuppliers();
+      Logger.i('SupplierProvider', '成功获取 ${_suppliers.length} 个供应商');
     } catch (e) {
-      _errorMessage = 'Failed to fetch suppliers: ${e.toString()}';
+      _errorMessage = '获取供应商失败: ${e.toString()}';
+      Logger.e('SupplierProvider', '获取供应商失败: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -63,5 +66,19 @@ class SupplierProvider with ChangeNotifier {
     }
   }
 
-  // TODO: Add method for deleting suppliers
+  Future<void> deleteSupplier(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _supplierService.deleteSupplier(id);
+      // 删除成功后刷新列表
+      fetchSuppliers();
+    } catch (e) {
+      _errorMessage = '删除供应商失败: ${e.toString()}';
+      _isLoading = false; // 出错时停止加载
+      notifyListeners();
+    }
+  }
 }

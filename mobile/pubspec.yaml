@@ -63,11 +63,16 @@ dependencies:
   # 国际化
   intl: ^0.19.0
 
+  # OpenAPI客户端
+  openapi_generator_annotations: ^4.13.1
+  openapi_generator: ^4.13.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   json_serializable: ^6.7.1
   build_runner: ^2.4.8
+  openapi_generator_cli: ^4.13.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

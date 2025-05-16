@@ -28,6 +28,9 @@ import Profile from '../views/Profile.vue'
 import Settings from '../views/Settings.vue'
 import PermissionManagement from '../views/permission/index.vue'
 import NotFound from '../views/NotFound.vue'
+import ReturnList from '../views/sales/ReturnList.vue'
+import ReturnCreate from '../views/sales/ReturnCreate.vue'
+import ReturnDetail from '../views/sales/ReturnDetail.vue'
 
 // 路由配置
 const routes = [
@@ -190,6 +193,24 @@ const routes = [
     name: 'PermissionManagement',
     component: PermissionManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/sales/returns',
+    name: 'ReturnList',
+    component: ReturnList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sales/returns/create',
+    name: 'ReturnCreate',
+    component: ReturnCreate,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sales/returns/:id',
+    name: 'ReturnDetail',
+    component: ReturnDetail,
+    meta: { requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*',

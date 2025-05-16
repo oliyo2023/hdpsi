@@ -1,6 +1,6 @@
-import '../models/transaction.dart';
-import '../utils/config.dart';
-import 'api_service.dart';
+import 'package:hd_psi_mobile/models/transaction.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
+import 'package:hd_psi_mobile/services/api_service.dart';
 
 class TransactionService {
   final ApiService _apiService = ApiService();

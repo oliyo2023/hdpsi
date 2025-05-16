@@ -755,27 +755,9 @@ const loadProduct = async () => {
 
   loading.value = true
   try {
-    console.log('正在加载商品数据，商品ID:', productId.value)
     const product = await productService.getProduct(productId.value)
-    // 保存原始数据供调试使用
+    // 保存原始数据
     rawProductData.value = product
-    console.log('从后端获取的商品数据:', product)
-    console.log('原始商品数据类型:', typeof product)
-    console.log('原始商品数据字段:', Object.keys(product))
-
-    // 打印转换后的字段名称和值
-    console.log('开始设置表单数据')
-    console.log('id:', product.id, typeof product.id)
-    console.log('sku:', product.sku, typeof product.sku)
-    console.log('name:', product.name, typeof product.name)
-    console.log('categoryId:', product.categoryId, typeof product.categoryId)
-    console.log('brandId:', product.brandId, typeof product.brandId)
-    console.log('description:', product.description, typeof product.description)
-    console.log('costPrice:', product.costPrice, typeof product.costPrice)
-    console.log('retailPrice:', product.retailPrice, typeof product.retailPrice)
-
-    // 打印表单数据绑定前的状态
-    console.log('表单数据绑定前:', JSON.stringify(formData))
 
     // 设置表单数据
     formData.id = product.id
@@ -784,15 +766,15 @@ const loadProduct = async () => {
 
     // 特别处理类别和品牌字段，确保它们是数字类型
     if (product.categoryId) {
-      formData.categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId
-      console.log('设置类别ID:', formData.categoryId, typeof formData.categoryId)
+      // 确保类别ID是有效的数字类型
+      const categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId;
+      formData.categoryId = isNaN(categoryId) ? null : categoryId;
     } else {
       formData.categoryId = null
     }
 
     if (product.brandId) {
       formData.brandId = typeof product.brandId === 'string' ? parseInt(product.brandId) : product.brandId
-      console.log('设置品牌ID:', formData.brandId, typeof formData.brandId)
     } else {
       formData.brandId = null
     }
@@ -800,19 +782,8 @@ const loadProduct = async () => {
     formData.costPrice = product.costPrice || 0
     formData.retailPrice = product.retailPrice || 0
 
-    // 特意将description放在最后设置，并确保其值不为空
-    if (product.description) {
-      console.log('设置描述内容:', product.description)
-      formData.description = product.description
-    } else {
-      console.log('商品描述为空')
-      formData.description = ''
-    }
-
-    // 打印表单数据绑定后的状态
-    console.log('表单数据绑定后:', JSON.stringify(formData))
-
-    console.log('表单数据设置完成')
+    // 设置描述内容
+    formData.description = product.description || ''
 
     // 处理图片
     if (product.images && Array.isArray(product.images)) {
@@ -830,38 +801,29 @@ const loadProduct = async () => {
     // 处理变体
     if (product.variants && Array.isArray(product.variants)) {
       variants.value = product.variants.map(v => ({
+        id: v.id, // 保留变体ID，用于更新
+        sku: v.sku || '', // 保留变体SKU
         colorId: v.colorId,
         sizeId: v.sizeId,
         seasonId: v.seasonId,
         fabricId: v.fabricId,
-        barcode: v.barcode,
-        costPrice: v.costPrice,
-        retailPrice: v.retailPrice
-      }))
+        barcode: v.barcode || '',
+        costPrice: v.costPrice || 0,
+        retailPrice: v.retailPrice || 0
+      }));
     }
 
     // 手动更新编辑器内容
     if (editor.value && formData.description) {
-      console.log('尝试设置编辑器内容:', formData.description)
       setTimeout(() => {
         editor.value.setHtml(formData.description)
-        console.log('编辑器内容已设置')
       }, 100) // 延迟一点时间确保编辑器已完全初始化
-    } else {
-      console.log('编辑器或描述内容不存在:', {
-        editorExists: !!editor.value,
-        descriptionExists: !!formData.description,
-        description: formData.description
-      })
     }
-
-    console.log('转换后的表单数据:', formData)
 
     // 数据加载完成后，重置表单验证状态
     setTimeout(() => {
       if (formRef.value) {
         formRef.value.restoreValidation()
-        console.log('表单验证状态已重置')
       }
     }, 300)
   } catch (error) {
@@ -873,7 +835,7 @@ const loadProduct = async () => {
   }
 }
 
-const handleSave = () => {
+const handleSave = async () => {
   // 手动检查必填字段
   if (!formData.sku) {
     message.error('请输入商品SKU')
@@ -895,75 +857,73 @@ const handleSave = () => {
     return
   }
 
-  // 打印当前表单数据状态
-  console.log('保存前的表单数据:', formData)
-
-  formRef.value?.validate(async (errors) => {
-    if (errors) {
-      console.error('表单验证错误:', errors)
-      return
+  // 直接保存，不使用Promise-based validate
+  saving.value = true;
+  try {
+    // 从编辑器获取最新的HTML内容
+    if (editor.value) {
+      formData.description = editor.value.getHtml();
     }
 
-    saving.value = true
-    try {
-      // 从编辑器获取最新的HTML内容
-      if (editor.value) {
-        formData.description = editor.value.getHtml()
-      }
-
-      // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
-      const productData = {
-        sku: formData.sku,
-        name: formData.name,
-        // 确保ID字段是数字类型
-        categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
-        brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
-        description: formData.description,
-        costPrice: formData.costPrice,
-        retailPrice: formData.retailPrice,
-        images: formData.images,
-        status: formData.status,
-        variants: variants.value.map(v => ({
+    // 使用前端字段名称，fieldConverter会自动转换为后端需要的格式
+    const productData = {
+      sku: formData.sku,
+      name: formData.name,
+      // 确保ID字段是数字类型
+      categoryId: typeof formData.categoryId === 'string' ? parseInt(formData.categoryId) : formData.categoryId,
+      brandId: formData.brandId ? (typeof formData.brandId === 'string' ? parseInt(formData.brandId) : formData.brandId) : null,
+      description: formData.description,
+      costPrice: formData.costPrice,
+      retailPrice: formData.retailPrice,
+      images: formData.images,
+      status: formData.status,
+      variants: variants.value.map(v => {
+        // 创建基本变体数据
+        const variantData = {
           colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
           sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
           seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
           fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
-          barcode: v.barcode,
+          barcode: v.barcode || '',
+          sku: v.sku || '',
           costPrice: v.costPrice,
           retailPrice: v.retailPrice
-        }))
-      }
+        };
 
-      // 调试输出
-      console.log('发送到后端的数据:', productData)
+        // 如果是编辑模式且变体有ID，则包含ID
+        if (isEdit.value && v.id) {
+          variantData.id = v.id;
+        }
 
-      // 调用API保存商品数据
-      if (isEdit.value) {
-        productData.id = productId.value
-        await productService.updateProduct(productId.value, productData)
-        message.success('商品更新成功')
-      } else {
-        await productService.createProduct(productData)
-        message.success('商品添加成功')
-      }
+        return variantData;
+      })
+    };
 
-      // 显示成功消息后返回列表页面
-      setTimeout(() => {
-        router.push('/products')
-      }, 500)
-    } catch (error) {
-      console.error('保存商品失败:', error)
-      message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'))
-    } finally {
-      saving.value = false
+    // 调用API保存商品数据
+    if (isEdit.value) {
+      productData.id = productId.value;
+      await productService.updateProduct(productId.value, productData);
+      message.success('商品更新成功');
+    } else {
+      await productService.createProduct(productData);
+      message.success('商品添加成功');
     }
-  })
+
+    // 显示成功消息后返回列表页面
+    setTimeout(() => {
+      router.push('/products');
+    }, 500);
+
+  } catch (error) {
+    console.error('保存商品失败:', error);
+    message.error('保存商品失败: ' + (error.response?.data?.error || '未知错误'));
+  } finally {
+    saving.value = false;
+  }
 }
 
 // 生命周期钩子
 onMounted(async () => {
-  console.log('组件挂载完成')
-
   // 加载字典数据
   await Promise.all([
     loadDictionaryItems('category', categoryOptions),
@@ -974,23 +934,14 @@ onMounted(async () => {
     loadDictionaryItems('fabric', fabricOptions)
   ])
 
-  console.log('字典数据加载完成')
-
   // 如果是编辑模式，加载商品数据
   if (isEdit.value) {
     await loadProduct()
 
     // 添加延迟处理，确保编辑器已初始化并数据已加载
     setTimeout(() => {
-      console.log('延迟检查编辑器和数据状态')
       if (editor.value && formData.description) {
-        console.log('尝试再次设置编辑器内容:', formData.description)
         editor.value.setHtml(formData.description)
-      } else {
-        console.log('延迟检查结果: 编辑器或描述内容不存在', {
-          editorExists: !!editor.value,
-          descriptionExists: !!formData.description
-        })
       }
     }, 500)
   }

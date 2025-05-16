@@ -3,6 +3,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
 import '../providers/supplier_provider.dart';
 import '../models/supplier.dart';
+import '../utils/logger.dart';
+import '../widgets/form_section_card.dart';
 
 class SupplierEditScreen extends StatefulWidget {
   final Supplier? supplier;
@@ -30,6 +32,11 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saveSupplier,
+        icon: const Icon(Icons.save),
+        label: const Text('保存'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FormBuilder(
@@ -52,100 +59,216 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
           },
           child: ListView(
             children: [
-              FormBuilderTextField(
-                name: 'name',
-                decoration: const InputDecoration(labelText: '供应商名称'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入供应商名称';
-                  }
-                  return null;
-                },
+              // 基本信息卡片
+              FormSectionCard(
+                title: '基本信息',
+                icon: Icons.business,
+                children: [
+                  FormBuilderTextField(
+                    name: 'name',
+                    decoration: const InputDecoration(
+                      labelText: '供应商名称',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '请输入供应商名称';
+                      }
+                      return null;
+                    },
+                  ),
+                  FormBuilderTextField(
+                    name: 'code',
+                    decoration: const InputDecoration(
+                      labelText: '供应商编码',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '请输入供应商编码';
+                      }
+                      return null;
+                    },
+                  ),
+                  FormBuilderDropdown<SupplierType>(
+                    name: 'type',
+                    decoration: const InputDecoration(
+                      labelText: '供应商类型',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: (value) {
+                      if (value == null) {
+                        return '请选择供应商类型';
+                      }
+                      return null;
+                    },
+                    items:
+                        SupplierType.values
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type.toString().split('.').last),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ],
               ),
-              FormBuilderTextField(
-                name: 'code',
-                decoration: const InputDecoration(labelText: '供应商编码'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入供应商编码';
-                  }
-                  return null;
-                },
+
+              // 联系信息卡片
+              FormSectionCard(
+                title: '联系信息',
+                icon: Icons.contact_phone,
+                children: [
+                  FormBuilderTextField(
+                    name: 'contactPerson',
+                    decoration: const InputDecoration(
+                      labelText: '联系人',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  FormBuilderTextField(
+                    name: 'contactPhone',
+                    decoration: const InputDecoration(
+                      labelText: '联系电话',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  FormBuilderTextField(
+                    name: 'email',
+                    decoration: const InputDecoration(
+                      labelText: '邮箱',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              FormBuilderDropdown<SupplierType>(
-                name: 'type',
-                decoration: const InputDecoration(labelText: '供应商类型'),
-                validator: (value) {
-                  if (value == null) {
-                    return '请选择供应商类型';
-                  }
-                  return null;
-                },
-                items:
-                    SupplierType.values
-                        .map(
-                          (type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type.toString().split('.').last),
-                          ),
-                        )
-                        .toList(),
+
+              // 地址信息卡片
+              FormSectionCard(
+                title: '地址信息',
+                icon: Icons.location_on,
+                children: [
+                  FormBuilderTextField(
+                    name: 'address',
+                    decoration: const InputDecoration(
+                      labelText: '地址',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  FormBuilderTextField(
+                    name: 'city',
+                    decoration: const InputDecoration(
+                      labelText: '城市',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              FormBuilderTextField(
-                name: 'contactPerson',
-                decoration: const InputDecoration(labelText: '联系人'),
+
+              // 评级与资质卡片
+              FormSectionCard(
+                title: '评级与资质',
+                icon: Icons.star,
+                children: [
+                  FormBuilderDropdown<SupplierRating>(
+                    name: 'rating',
+                    decoration: const InputDecoration(
+                      labelText: '评级',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    items:
+                        SupplierRating.values
+                            .map(
+                              (rating) => DropdownMenuItem(
+                                value: rating,
+                                child: Text(rating.toString().split('.').last),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                  FormBuilderTextField(
+                    name: 'qualification',
+                    decoration: const InputDecoration(
+                      labelText: '资质',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              FormBuilderTextField(
-                name: 'contactPhone',
-                decoration: const InputDecoration(labelText: '联系电话'),
+
+              // 交易条款卡片
+              FormSectionCard(
+                title: '交易条款',
+                icon: Icons.description,
+                children: [
+                  FormBuilderTextField(
+                    name: 'paymentTerms',
+                    decoration: const InputDecoration(
+                      labelText: '付款条款',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  FormBuilderTextField(
+                    name: 'deliveryTerms',
+                    decoration: const InputDecoration(
+                      labelText: '交货条款',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              FormBuilderTextField(
-                name: 'email',
-                decoration: const InputDecoration(labelText: '邮箱'),
+
+              // 其他信息卡片
+              FormSectionCard(
+                title: '其他信息',
+                icon: Icons.more_horiz,
+                children: [
+                  FormBuilderSwitch(
+                    name: 'status',
+                    title: const Text('状态（启用/禁用）'),
+                    initialValue: widget.supplier?.status ?? true,
+                    activeColor: Theme.of(context).primaryColor,
+                  ),
+                  FormBuilderTextField(
+                    name: 'note',
+                    decoration: const InputDecoration(
+                      labelText: '备注',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
               ),
-              FormBuilderTextField(
-                name: 'address',
-                decoration: const InputDecoration(labelText: '地址'),
-              ),
-              FormBuilderTextField(
-                name: 'city',
-                decoration: const InputDecoration(labelText: '城市'),
-              ),
-              FormBuilderDropdown<SupplierRating>(
-                name: 'rating',
-                decoration: const InputDecoration(labelText: '评级'),
-                items:
-                    SupplierRating.values
-                        .map(
-                          (rating) => DropdownMenuItem(
-                            value: rating,
-                            child: Text(rating.toString().split('.').last),
-                          ),
-                        )
-                        .toList(),
-              ),
-              FormBuilderTextField(
-                name: 'qualification',
-                decoration: const InputDecoration(labelText: '资质'),
-              ),
-              FormBuilderTextField(
-                name: 'paymentTerms',
-                decoration: const InputDecoration(labelText: '付款条款'),
-              ),
-              FormBuilderTextField(
-                name: 'deliveryTerms',
-                decoration: const InputDecoration(labelText: '交货条款'),
-              ),
-              FormBuilderSwitch(
-                name: 'status',
-                title: const Text('状态'),
-                initialValue: widget.supplier?.status ?? true,
-              ),
-              FormBuilderTextField(
-                name: 'note',
-                decoration: const InputDecoration(labelText: '备注'),
-                maxLines: 3,
-              ),
+
+              // 底部间距
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -156,6 +279,12 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
   void _saveSupplier() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
+
+      // 添加调试日志
+      Logger.i('SupplierEditScreen', '表单数据: $formData');
+      Logger.i('SupplierEditScreen', '联系人: ${formData['contactPerson']}');
+      Logger.i('SupplierEditScreen', '联系电话: ${formData['contactPhone']}');
+
       final supplierProvider = Provider.of<SupplierProvider>(
         context,
         listen: false,
@@ -191,8 +320,12 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
           Navigator.of(context).pop(); // Go back after saving
         }
       } catch (e) {
-        // TODO: Show error message
-        print('保存供应商失败: $e');
+        Logger.e('SupplierEditScreen', '保存供应商失败: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('保存供应商失败: ${e.toString()}')));
+        }
       }
     }
   }

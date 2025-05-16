@@ -3,6 +3,7 @@ package main
 import (
 	"hd_psi/backend/config"
 	"hd_psi/backend/controllers"
+	_ "hd_psi/backend/docs" // 导入swagger文档
 	"hd_psi/backend/embed"
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
@@ -14,6 +15,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -64,45 +67,47 @@ func main() {
 	log.Info("数据库连接池配置完成",
 		logger.F("max_idle_conns", config.AppConfig.Database.MaxIdleConns),
 		logger.F("max_open_conns", config.AppConfig.Database.MaxOpenConns),
-		logger.F("conn_max_lifetime", config.AppConfig.Database.ConnMaxLifetime))
+		logger.F("conn_max_lifetime", config.AppConfig.Database.ConnMaxLifetime),
+		logger.F("auto_migrate", config.AppConfig.Database.AutoMigrate))
 
-	// 自动迁移数据模型
-	// 禁用外键约束检查
-	db.Exec("SET FOREIGN_KEY_CHECKS = 0")
-	log.Info("开始自动迁移数据模型")
-	db.AutoMigrate(
-		&models.User{},
-		&models.Dictionary{},
-		&models.DictionaryItem{},
-		&models.Product{},
-		&models.ProductVariant{},
-		&models.Inventory{},
-		&models.Supplier{},
-		&models.PurchaseOrder{},
-		&models.PurchaseOrderItem{},
-		&models.PurchaseReceiving{},
-		&models.PurchaseReceivingItem{},
-		&models.Store{},
-		&models.InventoryTransaction{},
-		&models.InventoryAlert{},
-		&models.InventoryThreshold{},
-		&models.Member{},
-		&models.InventoryCheck{},
-		&models.InventoryCheckItem{},
-		&models.InventoryCheckAdjustment{},
-		&models.SalesOrder{},
-		&models.SalesOrderItem{},
-		&models.NegotiationRecord{},
-		&models.FittingRecord{},
-		&models.ReturnOrder{},
-		&models.ReturnOrderItem{},
-		&models.FittingRoom{},
-		&controllers.PointsTransaction{},
-		&models.SystemSetting{},
-	)
-	// 重新启用外键约束检查
-	db.Exec("SET FOREIGN_KEY_CHECKS = 1")
-	log.Info("数据模型自动迁移完成")
+	// 根据配置决定是否自动迁移数据模型
+	// 确保从配置中读取最新的 AutoMigrate 值
+	autoMigrate := config.AppConfig.Database.AutoMigrate
+	log.Info("自动迁移设置", logger.F("auto_migrate", autoMigrate))
+
+	if autoMigrate {
+		// 禁用外键约束检查
+		db.Exec("SET FOREIGN_KEY_CHECKS = 0")
+		log.Info("开始自动迁移数据模型")
+		db.AutoMigrate(
+			&models.User{},
+			&models.Dictionary{},
+			&models.DictionaryItem{},
+			&models.Product{},
+			&models.ProductVariant{},
+			&models.Inventory{},
+			&models.Supplier{},
+			&models.PurchaseOrder{},
+			&models.PurchaseOrderItem{},
+			&models.PurchaseReceiving{},
+			&models.PurchaseReceivingItem{},
+			&models.Store{},
+			&models.InventoryTransaction{},
+			&models.InventoryAlert{},
+			&models.InventoryThreshold{},
+			&models.Member{},
+			&models.InventoryCheck{},
+			&models.InventoryCheckItem{},
+			&models.InventoryCheckAdjustment{},
+			&controllers.PointsTransaction{},
+			&models.SystemSetting{},
+		)
+		// 重新启用外键约束检查
+		db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+		log.Info("数据模型自动迁移完成")
+	} else {
+		log.Info("自动迁移已禁用，跳过数据模型迁移")
+	}
 
 	// 初始化Casbin服务
 
@@ -110,9 +115,11 @@ func main() {
 	r := gin.New() // 使用New()而不是Default()，因为我们将自定义中间件
 
 	// 添加中间件
-	r.Use(gin.Logger())                // 使用Gin的默认日志中间件
-	r.Use(gin.Recovery())              // 使用Gin的默认恢复中间件
-	r.Use(middleware.CORSMiddleware()) // CORS中间件
+	r.Use(gin.Logger())                            // 使用Gin的默认日志中间件
+	r.Use(gin.Recovery())                          // 使用Gin的默认恢复中间件
+	r.Use(middleware.CORSMiddleware())             // CORS中间件
+	r.Use(middleware.APIVersionMiddleware())       // API版本中间件
+	r.Use(middleware.APIVersionHeaderMiddleware()) // API版本响应头中间件
 
 	// 设置404和405处理器
 	r.NoRoute(func(c *gin.Context) {
@@ -121,6 +128,10 @@ func main() {
 	r.NoMethod(func(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "方法不允许"})
 	})
+
+	// 注册Swagger路由
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	log.Info("Swagger文档已启用，访问地址: /swagger/index.html")
 
 	// 注册路由
 	routes.RegisterRoutes(r, db)

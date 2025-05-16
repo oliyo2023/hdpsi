@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/friendly_error_display.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -125,13 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (authProvider.error != null)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 16.0),
-                              child: Text(
-                                authProvider.error!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
+                              child: FriendlyErrorDisplay.auth(
+                                message: authProvider.error!,
+                                onRetry: () => authProvider.clearError(),
                               ),
                             ),
 

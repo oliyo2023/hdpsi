@@ -19,6 +19,24 @@ func NewProductController(db *gorm.DB) *ProductController {
 	return &ProductController{db: db}
 }
 
+// ListProducts godoc
+// @Summary 获取商品列表
+// @Description 获取商品列表，支持按名称、SKU、分类等条件筛选，并支持分页
+// @Tags 商品管理
+// @Accept json
+// @Produce json
+// @Param name query string false "商品名称（模糊查询）" example:"牛仔裤"
+// @Param sku query string false "商品SKU（模糊查询）" example:"JN001"
+// @Param category query string false "商品分类" example:"裤装"
+// @Param category_id query string false "商品分类ID" example:"1"
+// @Param page query int false "页码，默认1" minimum(1) example:"1"
+// @Param pageSize query int false "每页数量，默认10" minimum(1) maximum(100) example:"10"
+// @Success 200 {object} models.PaginatedResponse{items=[]models.Product} "成功获取商品列表"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /products [get]
+// @Security BearerAuth
 func (pc *ProductController) ListProducts(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -280,6 +298,19 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 	})
 }
 
+// GetProduct godoc
+// @Summary 获取商品详情
+// @Description 根据ID获取商品的详细信息，包括基本信息、变体、价格等
+// @Tags 商品管理
+// @Accept json
+// @Produce json
+// @Param id path int true "商品ID" example:"1"
+// @Success 200 {object} models.Product "成功获取商品详情"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "商品不存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /products/{id} [get]
+// @Security BearerAuth
 func (pc *ProductController) GetProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -339,6 +370,52 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 	})
 }
 
+// CreateProduct godoc
+// @Summary 创建商品
+// @Description 创建新的商品及其变体，需提供商品基本信息和变体信息
+// @Tags 商品管理
+// @Accept json
+// @Produce json
+// @Param product body map[string]interface{} true "商品信息"
+// @Success 201 {object} models.Product "创建成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 409 {object} models.ErrorResponse "商品SKU已存在"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /products [post]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "经典牛仔裤",
+//	  "description": "高品质牛仔面料，舒适耐穿",
+//	  "category_id": 1,
+//	  "brand": "宏达",
+//	  "season": "四季",
+//	  "gender": "男",
+//	  "material": "牛仔布",
+//	  "status": true,
+//	  "variants": [
+//	    {
+//	      "sku": "JN001-M-BLUE",
+//	      "size": "M",
+//	      "color": "蓝色",
+//	      "cost_price": 89.00,
+//	      "retail_price": 199.00,
+//	      "wholesale_price": 129.00,
+//	      "stock_quantity": 100
+//	    },
+//	    {
+//	      "sku": "JN001-L-BLUE",
+//	      "size": "L",
+//	      "color": "蓝色",
+//	      "cost_price": 89.00,
+//	      "retail_price": 199.00,
+//	      "wholesale_price": 129.00,
+//	      "stock_quantity": 80
+//	    }
+//	  ]
+//	}
 func (pc *ProductController) CreateProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -439,6 +516,65 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 	})
 }
 
+// UpdateProduct godoc
+// @Summary 更新商品
+// @Description 更新现有商品及其变体，需提供完整的商品信息
+// @Tags 商品管理
+// @Accept json
+// @Produce json
+// @Param id path int true "商品ID" example:"1"
+// @Param product body map[string]interface{} true "商品信息"
+// @Success 200 {object} models.Product "更新成功"
+// @Failure 400 {object} models.ErrorResponse "请求参数错误"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 404 {object} models.ErrorResponse "商品不存在"
+// @Failure 409 {object} models.ErrorResponse "商品SKU已被其他商品使用"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /products/{id} [put]
+// @Security BearerAuth
+// @Example 请求示例
+//
+//	{
+//	  "name": "经典牛仔裤（更新）",
+//	  "description": "高品质牛仔面料，舒适耐穿，新增弹力设计",
+//	  "category_id": 1,
+//	  "brand": "宏达",
+//	  "season": "四季",
+//	  "gender": "男",
+//	  "material": "牛仔布+弹性纤维",
+//	  "status": true,
+//	  "variants": [
+//	    {
+//	      "id": 1,
+//	      "sku": "JN001-M-BLUE",
+//	      "size": "M",
+//	      "color": "蓝色",
+//	      "cost_price": 95.00,
+//	      "retail_price": 219.00,
+//	      "wholesale_price": 139.00,
+//	      "stock_quantity": 120
+//	    },
+//	    {
+//	      "id": 2,
+//	      "sku": "JN001-L-BLUE",
+//	      "size": "L",
+//	      "color": "蓝色",
+//	      "cost_price": 95.00,
+//	      "retail_price": 219.00,
+//	      "wholesale_price": 139.00,
+//	      "stock_quantity": 100
+//	    },
+//	    {
+//	      "sku": "JN001-XL-BLUE",
+//	      "size": "XL",
+//	      "color": "蓝色",
+//	      "cost_price": 95.00,
+//	      "retail_price": 219.00,
+//	      "wholesale_price": 139.00,
+//	      "stock_quantity": 50
+//	    }
+//	  ]
+//	}
 func (pc *ProductController) UpdateProduct(c *gin.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
@@ -496,7 +632,47 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 
 	// 更新商品
 	input.Product.ID = product.ID
-	if err := tx.Save(&input.Product).Error; err != nil {
+
+	// 从数据库中获取当前商品的完整信息
+	var currentProduct models.Product
+	if err := tx.First(&currentProduct, product.ID).Error; err != nil {
+		tx.Rollback()
+		log.Error("获取当前商品信息失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取当前商品信息失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 保留原始的创建时间
+	input.Product.CreatedAt = currentProduct.CreatedAt
+
+	// 确保所有必要字段都有值
+	if input.Product.SKU == "" {
+		input.Product.SKU = currentProduct.SKU
+	}
+	if input.Product.Name == "" {
+		input.Product.Name = currentProduct.Name
+	}
+
+	// 记录更新前的商品信息
+	log.Info("更新前的商品信息",
+		logger.F("product_id", currentProduct.ID),
+		logger.F("sku", currentProduct.SKU),
+		logger.F("name", currentProduct.Name),
+		logger.F("category_id", currentProduct.CategoryID))
+
+	// 记录即将更新的商品信息
+	log.Info("即将更新的商品信息",
+		logger.F("product_id", input.Product.ID),
+		logger.F("sku", input.Product.SKU),
+		logger.F("name", input.Product.Name),
+		logger.F("category_id", input.Product.CategoryID))
+
+	// 使用Updates而不是Save，只更新非零值字段
+	if err := tx.Model(&currentProduct).Updates(input.Product).Error; err != nil {
 		tx.Rollback()
 		log.Error("更新商品失败", logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseUpdate).
@@ -506,6 +682,26 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		c.Error(appErr)
 		return
 	}
+
+	// 验证更新后的商品信息
+	var updatedProduct models.Product
+	if err := tx.First(&updatedProduct, product.ID).Error; err != nil {
+		tx.Rollback()
+		log.Error("获取更新后的商品信息失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取更新后的商品信息失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 记录更新后的商品信息
+	log.Info("更新后的商品信息",
+		logger.F("product_id", updatedProduct.ID),
+		logger.F("sku", updatedProduct.SKU),
+		logger.F("name", updatedProduct.Name),
+		logger.F("category_id", updatedProduct.CategoryID))
 
 	// Fetch existing variants
 	var existingVariants []models.ProductVariant
@@ -539,7 +735,19 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		if variant.ID != 0 { // If variant has an ID, check if it exists
 			if _, exists := existingVariantsMap[variant.ID]; exists {
 				// Variant exists, update it
-				if err := tx.Save(variant).Error; err != nil {
+				// 获取原始变体数据
+				existingVariant := existingVariantsMap[variant.ID]
+
+				// 保留原始的创建时间
+				variant.CreatedAt = existingVariant.CreatedAt
+
+				// 确保所有必要字段都有值
+				if variant.SKU == "" {
+					variant.SKU = existingVariant.SKU
+				}
+
+				// 使用Updates而不是Save，只更新非零值字段
+				if err := tx.Model(&existingVariant).Updates(variant).Error; err != nil {
 					tx.Rollback()
 					log.Error("更新商品变体失败",
 						logger.F("product_id", product.ID),

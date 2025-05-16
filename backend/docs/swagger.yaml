@@ -1,0 +1,1388 @@
+definitions:
+  controllers.CreateSupplierRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      code:
+        type: string
+      contact_person:
+        type: string
+      contact_phone:
+        type: string
+      delivery_terms:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      note:
+        type: string
+      payment_terms:
+        type: string
+      qualification:
+        type: string
+      rating:
+        $ref: '#/definitions/models.SupplierRating'
+      status:
+        type: boolean
+      type:
+        $ref: '#/definitions/models.SupplierType'
+    required:
+    - code
+    - name
+    - type
+    type: object
+  models.APIResponse:
+    properties:
+      code:
+        description: 状态码
+        example: 200
+        type: integer
+      data:
+        description: 响应数据
+      error:
+        description: 错误信息，仅在发生错误时返回
+        example: 错误信息
+        type: string
+      message:
+        description: 响应消息
+        example: 操作成功
+        type: string
+    type: object
+  models.ConsumptionLevel:
+    enum:
+    - low
+    - medium
+    - high
+    - luxury
+    type: string
+    x-enum-comments:
+      High: 高
+      Low: 低
+      Luxury: 奢侈
+      Medium: 中
+    x-enum-varnames:
+    - Low
+    - Medium
+    - High
+    - Luxury
+  models.Dictionary:
+    properties:
+      code:
+        description: 字典类型编码
+        type: string
+      createdAt:
+        type: string
+      description:
+        description: 描述
+        type: string
+      id:
+        type: integer
+      items:
+        description: 关联
+        items:
+          $ref: '#/definitions/models.DictionaryItem'
+        type: array
+      name:
+        description: 字典类型名称
+        type: string
+      sort:
+        description: 排序
+        type: integer
+      status:
+        description: 状态：启用/禁用
+        type: boolean
+      updatedAt:
+        type: string
+    type: object
+  models.DictionaryItem:
+    properties:
+      code:
+        description: 字典项编码
+        type: string
+      color:
+        description: 颜色值（用于前端展示）
+        type: string
+      createdAt:
+        type: string
+      description:
+        description: 描述
+        type: string
+      dictionary:
+        allOf:
+        - $ref: '#/definitions/models.Dictionary'
+        description: 关联
+      dictionaryCode:
+        description: 关联的字典类型编码
+        type: string
+      id:
+        type: integer
+      name:
+        description: 字典项名称
+        type: string
+      sort:
+        description: 排序
+        type: integer
+      status:
+        description: 状态：启用/禁用
+        type: boolean
+      updatedAt:
+        type: string
+      value:
+        description: 字典项值
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      code:
+        description: 错误码
+        example: 400
+        type: integer
+      error:
+        description: 详细错误信息，仅在开发环境返回
+        type: string
+      message:
+        description: 错误消息
+        example: 参数错误
+        type: string
+    type: object
+  models.Inventory:
+    properties:
+      alertQuantity:
+        description: 预警数量
+        type: integer
+      createdAt:
+        type: string
+      id:
+        type: integer
+      lastCheckTime:
+        description: 最后盘点时间
+        type: string
+      productVariant:
+        allOf:
+        - $ref: '#/definitions/models.ProductVariant'
+        description: 商品变体
+      productVariantID:
+        description: 商品变体ID
+        type: integer
+      quantity:
+        description: 库存数量
+        type: integer
+      store:
+        allOf:
+        - $ref: '#/definitions/models.Store'
+        description: 关联
+      storeID:
+        description: 店铺ID
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  models.Member:
+    properties:
+      address:
+        type: string
+      birthday:
+        type: string
+      bodyHeight:
+        description: 体型数据
+        type: integer
+      bodyWeight:
+        description: 体重(kg)
+        type: integer
+      bustSize:
+        description: 胸围(cm)
+        type: integer
+      consumptionLevel:
+        allOf:
+        - $ref: '#/definitions/models.ConsumptionLevel'
+        description: 消费能力
+      createdAt:
+        type: string
+      email:
+        type: string
+      favoriteCategories:
+        description: 喜欢的品类，逗号分隔
+        type: string
+      favoriteColors:
+        description: 喜欢的颜色，逗号分隔
+        type: string
+      gender:
+        type: string
+      hipSize:
+        description: 臀围(cm)
+        type: integer
+      id:
+        type: integer
+      inseam:
+        description: 内缝长度(cm)
+        type: integer
+      lastPurchaseDate:
+        type: string
+      level:
+        $ref: '#/definitions/models.MemberLevel'
+      name:
+        type: string
+      note:
+        description: 备注
+        type: string
+      openID:
+        description: 微信 OpenID
+        type: string
+      phone:
+        type: string
+      points:
+        description: 积分
+        type: integer
+      shoulderWidth:
+        description: 肩宽(cm)
+        type: integer
+      stylePreference:
+        allOf:
+        - $ref: '#/definitions/models.StylePreference'
+        description: 偏好数据
+      totalSpent:
+        description: 累计消费金额
+        type: number
+      updatedAt:
+        type: string
+      waistSize:
+        description: 腰围(cm)
+        type: integer
+    type: object
+  models.MemberLevel:
+    enum:
+    - regular
+    - silver
+    - gold
+    - platinum
+    - diamond
+    type: string
+    x-enum-comments:
+      Diamond: 钻石会员
+      Gold: 黄金会员
+      Platinum: 铂金会员
+      Regular: 普通会员
+      Silver: 白银会员
+    x-enum-varnames:
+    - Regular
+    - Silver
+    - Gold
+    - Platinum
+    - Diamond
+  models.PaginatedResponse:
+    properties:
+      items:
+        description: 数据项列表
+      page:
+        description: 当前页码
+        example: 1
+        type: integer
+      pageSize:
+        description: 每页记录数
+        example: 10
+        type: integer
+      total:
+        description: 总记录数
+        example: 100
+        type: integer
+    type: object
+  models.Product:
+    properties:
+      Brand:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 品牌
+      BrandID:
+        description: 品牌ID
+        type: integer
+      Category:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 关联
+      CategoryID:
+        description: 商品类别ID
+        type: integer
+      CostPrice:
+        description: 成本价
+        type: number
+      CreatedAt:
+        type: string
+      Description:
+        description: 商品描述
+        type: string
+      ID:
+        type: integer
+      Image:
+        description: 主图
+        type: string
+      Images:
+        description: 多张图片，不存储在数据库中，使用ProductImage关联
+        items:
+          type: string
+        type: array
+      Name:
+        type: string
+      RetailPrice:
+        description: 零售价
+        type: number
+      SKU:
+        type: string
+      Status:
+        description: 状态：上架/下架
+        type: boolean
+      UpdatedAt:
+        type: string
+      Variants:
+        description: 商品变体
+        items:
+          $ref: '#/definitions/models.ProductVariant'
+        type: array
+    type: object
+  models.ProductVariant:
+    properties:
+      Barcode:
+        description: 条形码
+        type: string
+      Color:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 颜色
+      ColorID:
+        description: 颜色ID
+        type: integer
+      CostPrice:
+        description: 成本价（可能与主商品不同）
+        type: number
+      CreatedAt:
+        type: string
+      Fabric:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 面料
+      FabricID:
+        description: 面料ID
+        type: integer
+      ID:
+        type: integer
+      ProductID:
+        description: 关联的商品ID
+        type: integer
+      QRCode:
+        description: 二维码数据
+        type: string
+      RetailPrice:
+        description: 零售价（可能与主商品不同）
+        type: number
+      SKU:
+        description: 变体SKU
+        type: string
+      Season:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 季节
+      SeasonID:
+        description: 季节ID
+        type: integer
+      Size:
+        allOf:
+        - $ref: '#/definitions/models.DictionaryItem'
+        description: 尺码
+      SizeID:
+        description: 尺码ID
+        type: integer
+      Status:
+        description: 状态：启用/禁用
+        type: boolean
+      UpdatedAt:
+        type: string
+    type: object
+  models.Store:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      manager:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      type:
+        description: 男装店/女装店
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.StylePreference:
+    enum:
+    - casual
+    - formal
+    - sportswear
+    - vintage
+    - minimalist
+    - romantic
+    - bohemian
+    - street
+    type: string
+    x-enum-comments:
+      Bohemian: 波西米亚
+      Casual: 休闲
+      Formal: 正式
+      Minimalist: 极简
+      Romantic: 浪漫
+      Sportswear: 运动
+      Street: 街头
+      Vintage: 复古
+    x-enum-varnames:
+    - Casual
+    - Formal
+    - Sportswear
+    - Vintage
+    - Minimalist
+    - Romantic
+    - Bohemian
+    - Street
+  models.Supplier:
+    properties:
+      address:
+        description: 地址
+        type: string
+      city:
+        description: 城市
+        type: string
+      code:
+        description: 供应商编码
+        type: string
+      contactPerson:
+        description: 联系人
+        type: string
+      contactPhone:
+        description: 联系电话
+        type: string
+      createdAt:
+        type: string
+      deliveryTerms:
+        description: 交货条件
+        type: string
+      email:
+        description: 电子邮箱
+        type: string
+      id:
+        type: integer
+      name:
+        description: 供应商名称
+        type: string
+      note:
+        description: 备注
+        type: string
+      paymentTerms:
+        description: 付款条件
+        type: string
+      qualification:
+        description: 资质证明
+        type: string
+      rating:
+        allOf:
+        - $ref: '#/definitions/models.SupplierRating'
+        description: 供应商评级
+      status:
+        description: 状态：true-启用，false-禁用
+        type: boolean
+      type:
+        allOf:
+        - $ref: '#/definitions/models.SupplierType'
+        description: 供应商类型
+      updatedAt:
+        type: string
+    type: object
+  models.SupplierRating:
+    enum:
+    - S
+    - A
+    - B
+    - C
+    - D
+    type: string
+    x-enum-comments:
+      SupplierA: 良好
+      SupplierB: 一般
+      SupplierC: 较差
+      SupplierD: 不合格
+      SupplierS: 优秀
+    x-enum-varnames:
+    - SupplierS
+    - SupplierA
+    - SupplierB
+    - SupplierC
+    - SupplierD
+  models.SupplierType:
+    enum:
+    - manufacturer
+    - wholesaler
+    - agent
+    - other
+    type: string
+    x-enum-comments:
+      SupplierAgent: 代理商
+      SupplierManufacturer: 生产厂商
+      SupplierOther: 其他
+      SupplierWholesaler: 批发商
+    x-enum-varnames:
+    - SupplierManufacturer
+    - SupplierWholesaler
+    - SupplierAgent
+    - SupplierOther
+info:
+  contact: {}
+paths:
+  /inventory:
+    get:
+      consumes:
+      - application/json
+      description: 获取库存列表，支持按产品变体和店铺筛选，并支持分页
+      parameters:
+      - description: 产品变体ID
+        in: query
+        name: product_variant_id
+        type: integer
+      - description: 店铺ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 页码，默认1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: 每页数量，默认10
+        in: query
+        maximum: 100
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取库存列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                items:
+                  items:
+                    $ref: '#/definitions/models.Inventory'
+                  type: array
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取库存列表
+      tags:
+      - 库存管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的库存记录，需提供产品变体ID、店铺ID和库存数量
+      parameters:
+      - description: 库存信息
+        in: body
+        name: inventory
+        required: true
+        schema:
+          $ref: '#/definitions/models.Inventory'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/models.Inventory'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 产品变体或店铺不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: 库存记录已存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建库存
+      tags:
+      - 库存管理
+  /inventory/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的库存记录，此操作不可逆
+      parameters:
+      - description: 库存ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 库存不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除库存
+      tags:
+      - 库存管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取库存的详细信息，包括产品变体和店铺信息
+      parameters:
+      - description: 库存ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取库存详情
+          schema:
+            $ref: '#/definitions/models.Inventory'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 库存不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取库存详情
+      tags:
+      - 库存管理
+    put:
+      consumes:
+      - application/json
+      description: 更新现有库存记录，可以修改库存数量并提供更新原因
+      parameters:
+      - description: 库存ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 库存信息
+        in: body
+        name: inventory
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/models.Inventory'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 库存不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新库存
+      tags:
+      - 库存管理
+  /members:
+    get:
+      consumes:
+      - application/json
+      description: 获取会员列表，支持按名称、手机号和等级筛选，并支持分页
+      parameters:
+      - description: 会员名称（模糊查询）
+        in: query
+        name: name
+        type: string
+      - description: 手机号码（模糊查询）
+        in: query
+        name: phone
+        type: string
+      - description: 会员等级
+        enum:
+        - regular
+        - silver
+        - gold
+        - platinum
+        - diamond
+        in: query
+        name: level
+        type: string
+      - description: 页码，默认1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: 每页数量，默认10
+        in: query
+        maximum: 100
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取会员列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                items:
+                  items:
+                    $ref: '#/definitions/models.Member'
+                  type: array
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取会员列表
+      tags:
+      - 会员管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的会员，需提供必要的会员信息
+      parameters:
+      - description: 会员信息
+        in: body
+        name: member
+        required: true
+        schema:
+          $ref: '#/definitions/models.Member'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Member'
+              type: object
+        "400":
+          description: 请求参数错误或手机号已被注册
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建会员
+      tags:
+      - 会员管理
+  /members/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的会员，此操作不可逆
+      parameters:
+      - description: 会员ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 会员不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除会员
+      tags:
+      - 会员管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取会员的详细信息，包括基本信息、等级、积分等
+      parameters:
+      - description: 会员ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取会员详情
+          schema:
+            $ref: '#/definitions/models.Member'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 会员不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取会员详情
+      tags:
+      - 会员管理
+    put:
+      consumes:
+      - application/json
+      description: 更新现有会员的信息，需提供完整的会员信息
+      parameters:
+      - description: 会员ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 会员信息
+        in: body
+        name: member
+        required: true
+        schema:
+          $ref: '#/definitions/models.Member'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/models.Member'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 会员不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新会员
+      tags:
+      - 会员管理
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: 获取商品列表，支持按名称、SKU、分类等条件筛选，并支持分页
+      parameters:
+      - description: 商品名称（模糊查询）
+        in: query
+        name: name
+        type: string
+      - description: 商品SKU（模糊查询）
+        in: query
+        name: sku
+        type: string
+      - description: 商品分类
+        in: query
+        name: category
+        type: string
+      - description: 商品分类ID
+        in: query
+        name: category_id
+        type: string
+      - description: 页码，默认1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: 每页数量，默认10
+        in: query
+        maximum: 100
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取商品列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                items:
+                  items:
+                    $ref: '#/definitions/models.Product'
+                  type: array
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取商品列表
+      tags:
+      - 商品管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的商品及其变体，需提供商品基本信息和变体信息
+      parameters:
+      - description: 商品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: 商品SKU已存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建商品
+      tags:
+      - 商品管理
+  /products/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取商品的详细信息，包括基本信息、变体、价格等
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取商品详情
+          schema:
+            $ref: '#/definitions/models.Product'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取商品详情
+      tags:
+      - 商品管理
+    put:
+      consumes:
+      - application/json
+      description: 更新现有商品及其变体，需提供完整的商品信息
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 商品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 商品不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: 商品SKU已被其他商品使用
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新商品
+      tags:
+      - 商品管理
+  /suppliers:
+    get:
+      consumes:
+      - application/json
+      description: 获取供应商列表，支持按名称、编码、类型和状态筛选，并支持分页
+      parameters:
+      - description: 供应商名称（模糊查询）
+        in: query
+        name: name
+        type: string
+      - description: 供应商编码（模糊查询）
+        in: query
+        name: code
+        type: string
+      - description: 供应商类型
+        enum:
+        - manufacturer
+        - distributor
+        - retailer
+        - wholesaler
+        - other
+        in: query
+        name: type
+        type: string
+      - description: 状态
+        enum:
+        - active
+        - inactive
+        in: query
+        name: status
+        type: string
+      - description: 页码，默认1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: 每页数量，默认10
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取供应商列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                items:
+                  items:
+                    $ref: '#/definitions/models.Supplier'
+                  type: array
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取供应商列表
+      tags:
+      - 供应商管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的供应商，需提供必要的供应商信息
+      parameters:
+      - description: 供应商信息
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateSupplierRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/models.Supplier'
+        "400":
+          description: 请求参数错误或供应商编码已存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建供应商
+      tags:
+      - 供应商管理
+  /suppliers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的供应商，如果供应商已被采购单引用则无法删除
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: 供应商已被采购单引用，无法删除
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 供应商不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除供应商
+      tags:
+      - 供应商管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取供应商的详细信息，包括基本信息、联系方式、评级等
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取供应商详情
+          schema:
+            $ref: '#/definitions/models.Supplier'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 供应商不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取供应商详情
+      tags:
+      - 供应商管理
+    put:
+      consumes:
+      - application/json
+      description: 更新现有供应商的信息，需提供完整的供应商信息
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 供应商信息
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateSupplierRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/models.Supplier'
+        "400":
+          description: 请求参数错误或供应商编码已被其他供应商使用
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: 供应商不存在
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新供应商
+      tags:
+      - 供应商管理
+swagger: "2.0"

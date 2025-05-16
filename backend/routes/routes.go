@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"hd_psi/backend/config"
 	"hd_psi/backend/controllers"
 	"hd_psi/backend/middleware"
 
@@ -10,6 +11,13 @@ import (
 
 // RegisterRoutes 注册所有路由
 func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
+	// 添加API版本中间件
+	r.Use(middleware.APIVersionMiddleware())
+	r.Use(middleware.APIVersionHeaderMiddleware())
+
+	// 添加API弃用中间件（如果有弃用的版本）
+	// r.Use(middleware.APIDeprecationMiddleware([]string{"v0"}))
+
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	// 认证路由
@@ -24,8 +32,11 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	wechatController := controllers.NewWechatController(db)
 	r.POST("/wechat/event", wechatController.HandleWechatEvent)
 
-	// API路由组
-	api := r.Group("/api")
+	// 获取API基础路径
+	apiBasePath := config.GetAPIBasePath()
+
+	// API路由组 - 使用版本前缀
+	api := r.Group(apiBasePath)
 
 	// 认证API路由
 	authGroup := api.Group("/auth")
@@ -54,24 +65,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		dictGroup.DELETE("/:code/items/:itemId", dictionaryController.DeleteDictionaryItem)
 	}
 
-	// 权限管理路由 - 仅管理员可访问
-	// permissionController := controllers.NewPermissionController(db, casbinService)
-	// permGroup := api.Group("/permissions")
-	// permGroup.Use(middleware.JWTAuth(), middleware.RoleAuth("admin"))
-	// {
-	// permGroup.GET("/policies", permissionController.GetAllPolicies)
-	// permGroup.GET("/roles", permissionController.GetAllRoles)
-	// permGroup.GET("/roles/:role", permissionController.GetRolePermissions)
-	// permGroup.POST("/policies", permissionController.AddPolicy)
-	// permGroup.DELETE("/policies", permissionController.RemovePolicy)
-	// permGroup.POST("/roles", permissionController.AddRoleForUser)
-	// permGroup.DELETE("/roles", permissionController.DeleteRoleForUser)
-	// permGroup.GET("/users/:user/roles", permissionController.GetRolesForUser)
-	// permGroup.GET("/roles/:role/users", permissionController.GetUsersForRole)
-	// permGroup.POST("/check", permissionController.CheckPermission)
-	// permGroup.GET("/audit-logs", permissionController.GetAuditLogs)
-	// }
-
 	// 需要认证的路由
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTAuth())
@@ -85,7 +78,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		apiAuth.PUT("/change-password", authController.ChangePassword)
 
 		// 系统设置路由
-		systemSettingController := controllers.NewSystemSettingController(db)
 		apiAuth.GET("/settings", systemSettingController.GetSettings)
 		apiAuth.PUT("/settings", middleware.RoleAuth("admin"), systemSettingController.UpdateSettings)
 		apiAuth.PUT("/settings/theme", systemSettingController.UpdateUserTheme)
@@ -151,7 +143,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 会员管理路由 - 暂时移除权限控制以便于开发
 		memberController := controllers.NewMemberController(db)
-		memberGroup := api.Group("/members")
+		memberGroup := apiAuth.Group("/members")
 		{
 			memberGroup.GET("", memberController.ListMembers)
 			memberGroup.GET("/:id", memberController.GetMember)
@@ -170,7 +162,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 店铺管理路由
 		storeController := controllers.NewStoreController(db)
-		storeGroup := api.Group("/stores")
+		storeGroup := apiAuth.Group("/stores")
 		{
 			storeGroup.GET("", storeController.ListStores)
 			storeGroup.GET("/:id", storeController.GetStore)
@@ -181,7 +173,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 库存交易路由
 		inventoryTransactionController := controllers.NewInventoryTransactionController(db)
-		transactionGroup := api.Group("/inventory-transactions")
+		transactionGroup := apiAuth.Group("/inventory-transactions")
 		{
 			transactionGroup.GET("", inventoryTransactionController.ListTransactions)
 			transactionGroup.GET("/:id", inventoryTransactionController.GetTransaction)
@@ -192,7 +184,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 库存预警路由
 		inventoryAlertController := controllers.NewInventoryAlertController(db)
-		alertGroup := api.Group("/inventory-alerts")
+		alertGroup := apiAuth.Group("/inventory-alerts")
 		{
 			alertGroup.GET("", inventoryAlertController.ListAlerts)
 			alertGroup.GET("/:id", inventoryAlertController.GetAlert)
@@ -202,7 +194,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 库存阈值路由
 		inventoryThresholdController := controllers.NewInventoryThresholdController(db)
-		thresholdGroup := api.Group("/inventory-thresholds")
+		thresholdGroup := apiAuth.Group("/inventory-thresholds")
 		{
 			thresholdGroup.GET("", inventoryThresholdController.ListThresholds)
 			thresholdGroup.GET("/:id", inventoryThresholdController.GetThreshold)
@@ -213,7 +205,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 		// 库存盘点路由
 		inventoryCheckController := controllers.NewInventoryCheckController(db)
-		checkGroup := api.Group("/inventory-checks")
+		checkGroup := apiAuth.Group("/inventory-checks")
 		{
 			checkGroup.GET("", inventoryCheckController.ListChecks)
 			checkGroup.GET("/:id", inventoryCheckController.GetCheck)
@@ -224,43 +216,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			checkGroup.PUT("/:id/items/:itemId", middleware.RoleAuth("admin", "manager", "staff"), inventoryCheckController.UpdateCheckItem)
 			checkGroup.POST("/:id/adjustments", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CreateAdjustment)
 			checkGroup.PUT("/adjustments/:adjustmentId/approve", middleware.RoleAuth("admin", "manager"), inventoryCheckController.ApproveAdjustment)
-		}
-
-		// 销售管理路由
-		salesController := controllers.NewSalesController(db)
-		salesGroup := api.Group("/sales")
-		{
-			// 最近销售路由
-			salesGroup.GET("/recent", salesController.GetRecentSales)
-
-			// 销售订单路由
-			salesGroup.GET("/orders", salesController.ListOrders)
-			salesGroup.GET("/orders/:id", salesController.GetOrder)
-			salesGroup.POST("/orders", middleware.RoleAuth("admin", "manager", "cashier"), salesController.CreateOrder)
-			salesGroup.PUT("/orders/:id/status", middleware.RoleAuth("admin", "manager", "cashier"), salesController.UpdateOrderStatus)
-
-			// 退换货路由
-			salesGroup.POST("/returns", middleware.RoleAuth("admin", "manager", "cashier"), salesController.CreateReturnOrder)
-			salesGroup.PUT("/returns/:id/status", middleware.RoleAuth("admin", "manager"), salesController.UpdateReturnOrderStatus)
-		}
-
-		// 试衣管理路由
-		fittingController := controllers.NewFittingController(db)
-		fittingGroup := api.Group("/fitting")
-		{
-			// 试衣间路由
-			fittingGroup.GET("/rooms", fittingController.ListFittingRooms)
-			fittingGroup.GET("/rooms/:id", fittingController.GetFittingRoom)
-			fittingGroup.POST("/rooms", middleware.RoleAuth("admin", "manager"), fittingController.CreateFittingRoom)
-			fittingGroup.PUT("/rooms/:id", middleware.RoleAuth("admin", "manager"), fittingController.UpdateFittingRoom)
-			fittingGroup.DELETE("/rooms/:id", middleware.RoleAuth("admin"), fittingController.DeleteFittingRoom)
-
-			// 试衣记录路由
-			fittingGroup.GET("/records", fittingController.ListFittingRecords)
-			fittingGroup.GET("/records/:id", fittingController.GetFittingRecord)
-			fittingGroup.POST("/records", middleware.RoleAuth("admin", "manager", "staff"), fittingController.CreateFittingRecord)
-			fittingGroup.PUT("/records/:id", middleware.RoleAuth("admin", "manager", "staff"), fittingController.UpdateFittingRecord)
-			fittingGroup.PUT("/records/:id/complete", middleware.RoleAuth("admin", "manager", "staff"), fittingController.CompleteFitting)
 		}
 
 	}
