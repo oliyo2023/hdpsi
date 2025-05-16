@@ -101,6 +101,10 @@ func main() {
 			&models.InventoryCheckAdjustment{},
 			&controllers.PointsTransaction{},
 			&models.SystemSetting{},
+			&models.ReturnOrder{},
+			&models.ReturnOrderItem{},
+			&models.ExchangeOrderItem{},
+			&models.ReturnOrderLog{},
 		)
 		// 重新启用外键约束检查
 		db.Exec("SET FOREIGN_KEY_CHECKS = 1")

@@ -4,6 +4,7 @@ import (
 	"hd_psi/backend/config"
 	"hd_psi/backend/controllers"
 	"hd_psi/backend/middleware"
+	"hd_psi/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -200,10 +201,29 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 			thresholdGroup.GET("/:id", inventoryThresholdController.GetThreshold)
 			thresholdGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.CreateThreshold)
 			thresholdGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.UpdateThreshold)
-			thresholdGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryThresholdController.DeleteThreshold)
+			thresholdGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.DeleteThreshold)
 		}
 
-		// 库存盘点路由
+		// 退换货管理路由
+		returnController := controllers.NewReturnController(services.NewReturnService(db))
+		returnGroup := apiAuth.Group("/returns")
+		{
+			returnGroup.POST("", returnController.CreateReturnOrder)                                                       // 创建退换货申请
+			returnGroup.GET("", returnController.GetReturnOrderList)                                                       // 获取退换货列表
+			returnGroup.GET("/:id", returnController.GetReturnOrderByID)                                                   // 获取单个退换货详情
+			returnGroup.PUT("/:id/status", returnController.UpdateReturnOrderStatus)                                       // 更新退换货状态 (通用)
+			returnGroup.POST("/:id/approve", middleware.RoleAuth("admin", "manager"), returnController.ApproveReturnOrder) // 审批通过
+			returnGroup.POST("/:id/reject", middleware.RoleAuth("admin", "manager"), returnController.RejectReturnOrder)
+			returnGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), returnController.DeleteReturnOrder)
+
+			// More specific status updates
+			returnGroup.POST("/:id/goods-received", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkGoodsReceived)
+			returnGroup.POST("/:id/exchange-shipped", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkExchangeShipped)
+			returnGroup.POST("/:id/process-refund", middleware.RoleAuth("admin", "manager"), returnController.ProcessRefund)
+			returnGroup.POST("/:id/complete", middleware.RoleAuth("admin", "manager"), returnController.CompleteReturnOrder)
+		}
+
+		// 文件上传路由
 		inventoryCheckController := controllers.NewInventoryCheckController(db)
 		checkGroup := apiAuth.Group("/inventory-checks")
 		{

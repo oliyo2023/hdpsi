@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"hd_psi/backend/utils"
+	"hd_psi/backend/utils/errors"
 	"net/http"
 	"strings"
 
@@ -45,6 +46,32 @@ func JWTAuth() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// GetUserFromContext retrieves userID and username from Gin context
+// It's a helper function to be used by controllers after JWTAuth middleware has run.
+func GetUserFromContext(c *gin.Context) (uint, string, error) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		return 0, "", errors.New("userID not found in context")
+	}
+
+	usernameVal, exists := c.Get("username")
+	if !exists {
+		return 0, "", errors.New("username not found in context")
+	}
+
+	userID, ok := userIDVal.(uint)
+	if !ok {
+		return 0, "", errors.New("userID in context is not of type uint")
+	}
+
+	username, ok := usernameVal.(string)
+	if !ok {
+		return 0, "", errors.New("username in context is not of type string")
+	}
+
+	return userID, username, nil
 }
 
 // RoleAuth 创建基于角色的权限控制中间件
