@@ -19,12 +19,7 @@
         >
           <!-- 退换货类型选择 -->
           <n-form-item label="退换类型" path="type">
-            <n-radio-group v-model:value="formData.type">
-              <n-space>
-                <n-radio value="RETURN">退货</n-radio>
-                <n-radio value="EXCHANGE">换货</n-radio>
-              </n-space>
-            </n-radio-group>
+            <return-type-selector v-model:value="formData.type" @change="handleTypeChange" />
           </n-form-item>
 
           <!-- 原订单信息 -->
@@ -64,11 +59,12 @@
               </template>
               <template #default="{ value }">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                  <n-select
+                  <product-selector
                     v-model:value="value.productId"
-                    :options="productOptions"
-                    placeholder="选择商品"
+                    :store-id="currentStoreId"
+                    :exclude-ids="getExcludeProductIds()"
                     style="width: 200px;"
+                    @select="handleProductSelect($event, value)"
                   />
                   <n-input-number
                     v-model:value="value.quantity"
@@ -186,8 +182,6 @@ import {
   NInput,
   NInputNumber,
   NInputGroup,
-  NRadioGroup,
-  NRadio,
   NSpace,
   NButton,
   NSelect,
@@ -198,10 +192,46 @@ import {
   NStatistic,
   useMessage
 } from 'naive-ui'
+import ReturnTypeSelector from '@/components/sales/ReturnTypeSelector.vue'
+import ProductSelector from '@/components/sales/ProductSelector.vue'
 
 const router = useRouter()
 const message = useMessage()
 const formRef = ref(null)
+const currentStoreId = ref(null) // 当前店铺ID
+
+// 获取需要排除的商品ID列表（已选择的商品）
+const getExcludeProductIds = () => {
+  const ids = formData.items.map(item => item.productId).filter(Boolean)
+  if (formData.type === 'EXCHANGE') {
+    ids.push(...formData.exchangeItems.map(item => item.productId).filter(Boolean))
+  }
+  return ids
+}
+
+// 处理商品选择
+const handleProductSelect = (product, item) => {
+  if (product) {
+    item.price = product.price
+    item.productName = product.label
+    item.sku = product.sku
+    // 自动计算退款金额（仅退货时）
+    if (formData.type === 'RETURN') {
+      calculateRefundAmount()
+    }
+    // 换货时计算差价
+    if (formData.type === 'EXCHANGE') {
+      calculatePriceDifference()
+    }
+  }
+}
+
+// 计算退款金额
+const calculateRefundAmount = () => {
+  formData.refundAmount = formData.items.reduce((total, item) => {
+    return total + (item.price || 0) * (item.quantity || 0)
+  }, 0)
+}
 
 // 表单数据
 const formData = reactive({
@@ -211,8 +241,37 @@ const formData = reactive({
   exchangeItems: [],
   refundAmount: 0,
   remarks: '',
-  attachments: []
+  attachments: [],
+  // 新增字段
+  storeId: null,
+  customerId: null,
+  orderInfo: null,
+  totalAmount: 0,
+  priceDifference: 0
 })
+
+// 计算差价
+const calculatePriceDifference = () => {
+  const originalTotal = formData.items.reduce((total, item) => {
+    return total + (item.price || 0) * (item.quantity || 0)
+  }, 0)
+  
+  const exchangeTotal = formData.exchangeItems.reduce((total, item) => {
+    return total + (item.price || 0) * (item.quantity || 0)
+  }, 0)
+  
+  formData.priceDifference = exchangeTotal - originalTotal
+  return formData.priceDifference
+}
+
+// 监听商品数量变化
+const handleQuantityChange = () => {
+  if (formData.type === 'RETURN') {
+    calculateRefundAmount()
+  } else {
+    calculatePriceDifference()
+  }
+}
 
 // 表单验证规则
 const rules = {
@@ -262,10 +321,14 @@ const onCreateExchangeItem = () => ({
   quantity: 1
 })
 
-// 计算差价
-const calculatePriceDifference = () => {
-  // TODO: 实现差价计算逻辑
-  return 0
+// 处理类型变化
+const handleTypeChange = (value) => {
+  // 根据类型重置相关字段
+  if (value === 'RETURN') {
+    formData.exchangeItems = []
+  } else if (value === 'EXCHANGE') {
+    formData.refundAmount = 0
+  }
 }
 
 // 处理订单搜索
@@ -307,13 +370,75 @@ const handleBack = () => {
 
 <style scoped>
 .content {
+  padding: 0 24px 24px;
+}
+
+.n-card {
+  margin-top: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.n-form {
   padding: 24px;
 }
 
+.n-form-item {
+  margin-bottom: 24px;
+}
+
 .order-info {
-  margin: 16px 0;
+  margin: 16px 0 24px;
   padding: 16px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
+  background-color: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.section-title {
+  margin: 24px 0 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.price-difference {
+  margin: 24px 0;
+  padding: 16px;
+  background-color: #f8f8f8;
+  border-radius: 6px;
+  text-align: right;
+  font-size: 16px;
+}
+
+.n-space {
+  justify-content: flex-end;
+}
+
+.n-button {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 0 16px 16px;
+  }
+  
+  .n-form {
+    padding: 16px;
+  }
+  
+  .n-form-item {
+    margin-bottom: 20px;
+  }
+  
+  .n-space {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+  
+  .n-button {
+    width: 100%;
+  }
 }
 </style>

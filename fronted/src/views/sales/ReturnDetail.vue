@@ -37,9 +37,7 @@
                 {{ returnInfo.type === 'RETURN' ? '退货' : '换货' }}
               </n-descriptions-item>
               <n-descriptions-item label="当前状态">
-                <n-tag :type="getStatusType(returnInfo.status)">
-                  {{ getStatusText(returnInfo.status) }}
-                </n-tag>
+                <return-status-tag :status="returnInfo.status" />
               </n-descriptions-item>
               <n-descriptions-item label="申请时间">
                 {{ returnInfo.createdAt }}
@@ -88,22 +86,7 @@
         <!-- 处理记录 -->
         <n-grid-item span="2">
           <n-card title="处理记录">
-            <n-timeline>
-              <n-timeline-item
-                v-for="record in processingRecords"
-                :key="record.id"
-                :type="record.type"
-                :title="record.title"
-                :content="record.content"
-                :time="record.time"
-              >
-                <template #icon>
-                  <n-icon>
-                    <component :is="getTimelineIcon(record.type)" />
-                  </n-icon>
-                </template>
-              </n-timeline-item>
-            </n-timeline>
+            <return-timeline :records="processingRecords" />
           </n-card>
         </n-grid-item>
 
@@ -150,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NLayout,
@@ -163,20 +146,18 @@ import {
   NDescriptions,
   NDescriptionsItem,
   NDataTable,
-  NTimeline,
-  NTimelineItem,
   NSpace,
   NButton,
-  NTag,
   NModal,
   NForm,
   NFormItem,
   NInput,
   NImage,
   NImageGroup,
-  NIcon,
   useMessage
 } from 'naive-ui'
+import ReturnStatusTag from '@/components/sales/ReturnStatusTag.vue'
+import ReturnTimeline from '@/components/sales/ReturnTimeline.vue'
 import {
   CheckmarkCircle,
   CloseCircle,
@@ -374,30 +355,90 @@ onMounted(() => {
 <style scoped>
 .content {
   padding: 24px;
+  background-color: #f8fafc;
+}
+
+.n-layout-header {
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+
+.n-card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.n-grid {
+  margin-bottom: 24px;
 }
 
 .section-title {
-  margin: 16px 0 8px;
-  font-weight: bold;
+  margin: 24px 0 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
 .price-difference {
-  margin-top: 16px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  background-color: #f8f8f8;
+  border-radius: 6px;
   text-align: right;
-  font-weight: bold;
+  font-size: 16px;
 }
 
 .positive {
   color: #18a058;
+  font-weight: 500;
 }
 
 .negative {
   color: #d03050;
+  font-weight: 500;
 }
 
 .refund-info {
-  margin-top: 16px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  background-color: #f8f8f8;
+  border-radius: 6px;
   text-align: right;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.n-space {
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.n-button {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 16px;
+  }
+  
+  .n-layout-header {
+    padding: 0 16px;
+  }
+  
+  .n-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  
+  .n-space {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .n-button {
+    width: 100%;
+  }
 }
 </style>

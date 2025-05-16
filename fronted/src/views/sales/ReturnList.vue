@@ -6,7 +6,7 @@
           <n-button type="primary" @click="handleCreate">
             <template #icon>
               <n-icon>
-                <add-icon />
+                <Add />
               </n-icon>
             </template>
             新建退换货
@@ -30,10 +30,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { Add as AddIcon } from '@vicons/ionicons5'
-import { NButton, NDataTable, NIcon, NLayout, NLayoutHeader, NLayoutContent, NPageHeader, NCard } from 'naive-ui'
+import { Add } from '@vicons/ionicons5'
+import { NButton, NDataTable, NIcon, NLayout, NLayoutHeader, NLayoutContent, NPageHeader, NCard, NSpace } from 'naive-ui'
+import ReturnStatusTag from '@/components/sales/ReturnStatusTag.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -79,13 +80,9 @@ const columns = ref([
     title: '状态',
     key: 'status',
     render: (row) => {
-      const statusMap = {
-        PENDING: '待处理',
-        APPROVED: '已批准',
-        REJECTED: '已拒绝',
-        COMPLETED: '已完成'
-      }
-      return statusMap[row.status] || row.status
+      return h(ReturnStatusTag, {
+        status: row.status
+      })
     }
   },
   {
@@ -170,5 +167,58 @@ onMounted(() => {
 <style scoped>
 .n-layout {
   height: 100%;
+  padding: 24px;
+}
+
+.n-layout-header {
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+
+.n-layout-content {
+  background: transparent;
+}
+
+.n-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.n-data-table {
+  margin-top: 16px;
+}
+
+.n-page-header {
+  padding: 16px 0;
+}
+
+.n-button {
+  margin-left: 12px;
+}
+
+@media (max-width: 768px) {
+  .n-layout {
+    padding: 16px;
+  }
+  
+  .n-layout-header {
+    padding: 0 16px;
+  }
+  
+  .n-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .n-page-header__extra {
+    margin-top: 12px;
+    width: 100%;
+  }
+  
+  .n-button {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
 }
 </style>
