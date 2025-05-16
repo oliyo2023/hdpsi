@@ -260,7 +260,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, h, computed, watch } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, h, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NButton, NCard, NForm, NFormItem, NFormItemGi, NGrid, NInput,
@@ -339,7 +339,12 @@ const rules = {
   categoryId: {
     required: true,
     message: '请选择商品类别',
-    trigger: ['blur', 'input', 'change', 'update:value']
+    trigger: ['blur', 'input', 'change', 'update:value'],
+    validator: (rule, value) => {
+      console.log('验证类别ID:', value, typeof value);
+      // 确保值存在且不为null/undefined/0/NaN
+      return value !== null && value !== undefined && value !== 0 && !isNaN(value);
+    }
   },
   retailPrice: {
     required: true,
@@ -441,14 +446,25 @@ watch(() => formData.description, (newValue) => {
 // 处理类别变更
 const handleCategoryChange = (val) => {
   console.log('类别选择变更:', val, typeof val)
-  // 确保值是数字类型
-  formData.categoryId = typeof val === 'string' ? parseInt(val) : val
+
+  // 确保值是数字类型，但不要将null或undefined转换为0
+  if (val === null || val === undefined || val === '') {
+    formData.categoryId = null;
+  } else {
+    // 确保转换为数字
+    const numVal = typeof val === 'string' ? parseInt(val) : val;
+    formData.categoryId = isNaN(numVal) ? null : numVal;
+  }
+
   console.log('处理后的类别ID:', formData.categoryId, typeof formData.categoryId)
 
   // 手动触发表单验证
   if (formRef.value) {
-    formRef.value.validate(['categoryId'], errors => {
-      console.log('类别验证结果:', errors)
+    // 使用nextTick确保值已经更新
+    nextTick(() => {
+      formRef.value.validate(['categoryId'], errors => {
+        console.log('类别验证结果:', errors)
+      })
     })
   }
 }
@@ -456,11 +472,18 @@ const handleCategoryChange = (val) => {
 // 监听类别ID变化
 watch(() => formData.categoryId, (newValue) => {
   console.log('类别ID变化:', newValue, typeof newValue)
-  // 手动触发表单验证
-  if (formRef.value) {
-    formRef.value.validate(['categoryId'], errors => {
-      console.log('类别验证结果:', errors)
-    })
+
+  // 确保值是有效的数字
+  if (newValue !== null && newValue !== undefined && !isNaN(newValue)) {
+    // 手动触发表单验证
+    if (formRef.value) {
+      // 使用nextTick确保值已经更新
+      nextTick(() => {
+        formRef.value.validate(['categoryId'], errors => {
+          console.log('类别验证结果:', errors)
+        })
+      })
+    }
   }
 })
 
@@ -784,9 +807,9 @@ const loadProduct = async () => {
 
     // 特别处理类别和品牌字段，确保它们是数字类型
     if (product.categoryId) {
-      // 确保类别ID是数字类型
+      // 确保类别ID是有效的数字类型
       const categoryId = typeof product.categoryId === 'string' ? parseInt(product.categoryId) : product.categoryId;
-      formData.categoryId = categoryId || null; // 避免0值
+      formData.categoryId = isNaN(categoryId) ? null : categoryId;
       console.log('设置类别ID:', formData.categoryId, typeof formData.categoryId)
     } else {
       formData.categoryId = null
@@ -908,6 +931,7 @@ const handleSave = async () => {
 
   // 打印当前表单数据状态
   console.log('保存前的表单数据:', formData);
+  console.log('保存前的类别ID:', formData.categoryId, typeof formData.categoryId);
 
   // 直接保存，不使用Promise-based validate
   saving.value = true;
@@ -929,18 +953,30 @@ const handleSave = async () => {
       retailPrice: formData.retailPrice,
       images: formData.images,
       status: formData.status,
-      variants: variants.value.map(v => ({
-        colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
-        sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
-        seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
-        fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
-        barcode: v.barcode,
-        costPrice: v.costPrice,
-        retailPrice: v.retailPrice
-      }))
+      variants: variants.value.map(v => {
+        // 创建基本变体数据
+        const variantData = {
+          colorId: typeof v.colorId === 'string' ? parseInt(v.colorId) : v.colorId,
+          sizeId: typeof v.sizeId === 'string' ? parseInt(v.sizeId) : v.sizeId,
+          seasonId: v.seasonId ? (typeof v.seasonId === 'string' ? parseInt(v.seasonId) : v.seasonId) : null,
+          fabricId: v.fabricId ? (typeof v.fabricId === 'string' ? parseInt(v.fabricId) : v.fabricId) : null,
+          barcode: v.barcode || '',
+          sku: v.sku || '',
+          costPrice: v.costPrice,
+          retailPrice: v.retailPrice
+        };
+
+        // 如果是编辑模式且变体有ID，则包含ID
+        if (isEdit.value && v.id) {
+          variantData.id = v.id;
+        }
+
+        return variantData;
+      })
     };
 
     console.log('发送到后端的数据:', productData);
+    console.log('发送的类别ID:', productData.categoryId, typeof productData.categoryId);
 
     // 调用API保存商品数据
     if (isEdit.value) {

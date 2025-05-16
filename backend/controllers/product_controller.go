@@ -632,11 +632,47 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 
 	// 更新商品
 	input.Product.ID = product.ID
-	// 保留原始的创建时间
-	input.Product.CreatedAt = product.CreatedAt
 
-	// 使用Select排除created_at字段，避免更新该字段
-	if err := tx.Model(&product).Omit("created_at").Updates(&input.Product).Error; err != nil {
+	// 从数据库中获取当前商品的完整信息
+	var currentProduct models.Product
+	if err := tx.First(&currentProduct, product.ID).Error; err != nil {
+		tx.Rollback()
+		log.Error("获取当前商品信息失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取当前商品信息失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 保留原始的创建时间
+	input.Product.CreatedAt = currentProduct.CreatedAt
+
+	// 确保所有必要字段都有值
+	if input.Product.SKU == "" {
+		input.Product.SKU = currentProduct.SKU
+	}
+	if input.Product.Name == "" {
+		input.Product.Name = currentProduct.Name
+	}
+
+	// 记录更新前的商品信息
+	log.Info("更新前的商品信息",
+		logger.F("product_id", currentProduct.ID),
+		logger.F("sku", currentProduct.SKU),
+		logger.F("name", currentProduct.Name),
+		logger.F("category_id", currentProduct.CategoryID))
+
+	// 记录即将更新的商品信息
+	log.Info("即将更新的商品信息",
+		logger.F("product_id", input.Product.ID),
+		logger.F("sku", input.Product.SKU),
+		logger.F("name", input.Product.Name),
+		logger.F("category_id", input.Product.CategoryID))
+
+	// 使用Updates而不是Save，只更新非零值字段
+	if err := tx.Model(&currentProduct).Updates(input.Product).Error; err != nil {
 		tx.Rollback()
 		log.Error("更新商品失败", logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrDatabaseUpdate).
@@ -646,6 +682,26 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		c.Error(appErr)
 		return
 	}
+
+	// 验证更新后的商品信息
+	var updatedProduct models.Product
+	if err := tx.First(&updatedProduct, product.ID).Error; err != nil {
+		tx.Rollback()
+		log.Error("获取更新后的商品信息失败", logger.F("error", err.Error()))
+		appErr := errors.New(errors.ErrDatabaseQuery).
+			WithDetails("获取更新后的商品信息失败").
+			WithError(err).
+			WithRequestID(c.GetString("request_id"))
+		c.Error(appErr)
+		return
+	}
+
+	// 记录更新后的商品信息
+	log.Info("更新后的商品信息",
+		logger.F("product_id", updatedProduct.ID),
+		logger.F("sku", updatedProduct.SKU),
+		logger.F("name", updatedProduct.Name),
+		logger.F("category_id", updatedProduct.CategoryID))
 
 	// Fetch existing variants
 	var existingVariants []models.ProductVariant
@@ -681,11 +737,17 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 				// Variant exists, update it
 				// 获取原始变体数据
 				existingVariant := existingVariantsMap[variant.ID]
+
 				// 保留原始的创建时间
 				variant.CreatedAt = existingVariant.CreatedAt
 
-				// 使用Omit排除created_at字段，避免更新该字段
-				if err := tx.Model(&existingVariant).Omit("created_at").Updates(variant).Error; err != nil {
+				// 确保所有必要字段都有值
+				if variant.SKU == "" {
+					variant.SKU = existingVariant.SKU
+				}
+
+				// 使用Updates而不是Save，只更新非零值字段
+				if err := tx.Model(&existingVariant).Updates(variant).Error; err != nil {
 					tx.Rollback()
 					log.Error("更新商品变体失败",
 						logger.F("product_id", product.ID),
