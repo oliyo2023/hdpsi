@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/member.dart';
-import '../utils/formatters.dart';
+import 'package:hd_psi_mobile/models/member.dart';
+import 'package:hd_psi_mobile/utils/formatters.dart';
 
 class MemberListItem extends StatelessWidget {
   const MemberListItem({super.key, required this.member, required this.onTap});
