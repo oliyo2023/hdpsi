@@ -25,7 +25,7 @@ database:
   max_idle_conns: 10
   max_open_conns: 100
   conn_max_lifetime: 3600  # 连接最大生命周期（秒）
-  auto_migrate: false      # 是否自动迁移数据库模型
+  auto_migrate: true      # 是否自动迁移数据库模型
 
 # JWT配置
 jwt:

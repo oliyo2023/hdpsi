@@ -404,6 +404,8 @@ func getStatusDescription(status string) string {
 		return "已发出换货商品"
 	case models.ReturnStatusRefunded:
 		return "已退款"
+	case models.ReturnStatusRefundProcessed:
+		return "退款已处理"
 	case models.ReturnStatusCompleted:
 		return "已完成"
 	case models.ReturnStatusCancelled:
@@ -443,15 +445,17 @@ func isValidStatusTransition(currentStatus, nextStatus, orderType string) bool {
 		return nextStatus == models.ReturnStatusCompleted // A rejected order can be marked as 'completed' in terms of workflow
 	case models.ReturnStatusProcessing:
 		if orderType == models.ReturnTypeReturn {
-			return nextStatus == models.ReturnStatusGoodsReceived || nextStatus == models.ReturnStatusRefunded || nextStatus == models.ReturnStatusCompleted
+			return nextStatus == models.ReturnStatusGoodsReceived || nextStatus == models.ReturnStatusRefunded || nextStatus == models.ReturnStatusRefundProcessed || nextStatus == models.ReturnStatusCompleted
 		} else { // EXCHANGE
 			return nextStatus == models.ReturnStatusExchangeShipped || nextStatus == models.ReturnStatusCompleted
 		}
 	case models.ReturnStatusGoodsReceived: // RETURN only
-		return nextStatus == models.ReturnStatusRefunded || nextStatus == models.ReturnStatusCompleted
+		return nextStatus == models.ReturnStatusRefunded || nextStatus == models.ReturnStatusRefundProcessed || nextStatus == models.ReturnStatusCompleted
 	case models.ReturnStatusExchangeShipped: // EXCHANGE only
 		return nextStatus == models.ReturnStatusCompleted
 	case models.ReturnStatusRefunded: // RETURN only
+		return nextStatus == models.ReturnStatusCompleted
+	case models.ReturnStatusRefundProcessed: // RETURN only
 		return nextStatus == models.ReturnStatusCompleted
 	case models.ReturnStatusCompleted, models.ReturnStatusCancelled:
 		return false // Cannot transition from a terminal state (except for re-opening, which is not handled here)

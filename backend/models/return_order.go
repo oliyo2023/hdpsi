@@ -23,6 +23,7 @@ const (
 	ReturnStatusGoodsReceived       = "GOODS_RECEIVED"        // 已收到退货商品 (退货场景)
 	ReturnStatusExchangeShipped     = "EXCHANGE_SHIPPED"      // 已发出换货商品 (换货场景)
 	ReturnStatusRefunded            = "REFUNDED"              // 已退款 (退货场景)
+	ReturnStatusRefundProcessed     = "REFUND_PROCESSED"      // 退款已处理 (退货场景)
 	ReturnStatusCompleted           = "COMPLETED"             // 已完成
 	ReturnStatusCancelled           = "CANCELLED"             // 已取消
 )
@@ -41,10 +42,11 @@ type ReturnOrder struct {
 	Images        string    `gorm:"type:text" json:"images"`   // 图片凭证 (JSON 字符串数组 of URLs)
 
 	// 退货相关
-	RefundAmount       *float64   `json:"refundAmount,omitempty"`                         // 期望退款金额 (退货时)
-	ActualRefundAmount *float64   `json:"actualRefundAmount,omitempty"`                   // 实际退款金额
-	RefundMethod       *string    `gorm:"type:varchar(50)" json:"refundMethod,omitempty"` // 退款方式
-	RefundDate         *time.Time `json:"refundDate,omitempty"`                           // 退款日期
+	RefundAmount        *float64   `json:"refundAmount,omitempty"`                                 // 期望退款金额 (退货时)
+	ActualRefundAmount  *float64   `json:"actualRefundAmount,omitempty"`                           // 实际退款金额
+	RefundMethod        *string    `gorm:"type:varchar(50)" json:"refundMethod,omitempty"`         // 退款方式
+	RefundTransactionID *string    `gorm:"type:varchar(100)" json:"refundTransactionId,omitempty"` // 退款交易ID
+	RefundDate          *time.Time `json:"refundDate,omitempty"`                                   // 退款日期
 
 	// 换货相关
 	ExchangeShippingAddress string     `gorm:"type:varchar(255)" json:"exchangeShippingAddress,omitempty"` // 换货收货地址
