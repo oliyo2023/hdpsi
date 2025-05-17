@@ -44,9 +44,6 @@
           <n-button @click="handleRefresh" type="info">
             刷新
           </n-button>
-          <n-button @click="toggleDebug" type="warning">
-            {{ showDebug ? '隐藏调试' : '显示调试' }}
-          </n-button>
         </div>
       </div>
 
@@ -61,18 +58,6 @@
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       />
-
-      <!-- 调试信息区域 -->
-      <n-collapse v-if="showDebug">
-        <n-collapse-item title="调试信息" name="debug">
-          <n-card title="原始响应数据">
-            <pre>{{ JSON.stringify(rawResponse, null, 2) }}</pre>
-          </n-card>
-          <n-card title="处理后的数据" class="mt-4">
-            <pre>{{ JSON.stringify(products, null, 2) }}</pre>
-          </n-card>
-        </n-collapse-item>
-      </n-collapse>
     </div>
   </div>
 </template>
@@ -95,8 +80,6 @@ const message = useMessage()
 // 响应式状态
 const loading = ref(false)
 const products = ref([])
-const rawResponse = ref(null) // 原始响应数据
-const showDebug = ref(true) // 显示调试信息
 
 const pagination = reactive({
   page: 1,
@@ -284,21 +267,10 @@ const loadProducts = async () => {
     // 调用API获取商品数据
     const response = await productService.getProducts(params)
 
-    // 保存原始响应数据供调试使用
-    rawResponse.value = response
-
-    // 调试输出响应数据
-    console.log('API响应数据:', JSON.stringify(response, null, 2))
-
     // 处理响应数据
     if (response.items && response.total !== undefined) {
-      console.log('原始响应数据:', JSON.stringify(response.items, null, 2))
-
       // 确保每个商品都有必要的字段
       products.value = response.items.map(item => {
-        // 检查原始字段名称
-        console.log('单个商品原始数据:', item)
-        console.log('商品字段名称:', Object.keys(item))
 
         // 使用原始字段名称或转换后的字段名称
         const id = item.ID !== undefined ? item.ID : (item.id || 0)
@@ -320,7 +292,6 @@ const loadProducts = async () => {
       })
 
       pagination.itemCount = response.total
-      console.log('处理后的商品数据:', products.value)
     } else {
       products.value = []
       pagination.itemCount = 0
@@ -351,10 +322,6 @@ const resetSearch = () => {
 const handleRefresh = () => {
   loadProducts()
   message.success('刷新成功')
-}
-
-const toggleDebug = () => {
-  showDebug.value = !showDebug.value
 }
 
 const handlePageChange = (page) => {

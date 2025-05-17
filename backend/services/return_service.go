@@ -57,10 +57,10 @@ type CreateExchangeOrderItemInput struct {
 
 // CreateReturnOrder creates a new return/exchange order
 func (s *ReturnService) CreateReturnOrder(input CreateReturnOrderInput) (*models.ReturnOrder, error) {
-	if input.Type == models.ReturnTypeReturn && (input.ReturnOrderItems == nil || len(input.ReturnOrderItems) == 0) {
+	if input.Type == models.ReturnTypeReturn && len(input.ReturnOrderItems) == 0 {
 		return nil, utils.NewValidationError("退货申请必须包含至少一个退货商品")
 	}
-	if input.Type == models.ReturnTypeExchange && (input.ExchangeOrderItems == nil || len(input.ExchangeOrderItems) == 0) {
+	if input.Type == models.ReturnTypeExchange && len(input.ExchangeOrderItems) == 0 {
 		return nil, utils.NewValidationError("换货申请必须包含至少一个换货商品")
 	}
 
@@ -463,7 +463,8 @@ func isValidStatusTransition(currentStatus, nextStatus, orderType string) bool {
 	return false // Default deny
 }
 
-// Helper function to convert string to uint for user ID
+// Deprecated: 此函数暂未使用，保留以备将来使用
+// getUserIDFromString 将字符串形式的用户ID转换为uint类型
 func getUserIDFromString(userIDStr string) (uint, error) {
 	if userIDStr == "" {
 		return 0, utils.NewValidationError("用户ID不能为空")

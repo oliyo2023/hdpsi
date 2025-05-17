@@ -61,17 +61,7 @@
         @update:page-size="handlePageSizeChange"
       />
 
-      <!-- 调试信息区域 -->
-      <n-collapse v-if="showDebug">
-        <n-collapse-item title="调试信息" name="debug">
-          <n-card title="原始响应数据">
-            <pre>{{ JSON.stringify(rawResponse, null, 2) }}</pre>
-          </n-card>
-          <n-card title="处理后的数据" class="mt-4">
-            <pre>{{ JSON.stringify(products, null, 2) }}</pre>
-          </n-card>
-        </n-collapse-item>
-      </n-collapse>
+
     </div>
   </div>
 </template>
@@ -94,8 +84,6 @@ const message = useMessage()
 // 响应式状态
 const loading = ref(false)
 const products = ref([])
-const rawResponse = ref(null) // 原始响应数据
-const showDebug = ref(true) // 显示调试信息，便于排查问题
 
 const pagination = reactive({
   page: 1,
@@ -122,12 +110,6 @@ const categoryOptions = ref([])
 const loadDictionaryItems = async (code, options) => {
   try {
     const items = await dictionaryService.getDictionaryItems(code)
-    console.log(`原始字典项数据: ${code}`, items)
-
-    // 检查字典项数据结构
-    if (items && items.length > 0) {
-      console.log('字典项第一项字段:', Object.keys(items[0]))
-    }
 
     // 构建选项
     options.value = items.map(item => {
@@ -142,10 +124,7 @@ const loadDictionaryItems = async (code, options) => {
         disabled: !status // 根据状态设置是否禁用
       }
     })
-
-    console.log(`字典项加载成功: ${code}`, options.value)
   } catch (error) {
-    console.error(`加载${code}字典数据失败:`, error)
     message.error(`加载${code}字典数据失败: ${error.message || '未知错误'}`)
   }
 }
@@ -257,23 +236,13 @@ const loadProducts = async () => {
       delete params.category
     }
 
-    console.log('查询参数:', params)
-
     // 调用API获取已删除商品数据
     const response = await productService.getDeletedProducts(params)
 
-    // 保存原始响应数据供调试使用
-    rawResponse.value = response
-
     // 处理响应数据
     if (response.items && response.total !== undefined) {
-      console.log('原始响应数据:', JSON.stringify(response.items, null, 2))
-
       // 确保每个商品都有必要的字段
       products.value = response.items.map(item => {
-        // 检查原始字段名称
-        console.log('单个商品原始数据:', item)
-        console.log('商品字段名称:', Object.keys(item))
 
         // 使用原始字段名称或转换后的字段名称
         const id = item.ID !== undefined ? item.ID : (item.id || 0)
@@ -293,13 +262,11 @@ const loadProducts = async () => {
       })
 
       pagination.itemCount = response.total
-      console.log('处理后的商品数据:', products.value)
     } else {
       products.value = []
       pagination.itemCount = 0
     }
   } catch (error) {
-    console.error('加载已删除商品列表失败:', error)
     message.error('加载已删除商品列表失败: ' + (error.response?.data?.error || '未知错误'))
     products.value = []
     pagination.itemCount = 0
@@ -344,22 +311,17 @@ const handleRestore = (row) => {
 
   if (!id || id === 0) {
     message.error('商品ID无效，无法恢复')
-    console.error('尝试恢复无效ID的商品:', row)
     return
   }
 
-  console.log('尝试恢复商品:', row, '使用ID:', id)
-
   loading.value = true
   productService.restoreProduct(id)
-    .then((response) => {
-      console.log('恢复商品成功响应:', response)
+    .then(() => {
       const name = row.Name || row.name || ''
       message.success(`商品 ${name || 'ID: ' + id} 恢复成功`)
       loadProducts()
     })
     .catch(error => {
-      console.error('恢复商品失败:', error)
       message.error('恢复失败: ' + (error.response?.data?.error || '未知错误'))
     })
     .finally(() => {

@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../models/product.dart';
-import '../services/product_service.dart';
+import 'package:hd_psi_mobile/models/product.dart';
+import 'package:hd_psi_mobile/services/product_service.dart';
 
 class ProductProvider extends ChangeNotifier {
   final ProductService _productService = ProductService();
-  
+
   List<Product> _products = [];
   Product? _selectedProduct;
   bool _isLoading = false;
@@ -13,7 +13,7 @@ class ProductProvider extends ChangeNotifier {
   int _totalProducts = 0;
   int _currentPage = 1;
   int _pageSize = 10;
-  
+
   List<Product> get products => _products;
   Product? get selectedProduct => _selectedProduct;
   bool get isLoading => _isLoading;
@@ -22,7 +22,7 @@ class ProductProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   int get pageSize => _pageSize;
   bool get hasMorePages => _totalProducts > _currentPage * _pageSize;
-  
+
   // 加载商品列表
   Future<void> loadProducts({
     int page = 1,
@@ -39,11 +39,11 @@ class ProductProvider extends ChangeNotifier {
       _currentPage = page;
     }
     _pageSize = pageSize;
-    
+
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     try {
       final result = await _productService.getProducts(
         page: page,
@@ -52,13 +52,13 @@ class ProductProvider extends ChangeNotifier {
         sku: sku,
         categoryId: categoryId,
       );
-      
+
       if (refresh || page == 1) {
         _products = result['items'];
       } else {
         _products.addAll(result['items']);
       }
-      
+
       _totalProducts = result['total'];
       _error = null;
     } catch (e) {
@@ -68,7 +68,7 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // 加载更多商品
   Future<void> loadMoreProducts({
     String? name,
@@ -76,7 +76,7 @@ class ProductProvider extends ChangeNotifier {
     int? categoryId,
   }) async {
     if (_isLoading || !hasMorePages) return;
-    
+
     await loadProducts(
       page: _currentPage + 1,
       pageSize: _pageSize,
@@ -85,13 +85,13 @@ class ProductProvider extends ChangeNotifier {
       categoryId: categoryId,
     );
   }
-  
+
   // 获取单个商品
   Future<void> getProduct(int id) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     try {
       _selectedProduct = await _productService.getProduct(id);
       _error = null;
@@ -102,15 +102,23 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // 创建商品
-  Future<bool> createProduct(Product product, List<ProductVariant> variants, {List<File>? images}) async {
+  Future<bool> createProduct(
+    Product product,
+    List<ProductVariant> variants, {
+    List<File>? images,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     try {
-      final newProduct = await _productService.createProduct(product, variants, images: images);
+      final newProduct = await _productService.createProduct(
+        product,
+        variants,
+        images: images,
+      );
       _products.insert(0, newProduct);
       _totalProducts += 1;
       _error = null;
@@ -123,27 +131,37 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // 更新商品
-  Future<bool> updateProduct(int id, Product product, List<ProductVariant> variants, {List<File>? newImages}) async {
+  Future<bool> updateProduct(
+    int id,
+    Product product,
+    List<ProductVariant> variants, {
+    List<File>? newImages,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     try {
-      final updatedProduct = await _productService.updateProduct(id, product, variants, newImages: newImages);
-      
+      final updatedProduct = await _productService.updateProduct(
+        id,
+        product,
+        variants,
+        newImages: newImages,
+      );
+
       // 更新列表中的商品
       final index = _products.indexWhere((p) => p.id == id);
       if (index != -1) {
         _products[index] = updatedProduct;
       }
-      
+
       // 更新选中的商品
       if (_selectedProduct?.id == id) {
         _selectedProduct = updatedProduct;
       }
-      
+
       _error = null;
       return true;
     } catch (e) {
@@ -154,25 +172,25 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // 删除商品
   Future<bool> deleteProduct(int id) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
+
     try {
       await _productService.deleteProduct(id);
-      
+
       // 从列表中移除商品
       _products.removeWhere((p) => p.id == id);
       _totalProducts -= 1;
-      
+
       // 清除选中的商品
       if (_selectedProduct?.id == id) {
         _selectedProduct = null;
       }
-      
+
       _error = null;
       return true;
     } catch (e) {
@@ -183,13 +201,13 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // 清除选中的商品
   void clearSelectedProduct() {
     _selectedProduct = null;
     notifyListeners();
   }
-  
+
   // 清除错误
   void clearError() {
     _error = null;

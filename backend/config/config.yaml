@@ -38,8 +38,8 @@ jwt:
 
 # 微信公众号配置
 wechat_official_account:
-  appid: your_appid
-  appsecret: your_appsecret
+  appid: wx75a27ed91c4912cb
+  appsecret: effd7f0be2b07bb21d5532c385cdc3bd
   redirect_uri: "http://your_backend_domain/api/v1/auth/wechat_callback" # 授权回调地址，需要与公众号后台配置一致
   scope: "snsapi_userinfo" # 获取用户基本信息
   verify_token: your_wechat_verify_token # 新增：用于公众号服务器配置的Token，需要与公众号后台配置一致

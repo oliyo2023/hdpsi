@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
-import '../services/auth_service.dart';
-import '../utils/error_handler.dart';
+import 'package:hd_psi_mobile/models/user.dart';
+import 'package:hd_psi_mobile/services/auth_service.dart';
+import 'package:hd_psi_mobile/utils/error_handler.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/member_provider.dart';
-import '../widgets/loading_indicator.dart';
-import '../widgets/error_display.dart';
-import '../widgets/empty_data.dart';
+import 'package:hd_psi_mobile/providers/member_provider.dart';
+import 'package:hd_psi_mobile/widgets/loading_indicator.dart';
+import 'package:hd_psi_mobile/widgets/error_display.dart';
+import 'package:hd_psi_mobile/widgets/empty_data.dart';
 
-import '../widgets/member_list_item.dart';
+import 'package:hd_psi_mobile/widgets/member_list_item.dart';
 
 class MemberListScreen extends StatefulWidget {
   const MemberListScreen({super.key});

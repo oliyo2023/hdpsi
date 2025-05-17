@@ -11,9 +11,6 @@
         <h1 class="page-title">{{ isEditing ? '编辑商品' : '添加商品' }}</h1>
       </div>
       <div class="header-right">
-        <n-button @click="toggleDebug" type="warning" class="mr-2">
-          {{ showDebug ? '隐藏调试' : '显示调试' }}
-        </n-button>
       </div>
     </div>
 
@@ -152,27 +149,7 @@
       </n-form>
     </div>
 
-    <!-- 调试信息区域 -->
-    <n-collapse v-if="showDebug">
-      <n-collapse-item title="调试信息" name="debug">
-        <n-card title="原始商品数据">
-          <pre>{{ JSON.stringify(rawProduct, null, 2) }}</pre>
-        </n-card>
-        <n-card title="表单数据" class="mt-4">
-          <pre>{{ JSON.stringify(formData, null, 2) }}</pre>
-        </n-card>
-        <n-card title="字典选项" class="mt-4">
-          <h3>类别选项</h3>
-          <pre>{{ JSON.stringify(categoryOptions, null, 2) }}</pre>
-          <h3>颜色选项</h3>
-          <pre>{{ JSON.stringify(colorOptions, null, 2) }}</pre>
-          <h3>尺码选项</h3>
-          <pre>{{ JSON.stringify(sizeOptions, null, 2) }}</pre>
-          <h3>季节选项</h3>
-          <pre>{{ JSON.stringify(seasonOptions, null, 2) }}</pre>
-        </n-card>
-      </n-collapse-item>
-    </n-collapse>
+
   </div>
 </template>
 
@@ -196,8 +173,6 @@ const message = useMessage()
 // 获取商品ID（如果是编辑模式）
 const productId = ref(route.params.id)
 const isEditing = ref(!!productId.value)
-const rawProduct = ref(null) // 原始商品数据
-const showDebug = ref(true) // 显示调试信息
 
 // 表单和验证
 const formRef = ref(null)
@@ -234,7 +209,6 @@ const loadDictionaryItems = async (code, optionsRef) => {
   try {
     const dictionaryService = (await import('../services/dictionary')).default
     const items = await dictionaryService.getDictionaryItems(code)
-    console.log(`原始${code}字典项数据:`, items)
 
     // 构建选项
     optionsRef.value = items.map(item => {
@@ -250,10 +224,7 @@ const loadDictionaryItems = async (code, optionsRef) => {
         disabled: !status // 根据状态设置是否禁用
       }
     })
-
-    console.log(`${code}字典项加载成功:`, optionsRef.value)
   } catch (error) {
-    console.error(`加载${code}字典数据失败:`, error)
     message.error(`加载${code}字典数据失败: ${error.message || '未知错误'}`)
   }
 }
@@ -287,8 +258,6 @@ const loadProduct = async () => {
 
   try {
     const product = await productService.getProduct(productId.value)
-    console.log('从后端获取的商品数据:', product)
-    rawProduct.value = product
 
     // 将后端字段名称转换为前端字段名称
     // 注意：字段名称已经被 convertBackendFields 函数转换为小写了
@@ -301,11 +270,9 @@ const loadProduct = async () => {
       // 使用ID作为选择器的值
       const categoryId = product.category.id || (typeof product.category === 'number' ? product.category : null);
       formData.category = categoryId;
-      console.log('设置类别ID:', formData.category, '类别对象:', product.category)
     } else if (product.categoryId) {
       // 直接使用categoryId字段（如果存在）
       formData.category = product.categoryId;
-      console.log('使用categoryId字段:', formData.category)
     } else {
       formData.category = null
     }
@@ -313,10 +280,8 @@ const loadProduct = async () => {
     if (product.brand) {
       const brandId = product.brand.id || (typeof product.brand === 'number' ? product.brand : null);
       formData.brand = brandId;
-      console.log('设置品牌ID:', formData.brand, '品牌对象:', product.brand)
     } else if (product.brandId) {
       formData.brand = product.brandId;
-      console.log('使用brandId字段:', formData.brand)
     } else {
       formData.brand = null
     }
@@ -324,10 +289,8 @@ const loadProduct = async () => {
     if (product.color) {
       const colorId = product.color.id || (typeof product.color === 'number' ? product.color : null);
       formData.color = colorId;
-      console.log('设置颜色ID:', formData.color, '颜色对象:', product.color)
     } else if (product.colorId) {
       formData.color = product.colorId;
-      console.log('使用colorId字段:', formData.color)
     } else {
       formData.color = null
     }
@@ -335,10 +298,8 @@ const loadProduct = async () => {
     if (product.size) {
       const sizeId = product.size.id || (typeof product.size === 'number' ? product.size : null);
       formData.size = sizeId;
-      console.log('设置尺码ID:', formData.size, '尺码对象:', product.size)
     } else if (product.sizeId) {
       formData.size = product.sizeId;
-      console.log('使用sizeId字段:', formData.size)
     } else {
       formData.size = null
     }
@@ -346,10 +307,8 @@ const loadProduct = async () => {
     if (product.season) {
       const seasonId = product.season.id || (typeof product.season === 'number' ? product.season : null);
       formData.season = seasonId;
-      console.log('设置季节ID:', formData.season, '季节对象:', product.season)
     } else if (product.seasonId) {
       formData.season = product.seasonId;
-      console.log('使用seasonId字段:', formData.season)
     } else {
       formData.season = null
     }
@@ -358,18 +317,10 @@ const loadProduct = async () => {
     formData.retailPrice = product.retailPrice || 0
     formData.image = product.image || ''
     formData.description = product.description || ''
-
-    console.log('转换后的表单数据:', formData)
   } catch (error) {
-    console.error('加载商品数据失败:', error)
     message.error('加载商品数据失败: ' + (error.response?.data?.error || '未知错误'))
     router.push('/products')
   }
-}
-
-// 切换调试信息显示
-const toggleDebug = () => {
-  showDebug.value = !showDebug.value
 }
 
 // 返回商品列表
@@ -379,18 +330,14 @@ const goBack = () => {
 
 // 处理类别变更
 const handleCategoryChange = (val) => {
-  console.log('类别选择变更:', val, typeof val);
   // 确保值是数字类型
   formData.category = val === null ? null : (typeof val === 'string' ? parseInt(val) : val);
-  console.log('处理后的类别ID:', formData.category, typeof formData.category);
 }
 
 // 处理品牌变更
 const handleBrandChange = (val) => {
-  console.log('品牌选择变更:', val, typeof val);
   // 确保值是数字类型
   formData.brand = val === null ? null : (typeof val === 'string' ? parseInt(val) : val);
-  console.log('处理后的品牌ID:', formData.brand, typeof formData.brand);
 }
 
 // 生成SKU
@@ -447,12 +394,11 @@ const generateSKU = async () => {
 
 // 上传相关方法
 const beforeUpload = (data) => {
-  console.log('准备上传:', data)
   return true
 }
 
 const handleUploadChange = (options) => {
-  console.log('上传变化:', options)
+  // 处理上传变化
 }
 
 // 保存商品
@@ -490,17 +436,7 @@ const handleSave = async () => {
   // 开始保存
   saving.value = true;
   try {
-    // 打印表单数据，确保所有必填字段都有值
-    console.log('准备保存的表单数据:', {
-      id: formData.id,
-      sku: formData.sku,
-      name: formData.name,
-      category: formData.category,
-      brand: formData.brand,
-      color: formData.color,
-      size: formData.size,
-      season: formData.season
-    });
+
 
     // 将字段名称转换为大写，以匹配后端模型
     const productData = {
@@ -519,7 +455,7 @@ const handleSave = async () => {
     }
 
     // 调试输出
-    console.log('发送到后端的数据:', productData)
+
 
     if (isEditing.value) {
       await productService.updateProduct(productId.value, productData)
@@ -531,7 +467,6 @@ const handleSave = async () => {
 
     router.push('/products')
   } catch (error) {
-    console.error('保存商品失败:', error)
     message.error('保存失败: ' + (error.response?.data?.error || '未知错误'))
   } finally {
     saving.value = false
@@ -542,7 +477,6 @@ const handleSave = async () => {
 onMounted(async () => {
   try {
     // 先加载字典项
-    console.log('开始加载字典项...')
     await Promise.all([
       loadDictionaryItems('category', categoryOptions),
       loadDictionaryItems('brand', brandOptions),
@@ -550,16 +484,12 @@ onMounted(async () => {
       loadDictionaryItems('size', sizeOptions),
       loadDictionaryItems('season', seasonOptions)
     ])
-    console.log('字典项加载完成')
 
     // 等待字典项加载完成后再加载商品数据
     if (isEditing.value) {
-      console.log('开始加载商品数据...')
       await loadProduct()
-      console.log('商品数据加载完成')
     }
   } catch (error) {
-    console.error('初始化数据失败:', error)
     message.error('初始化数据失败: ' + error.message)
   }
 })
