@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/product.dart';
-import '../providers/product_provider.dart';
-import '../widgets/loading_indicator.dart';
-import '../widgets/error_display.dart';
-import '../widgets/empty_data.dart';
-import '../utils/formatters.dart';
+import 'package:hd_psi_mobile/models/product.dart';
+import 'package:hd_psi_mobile/providers/product_provider.dart';
+import 'package:hd_psi_mobile/widgets/loading_indicator.dart';
+import 'package:hd_psi_mobile/widgets/error_display.dart';
+import 'package:hd_psi_mobile/widgets/empty_data.dart';
+import 'package:hd_psi_mobile/utils/formatters.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});

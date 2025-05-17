@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../widgets/chinese_style_header.dart';
-import '../utils/app_theme.dart';
-import '../theme/app_colors.dart';
-import '../widgets/chinese_style_action.dart' hide PatternType;
-import '../widgets/chinese_style_card.dart';
+import 'package:hd_psi_mobile/providers/auth_provider.dart';
+import 'package:hd_psi_mobile/widgets/chinese_style_header.dart';
+import 'package:hd_psi_mobile/utils/app_theme.dart';
+import 'package:hd_psi_mobile/theme/app_colors.dart';
+import 'package:hd_psi_mobile/widgets/chinese_style_action.dart'
+    hide PatternType;
+import 'package:hd_psi_mobile/widgets/chinese_style_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

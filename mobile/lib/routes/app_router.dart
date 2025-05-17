@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import '../screens/splash_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/main_container.dart';
-import '../screens/product_list_screen.dart';
-import '../screens/product_add_screen.dart';
-import '../screens/product_detail_screen.dart';
-import '../screens/product_edit_screen.dart';
-import '../screens/scan_checkout_screen.dart';
-import '../screens/scan_checkin_screen.dart';
-import '../screens/inventory_detail_screen.dart';
-import '../screens/member_list_screen.dart';
-import '../screens/member_add_screen.dart';
-import '../screens/member_detail_screen.dart';
-import '../screens/member_edit_screen.dart';
-import '../screens/member_transactions_screen.dart';
-import '../screens/inventory_list_screen.dart';
-import '../screens/settings_screen.dart';
-import '../screens/sku_generator_screen.dart';
-import '../screens/supplier_list_screen.dart';
-import '../screens/supplier_detail_screen.dart';
-import '../screens/supplier_edit_screen.dart';
-import '../models/supplier.dart'; // Import Supplier model
+import 'package:hd_psi_mobile/screens/splash_screen.dart';
+import 'package:hd_psi_mobile/screens/login_screen.dart';
+import 'package:hd_psi_mobile/screens/main_container.dart';
+import 'package:hd_psi_mobile/screens/product_list_screen.dart';
+import 'package:hd_psi_mobile/screens/product_add_screen.dart';
+import 'package:hd_psi_mobile/screens/product_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/product_edit_screen.dart';
+import 'package:hd_psi_mobile/screens/scan_checkout_screen.dart';
+import 'package:hd_psi_mobile/screens/scan_checkin_screen.dart';
+import 'package:hd_psi_mobile/screens/inventory_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/member_list_screen.dart';
+import 'package:hd_psi_mobile/screens/member_add_screen.dart';
+import 'package:hd_psi_mobile/screens/member_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/member_edit_screen.dart';
+import 'package:hd_psi_mobile/screens/member_transactions_screen.dart';
+import 'package:hd_psi_mobile/screens/inventory_list_screen.dart';
+import 'package:hd_psi_mobile/screens/settings_screen.dart';
+import 'package:hd_psi_mobile/screens/sku_generator_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_list_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_edit_screen.dart';
+import 'package:hd_psi_mobile/models/supplier.dart'; // Import Supplier model
 
 /// 应用路由配置
 class AppRouter {

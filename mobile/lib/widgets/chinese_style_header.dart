@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../utils/app_theme.dart';
+import 'package:hd_psi_mobile/utils/app_theme.dart';
 
 /// 中国风格的动画头部组件
 class ChineseStyleHeader extends StatefulWidget {

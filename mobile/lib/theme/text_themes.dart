@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
-import 'app_dimensions.dart';
+import 'package:hd_psi_mobile/theme/app_colors.dart';
+import 'package:hd_psi_mobile/theme/app_dimensions.dart';
 
 /// 文本主题定义
 class TextThemes {
@@ -32,8 +32,8 @@ class TextThemes {
       color: AppColors.textPrimaryColor,
     ),
     bodyLarge: TextStyle(
-      fontSize: AppDimensions.fontSizeNormal, 
-      color: AppColors.textPrimaryColor
+      fontSize: AppDimensions.fontSizeNormal,
+      color: AppColors.textPrimaryColor,
     ),
     bodyMedium: TextStyle(
       fontSize: AppDimensions.fontSizeNormal,
@@ -69,12 +69,12 @@ class TextThemes {
       color: Colors.white,
     ),
     bodyLarge: TextStyle(
-      fontSize: AppDimensions.fontSizeNormal, 
-      color: Colors.white
+      fontSize: AppDimensions.fontSizeNormal,
+      color: Colors.white,
     ),
     bodyMedium: TextStyle(
-      fontSize: AppDimensions.fontSizeNormal, 
-      color: Colors.white70
+      fontSize: AppDimensions.fontSizeNormal,
+      color: Colors.white70,
     ),
   );
 }

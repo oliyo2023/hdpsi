@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'providers/auth_provider.dart';
-import 'providers/product_provider.dart';
-import 'providers/member_provider.dart';
-import 'providers/inventory_provider.dart';
-import 'providers/transaction_provider.dart';
-import 'providers/supplier_provider.dart';
-import 'services/supplier_service_adapter.dart';
+import 'package:hd_psi_mobile/providers/auth_provider.dart';
+import 'package:hd_psi_mobile/providers/product_provider.dart';
+import 'package:hd_psi_mobile/providers/member_provider.dart';
+import 'package:hd_psi_mobile/providers/inventory_provider.dart';
+import 'package:hd_psi_mobile/providers/transaction_provider.dart';
+import 'package:hd_psi_mobile/providers/supplier_provider.dart';
+import 'package:hd_psi_mobile/services/supplier_service_adapter.dart';
 
-import 'routes/app_router.dart';
-import 'theme/app_theme.dart';
-import 'utils/scanner_util.dart';
-import 'utils/config.dart';
+import 'package:hd_psi_mobile/routes/app_router.dart';
+import 'package:hd_psi_mobile/theme/app_theme.dart';
+import 'package:hd_psi_mobile/utils/scanner_util.dart';
+import 'package:hd_psi_mobile/utils/config.dart';
 
 void main() {
   // 初始化日期格式化

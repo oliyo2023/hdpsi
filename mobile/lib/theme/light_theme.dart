@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
-import 'app_dimensions.dart';
-import 'text_themes.dart';
+import 'package:hd_psi_mobile/theme/app_colors.dart';
+import 'package:hd_psi_mobile/theme/app_dimensions.dart';
+import 'package:hd_psi_mobile/theme/text_themes.dart';
 
 /// 亮色主题配置
 class LightTheme {
@@ -192,9 +192,7 @@ class LightTheme {
 
   // 进度指示器主题
   static ProgressIndicatorThemeData _buildProgressIndicatorTheme() {
-    return const ProgressIndicatorThemeData(
-      color: AppColors.primaryColor,
-    );
+    return const ProgressIndicatorThemeData(color: AppColors.primaryColor);
   }
 
   // 复选框主题
