@@ -62,8 +62,8 @@ api.interceptors.response.use(
     console.error('API 请求错误:', error)
 
     // 显示错误提示
-    if (error.response && error.response.data && error.response.data.message) {
-      handleError(error.response.data.message)
+    if (error.response && error.response.data && error.response.data.error) {
+      handleError(error.response.data.error)
     } else if (error.message) {
       handleError(error.message)
     } else {
