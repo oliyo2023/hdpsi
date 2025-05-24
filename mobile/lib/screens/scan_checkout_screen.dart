@@ -44,7 +44,7 @@ class _ScanCheckoutScreenState extends State<ScanCheckoutScreen> {
 
   // 扫描条形码或二维码
   Future<void> _scanBarcode() async {
-    final barcode = await ScannerUtil.scanBarcode();
+    final barcode = await ScannerUtil.scanBarcode(context);
     if (barcode != null) {
       // 查找商品
       if (mounted) {

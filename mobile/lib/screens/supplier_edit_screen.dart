@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:provider/provider.dart';
-import '../providers/supplier_provider.dart';
+import 'package:get/get.dart';
+import '../controllers/supplier_controller.dart';
 import '../models/supplier.dart';
 import '../utils/logger.dart';
 import '../widgets/form_section_card.dart';
@@ -17,6 +17,15 @@ class SupplierEditScreen extends StatefulWidget {
 
 class _SupplierEditScreenState extends State<SupplierEditScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
+  late final SupplierController _supplierController;
+
+  @override
+  void initState() {
+    super.initState();
+    _supplierController = Get.find<SupplierController>(
+      tag: 'supplier_controller',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -285,11 +294,6 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
       Logger.i('SupplierEditScreen', '联系人: ${formData['contactPerson']}');
       Logger.i('SupplierEditScreen', '联系电话: ${formData['contactPhone']}');
 
-      final supplierProvider = Provider.of<SupplierProvider>(
-        context,
-        listen: false,
-      );
-
       final supplier = Supplier(
         id: widget.supplier?.id ?? 0, // Use 0 for new supplier
         name: formData['name'],
@@ -310,22 +314,15 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
         updatedAt: DateTime.now().toUtc(),
       );
 
-      try {
-        if (widget.supplier == null) {
-          await supplierProvider.createSupplier(supplier);
-        } else {
-          await supplierProvider.updateSupplier(supplier);
-        }
-        if (mounted) {
-          Navigator.of(context).pop(); // Go back after saving
-        }
-      } catch (e) {
-        Logger.e('SupplierEditScreen', '保存供应商失败: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('保存供应商失败: ${e.toString()}')));
-        }
+      bool success;
+      if (widget.supplier == null) {
+        success = await _supplierController.createSupplier(supplier);
+      } else {
+        success = await _supplierController.updateSupplier(supplier);
+      }
+
+      if (success && mounted) {
+        Get.back(result: true); // 返回上一页，传递成功标志
       }
     }
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
-import '../providers/member_provider.dart';
+import '../controllers/member_controller.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import '../widgets/empty_data.dart';
@@ -29,10 +30,12 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
   final _scrollController = ScrollController();
   String? _selectedType;
   DateTimeRange? _dateRange;
+  late final MemberController _memberController;
 
   @override
   void initState() {
     super.initState();
+    _memberController = Get.find<MemberController>(tag: 'member_controller');
 
     // 加载会员交易记录
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -131,41 +134,42 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final memberProvider = Provider.of<MemberProvider>(context);
-    final member = memberProvider.selectedMember;
+    return Obx(() {
+      final member = _memberController.selectedMember;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${member?.name ?? '会员'}的交易记录'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 筛选条件显示
-          FilterChipsBar(
-            selectedType: _selectedType,
-            dateRange: _dateRange,
-            formatTransactionType: TransactionUtils.formatTransactionType,
-            onClearFilters: _clearFilters,
-            onClearType: _clearTypeFilter,
-            onClearDateRange: _clearDateRangeFilter,
-          ),
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('${member?.name ?? '会员'}的交易记录'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // 筛选条件显示
+            FilterChipsBar(
+              selectedType: _selectedType,
+              dateRange: _dateRange,
+              formatTransactionType: TransactionUtils.formatTransactionType,
+              onClearFilters: _clearFilters,
+              onClearType: _clearTypeFilter,
+              onClearDateRange: _clearDateRangeFilter,
+            ),
 
-          // 交易记录列表
-          Expanded(child: _buildTransactionList()),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showPointsAdjustmentDialog,
-        tooltip: '调整积分',
-        child: const Icon(Icons.add),
-      ),
-    );
+            // 交易记录列表
+            Expanded(child: _buildTransactionList()),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showPointsAdjustmentDialog,
+          tooltip: '调整积分',
+          child: const Icon(Icons.add),
+        ),
+      );
+    });
   }
 
   // 清除类型筛选
@@ -324,7 +328,6 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
     required int points,
     required String note,
     required bool isPositive,
-    required MemberProvider memberProvider,
   }) async {
     final success = await provider.adjustPoints(
       memberId: memberId,
@@ -334,12 +337,10 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
 
     if (success && mounted) {
       // 显示成功消息
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('积分${isPositive ? '增加' : '减少'}成功')),
-      );
+      Get.snackbar('成功', '积分${isPositive ? '增加' : '减少'}成功');
 
       // 刷新会员信息以更新积分
-      memberProvider.getMember(memberId);
+      await _memberController.getMember(memberId);
     }
   }
 }

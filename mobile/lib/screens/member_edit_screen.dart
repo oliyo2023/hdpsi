@@ -42,7 +42,10 @@ class _MemberEditScreenState extends State<MemberEditScreen> {
     });
 
     try {
-      await Provider.of<MemberProvider>(context, listen: false).getMember(widget.memberId);
+      await Provider.of<MemberProvider>(
+        context,
+        listen: false,
+      ).getMember(widget.memberId);
     } catch (e) {
       setState(() {
         _error = '加载会员信息失败: ${e.toString()}';
@@ -206,7 +209,8 @@ class _MemberEditScreenState extends State<MemberEditScreen> {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) => Validators.validateNumber(value, '积分'),
+                        validator:
+                            (value) => Validators.validateNumber(value, '积分'),
                         enabled: false, // 积分不允许直接编辑
                       ),
                     ],
@@ -498,19 +502,41 @@ class _MemberEditScreenState extends State<MemberEditScreen> {
     }
 
     // 处理体型数据
-    if (member.bodyHeight != null) initialValues['bodyHeight'] = member.bodyHeight.toString();
-    if (member.bodyWeight != null) initialValues['bodyWeight'] = member.bodyWeight.toString();
-    if (member.shoulderWidth != null) initialValues['shoulderWidth'] = member.shoulderWidth.toString();
-    if (member.bustSize != null) initialValues['bustSize'] = member.bustSize.toString();
-    if (member.waistSize != null) initialValues['waistSize'] = member.waistSize.toString();
-    if (member.hipSize != null) initialValues['hipSize'] = member.hipSize.toString();
-    if (member.inseam != null) initialValues['inseam'] = member.inseam.toString();
+    if (member.bodyHeight != null) {
+      initialValues['bodyHeight'] = member.bodyHeight.toString();
+    }
+    if (member.bodyWeight != null) {
+      initialValues['bodyWeight'] = member.bodyWeight.toString();
+    }
+    if (member.shoulderWidth != null) {
+      initialValues['shoulderWidth'] = member.shoulderWidth.toString();
+    }
+    if (member.bustSize != null) {
+      initialValues['bustSize'] = member.bustSize.toString();
+    }
+    if (member.waistSize != null) {
+      initialValues['waistSize'] = member.waistSize.toString();
+    }
+    if (member.hipSize != null) {
+      initialValues['hipSize'] = member.hipSize.toString();
+    }
+    if (member.inseam != null) {
+      initialValues['inseam'] = member.inseam.toString();
+    }
 
     // 处理偏好数据
-    if (member.stylePreference != null) initialValues['stylePreference'] = member.stylePreference;
-    if (member.favoriteColors != null) initialValues['favoriteColors'] = member.favoriteColors;
-    if (member.favoriteCategories != null) initialValues['favoriteCategories'] = member.favoriteCategories;
-    if (member.consumptionLevel != null) initialValues['consumptionLevel'] = member.consumptionLevel;
+    if (member.stylePreference != null) {
+      initialValues['stylePreference'] = member.stylePreference;
+    }
+    if (member.favoriteColors != null) {
+      initialValues['favoriteColors'] = member.favoriteColors;
+    }
+    if (member.favoriteCategories != null) {
+      initialValues['favoriteCategories'] = member.favoriteCategories;
+    }
+    if (member.consumptionLevel != null) {
+      initialValues['consumptionLevel'] = member.consumptionLevel;
+    }
 
     return initialValues;
   }
@@ -556,13 +582,16 @@ class _MemberEditScreenState extends State<MemberEditScreen> {
         }
       }
 
+      // 创建一个可修改的副本
+      final mutableFormData = Map<String, dynamic>.from(formData);
+
       // 移除积分字段，因为积分不允许直接编辑
-      formData.remove('points');
+      mutableFormData.remove('points');
 
       final success = await Provider.of<MemberProvider>(
         context,
         listen: false,
-      ).updateMember(widget.memberId, formData);
+      ).updateMember(widget.memberId, mutableFormData);
 
       if (success && mounted) {
         ScaffoldMessenger.of(

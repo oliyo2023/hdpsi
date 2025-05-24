@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hd_psi_mobile/providers/member_provider.dart';
+import 'package:get/get.dart';
+import 'package:hd_psi_mobile/controllers/member_controller.dart';
 import 'package:hd_psi_mobile/widgets/loading_indicator.dart';
 import 'package:hd_psi_mobile/widgets/error_display.dart';
 import 'package:hd_psi_mobile/widgets/empty_data.dart';
@@ -17,6 +17,10 @@ class MemberListScreen extends StatefulWidget {
 class _MemberListScreenState extends State<MemberListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  // 使用GetX获取控制器
+  final MemberController _memberController = Get.find<MemberController>(
+    tag: 'member_controller',
+  );
 
   @override
   void initState() {
@@ -24,10 +28,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
 
     // 加载会员列表
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MemberProvider>(
-        context,
-        listen: false,
-      ).loadMembers(refresh: true);
+      _memberController.loadMembers(refresh: true);
     });
 
     // 添加滚动监听器，用于加载更多
@@ -46,12 +47,8 @@ class _MemberListScreenState extends State<MemberListScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
-      final memberProvider = Provider.of<MemberProvider>(
-        context,
-        listen: false,
-      );
-      if (!memberProvider.isLoading && memberProvider.hasMorePages) {
-        memberProvider.loadMoreMembers(
+      if (!_memberController.isLoading && _memberController.hasMorePages) {
+        _memberController.loadMoreMembers(
           name:
               _searchController.text.isNotEmpty ? _searchController.text : null,
         );
@@ -61,7 +58,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
 
   // 搜索会员
   void _searchMembers() {
-    Provider.of<MemberProvider>(context, listen: false).loadMembers(
+    _memberController.loadMembers(
       refresh: true,
       name: _searchController.text.isNotEmpty ? _searchController.text : null,
     );
@@ -106,60 +103,58 @@ class _MemberListScreenState extends State<MemberListScreen> {
 
           // 会员列表
           Expanded(
-            child: Consumer<MemberProvider>(
-              builder: (context, memberProvider, child) {
-                if (memberProvider.isLoading &&
-                    memberProvider.members.isEmpty) {
-                  return const LoadingIndicator(message: '加载会员中...');
-                }
+            child: Obx(() {
+              if (_memberController.isLoading &&
+                  _memberController.members.isEmpty) {
+                return const LoadingIndicator(message: '加载会员中...');
+              }
 
-                if (memberProvider.error != null &&
-                    memberProvider.members.isEmpty) {
-                  return ErrorDisplay(
-                    error: memberProvider.error!,
-                    onRetry: () => memberProvider.loadMembers(refresh: true),
-                  );
-                }
-
-                if (memberProvider.members.isEmpty) {
-                  return EmptyData(
-                    message: '暂无会员数据',
-                    icon: Icons.people,
-                    onAction:
-                        () => Navigator.of(context).pushNamed('/members/add'),
-                    actionLabel: '添加会员',
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () => memberProvider.loadMembers(refresh: true),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount:
-                        memberProvider.members.length +
-                        (memberProvider.hasMorePages ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == memberProvider.members.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      final member = memberProvider.members[index];
-                      return MemberListItem(
-                        member: member,
-                        onTap: () {
-                          Navigator.of(
-                            context,
-                          ).pushNamed('/members/detail', arguments: member.id);
-                        },
-                      );
-                    },
-                  ),
+              if (_memberController.error != null &&
+                  _memberController.members.isEmpty) {
+                return ErrorDisplay(
+                  error: _memberController.error!,
+                  onRetry: () => _memberController.loadMembers(refresh: true),
                 );
-              },
-            ),
+              }
+
+              if (_memberController.members.isEmpty) {
+                return EmptyData(
+                  message: '暂无会员数据',
+                  icon: Icons.people,
+                  onAction:
+                      () => Navigator.of(context).pushNamed('/members/add'),
+                  actionLabel: '添加会员',
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => _memberController.loadMembers(refresh: true),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemCount:
+                      _memberController.members.length +
+                      (_memberController.hasMorePages ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _memberController.members.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final member = _memberController.members[index];
+                    return MemberListItem(
+                      member: member,
+                      onTap: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed('/members/detail', arguments: member.id);
+                      },
+                    );
+                  },
+                ),
+              );
+            }),
           ),
         ],
       ),

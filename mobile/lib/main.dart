@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:get/get.dart';
 
-import 'package:hd_psi_mobile/providers/auth_provider.dart';
-import 'package:hd_psi_mobile/providers/product_provider.dart';
-import 'package:hd_psi_mobile/providers/member_provider.dart';
-import 'package:hd_psi_mobile/providers/inventory_provider.dart';
-import 'package:hd_psi_mobile/providers/transaction_provider.dart';
-import 'package:hd_psi_mobile/providers/supplier_provider.dart';
-import 'package:hd_psi_mobile/services/supplier_service_adapter.dart';
+// GetX控制器
+import 'package:hd_psi_mobile/controllers/auth_controller.dart';
+import 'package:hd_psi_mobile/controllers/product_controller.dart';
+import 'package:hd_psi_mobile/controllers/inventory_controller.dart';
+import 'package:hd_psi_mobile/controllers/transaction_controller.dart';
+import 'package:hd_psi_mobile/controllers/member_controller.dart';
+import 'package:hd_psi_mobile/controllers/supplier_controller.dart';
 
 import 'package:hd_psi_mobile/routes/app_router.dart';
 import 'package:hd_psi_mobile/theme/app_theme.dart';
-import 'package:hd_psi_mobile/utils/scanner_util.dart';
 import 'package:hd_psi_mobile/utils/config.dart';
 
 void main() {
@@ -22,22 +21,21 @@ void main() {
   // 初始化应用配置
   initializeAppConfig();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider()),
-        ChangeNotifierProvider(create: (_) => MemberProvider()),
-        ChangeNotifierProvider(create: (_) => InventoryProvider()),
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        // 使用新的供应商服务适配器
-        ChangeNotifierProvider(
-          create: (_) => SupplierProvider(SupplierServiceAdapter()),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  // 初始化所有GetX控制器
+  _initializeControllers();
+
+  runApp(const MyApp());
+}
+
+/// 初始化所有GetX控制器
+void _initializeControllers() {
+  // 注册所有控制器为永久实例
+  Get.put(AuthController(), permanent: true);
+  Get.put(ProductController(), permanent: true);
+  Get.put(InventoryController(), permanent: true);
+  Get.put(TransactionController(), permanent: true);
+  Get.put(MemberController(), permanent: true);
+  Get.put(SupplierController(), permanent: true);
 }
 
 // 初始化应用配置
@@ -66,7 +64,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: '服装进销存系统',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey, // 添加全局导航键
@@ -74,6 +72,7 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system, // 跟随系统设置
       initialRoute: AppRouter.splash,
+      getPages: [], // GetX路由，暂时为空，我们仍使用传统路由
       routes: AppRouter.routes,
       onGenerateRoute: AppRouter.onGenerateRoute,
     );

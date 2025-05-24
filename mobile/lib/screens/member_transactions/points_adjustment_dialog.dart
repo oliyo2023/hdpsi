@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/transaction_provider.dart';
-import '../../providers/member_provider.dart';
 
 class PointsAdjustmentDialog extends StatefulWidget {
   final int memberId;
@@ -11,8 +10,8 @@ class PointsAdjustmentDialog extends StatefulWidget {
     required int points,
     required String note,
     required bool isPositive,
-    required MemberProvider memberProvider,
-  }) onAdjustPoints;
+  })
+  onAdjustPoints;
 
   const PointsAdjustmentDialog({
     super.key,
@@ -115,46 +114,41 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
         Consumer<TransactionProvider>(
           builder: (context, provider, _) {
             return ElevatedButton(
-              onPressed: provider.isLoading
-                  ? null
-                  : () {
-                      if (formKey.currentState!.validate()) {
-                        formKey.currentState!.save();
+              onPressed:
+                  provider.isLoading
+                      ? null
+                      : () {
+                        if (formKey.currentState!.validate()) {
+                          formKey.currentState!.save();
 
-                        // 根据选择的方向调整积分值
-                        final adjustedPoints = isPositive ? points : -points;
+                          // 根据选择的方向调整积分值
+                          final adjustedPoints = isPositive ? points : -points;
 
-                        // 在异步操作前保存必要的变量
-                        final bool currentIsPositive = isPositive;
-                        final int currentMemberId = widget.memberId;
+                          // 在异步操作前保存必要的变量
+                          final bool currentIsPositive = isPositive;
+                          final int currentMemberId = widget.memberId;
 
-                        // 获取需要的provider
-                        final memberProvider = Provider.of<MemberProvider>(
-                          context,
-                          listen: false,
-                        );
+                          // 使用回调处理异步操作
+                          widget.onAdjustPoints(
+                            provider: provider,
+                            memberId: currentMemberId,
+                            points: adjustedPoints,
+                            note: note,
+                            isPositive: currentIsPositive,
+                          );
 
-                        // 使用回调处理异步操作
-                        widget.onAdjustPoints(
-                          provider: provider,
-                          memberId: currentMemberId,
-                          points: adjustedPoints,
-                          note: note,
-                          isPositive: currentIsPositive,
-                          memberProvider: memberProvider,
-                        );
-
-                        // 立即关闭对话框
-                        Navigator.of(context).pop();
-                      }
-                    },
-              child: provider.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('确认'),
+                          // 立即关闭对话框
+                          Navigator.of(context).pop();
+                        }
+                      },
+              child:
+                  provider.isLoading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('确认'),
             );
           },
         ),

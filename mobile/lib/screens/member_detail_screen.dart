@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../models/member.dart';
-import '../providers/member_provider.dart';
+import '../controllers/member_controller.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/loading_indicator.dart';
@@ -17,15 +17,17 @@ class MemberDetailScreen extends StatefulWidget {
 }
 
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
+  // 使用GetX获取控制器
+  final MemberController _memberController = Get.find<MemberController>(
+    tag: 'member_controller',
+  );
+
   @override
   void initState() {
     super.initState();
     // 加载会员详情
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MemberProvider>(
-        context,
-        listen: false,
-      ).getMember(widget.memberId);
+      _memberController.getMember(widget.memberId);
     });
   }
 
@@ -46,45 +48,43 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           ),
         ],
       ),
-      body: Consumer<MemberProvider>(
-        builder: (context, memberProvider, child) {
-          if (memberProvider.isLoading) {
-            return const LoadingIndicator(message: '加载会员信息...');
-          }
+      body: Obx(() {
+        if (_memberController.isLoading) {
+          return const LoadingIndicator(message: '加载会员信息...');
+        }
 
-          if (memberProvider.error != null) {
-            return ErrorDisplay(
-              error: memberProvider.error!,
-              onRetry: () => memberProvider.getMember(widget.memberId),
-            );
-          }
-
-          final member = memberProvider.selectedMember;
-          if (member == null) {
-            return const Center(child: Text('未找到会员信息'));
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMemberHeader(member),
-                const SizedBox(height: 24.0),
-                _buildInfoSection('基本信息', _buildBasicInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('体型数据', _buildBodyInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('偏好信息', _buildPreferenceInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('备注', _buildNoteInfo(member)),
-                const SizedBox(height: 24.0),
-                _buildActionButtons(context, member),
-              ],
-            ),
+        if (_memberController.error != null) {
+          return ErrorDisplay(
+            error: _memberController.error!,
+            onRetry: () => _memberController.getMember(widget.memberId),
           );
-        },
-      ),
+        }
+
+        final member = _memberController.selectedMember;
+        if (member == null) {
+          return const Center(child: Text('未找到会员信息'));
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildMemberHeader(member),
+              const SizedBox(height: 24.0),
+              _buildInfoSection('基本信息', _buildBasicInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('体型数据', _buildBodyInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('偏好信息', _buildPreferenceInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('备注', _buildNoteInfo(member)),
+              const SizedBox(height: 24.0),
+              _buildActionButtons(context, member),
+            ],
+          ),
+        );
+      }),
     );
   }
 
