@@ -23,7 +23,7 @@ class _MemberAddScreenState extends State<MemberAddScreen> {
   @override
   void initState() {
     super.initState();
-    _memberController = Get.find<MemberController>(tag: 'member_controller');
+    _memberController = Get.find<MemberController>();
   }
 
   @override

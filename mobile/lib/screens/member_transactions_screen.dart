@@ -35,7 +35,7 @@ class _MemberTransactionsScreenState extends State<MemberTransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    _memberController = Get.find<MemberController>(tag: 'member_controller');
+    _memberController = Get.find<MemberController>();
 
     // 加载会员交易记录
     WidgetsBinding.instance.addPostFrameCallback((_) {

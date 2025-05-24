@@ -22,9 +22,6 @@ import 'package:hd_psi_mobile/screens/supplier_detail_screen.dart';
 import 'package:hd_psi_mobile/screens/supplier_edit_screen.dart';
 import 'package:hd_psi_mobile/models/supplier.dart'; // Import Supplier model
 
-// 全局导航键，用于GetX
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 /// 应用路由配置
 class AppRouter {
   /// 路由名称常量

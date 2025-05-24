@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:get/get.dart';
+import 'package:hd_psi_mobile/controllers/auth_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,11 +27,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authController = Get.find<AuthController>();
 
     // 如果已经登录，直接进入主页
-    if (authProvider.isLoggedIn) {
-      Navigator.of(context).pushReplacementNamed('/home');
+    if (authController.isLoggedIn) {
+      Get.offNamed('/home');
     } else {
       // 否则显示登录按钮
       setState(() {
@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen> {
             if (_showLoginButton)
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pushReplacementNamed('/login');
+                  Get.offNamed('/login');
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(

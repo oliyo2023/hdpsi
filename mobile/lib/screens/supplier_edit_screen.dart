@@ -22,9 +22,7 @@ class _SupplierEditScreenState extends State<SupplierEditScreen> {
   @override
   void initState() {
     super.initState();
-    _supplierController = Get.find<SupplierController>(
-      tag: 'supplier_controller',
-    );
+    _supplierController = Get.find<SupplierController>();
   }
 
   @override

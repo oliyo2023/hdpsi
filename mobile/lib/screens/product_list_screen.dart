@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:hd_psi_mobile/models/product.dart';
-import 'package:hd_psi_mobile/providers/product_provider.dart';
+import 'package:hd_psi_mobile/controllers/product_controller.dart';
 import 'package:hd_psi_mobile/widgets/loading_indicator.dart';
 import 'package:hd_psi_mobile/widgets/error_display.dart';
 import 'package:hd_psi_mobile/widgets/empty_data.dart';
@@ -17,17 +17,18 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  late final ProductController _productController;
 
   @override
   void initState() {
     super.initState();
+    _productController = Get.find<ProductController>();
 
-    // 加载商品列表
+    // 只有在数据为空时才加载商品列表，避免重复加载
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      ).loadProducts(refresh: true);
+      if (_productController.products.isEmpty) {
+        _productController.loadProducts(refresh: true);
+      }
     });
 
     // 添加滚动监听器，用于加载更多
@@ -46,12 +47,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
-      final productProvider = Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      );
-      if (!productProvider.isLoading && productProvider.hasMorePages) {
-        productProvider.loadMoreProducts(
+      if (!_productController.isLoading && _productController.hasMorePages) {
+        _productController.loadMoreProducts(
           name:
               _searchController.text.isNotEmpty ? _searchController.text : null,
         );
@@ -61,7 +58,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   // 搜索商品
   void _searchProducts() {
-    Provider.of<ProductProvider>(context, listen: false).loadProducts(
+    _productController.loadProducts(
       refresh: true,
       name: _searchController.text.isNotEmpty ? _searchController.text : null,
     );
@@ -76,7 +73,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              Navigator.of(context).pushNamed('/products/add');
+              Get.toNamed('/products/add');
             },
           ),
         ],
@@ -106,53 +103,50 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
           // 商品列表
           Expanded(
-            child: Consumer<ProductProvider>(
-              builder: (context, productProvider, child) {
-                if (productProvider.isLoading &&
-                    productProvider.products.isEmpty) {
-                  return const LoadingIndicator(message: '加载商品中...');
-                }
+            child: Obx(() {
+              if (_productController.isLoading &&
+                  _productController.products.isEmpty) {
+                return const LoadingIndicator(message: '加载商品中...');
+              }
 
-                if (productProvider.error != null &&
-                    productProvider.products.isEmpty) {
-                  return ErrorDisplay(
-                    error: productProvider.error!,
-                    onRetry: () => productProvider.loadProducts(refresh: true),
-                  );
-                }
-
-                if (productProvider.products.isEmpty) {
-                  return EmptyData(
-                    message: '暂无商品数据',
-                    icon: Icons.inventory,
-                    onAction:
-                        () => Navigator.of(context).pushNamed('/products/add'),
-                    actionLabel: '添加商品',
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () => productProvider.loadProducts(refresh: true),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount:
-                        productProvider.products.length +
-                        (productProvider.hasMorePages ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == productProvider.products.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      final product = productProvider.products[index];
-                      return _buildProductItem(context, product);
-                    },
-                  ),
+              if (_productController.hasError &&
+                  _productController.products.isEmpty) {
+                return ErrorDisplay(
+                  error: _productController.error,
+                  onRetry: () => _productController.loadProducts(refresh: true),
                 );
-              },
-            ),
+              }
+
+              if (_productController.products.isEmpty) {
+                return EmptyData(
+                  message: '暂无商品数据',
+                  icon: Icons.inventory,
+                  onAction: () => Get.toNamed('/products/add'),
+                  actionLabel: '添加商品',
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => _productController.loadProducts(refresh: true),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemCount:
+                      _productController.products.length +
+                      (_productController.hasMorePages ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _productController.products.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final product = _productController.products[index];
+                    return _buildProductItem(context, product);
+                  },
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -164,9 +158,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          Navigator.of(
-            context,
-          ).pushNamed('/products/detail', arguments: product.id);
+          Get.toNamed('/products/detail', arguments: product.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),

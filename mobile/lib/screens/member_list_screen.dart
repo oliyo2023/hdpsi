@@ -18,9 +18,7 @@ class _MemberListScreenState extends State<MemberListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   // 使用GetX获取控制器
-  final MemberController _memberController = Get.find<MemberController>(
-    tag: 'member_controller',
-  );
+  final MemberController _memberController = Get.find<MemberController>();
 
   @override
   void initState() {

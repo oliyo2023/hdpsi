@@ -14,6 +14,30 @@ import 'package:hd_psi_mobile/routes/app_router.dart';
 import 'package:hd_psi_mobile/theme/app_theme.dart';
 import 'package:hd_psi_mobile/utils/config.dart';
 
+// 页面导入
+import 'package:hd_psi_mobile/screens/splash_screen.dart';
+import 'package:hd_psi_mobile/screens/main_container.dart';
+import 'package:hd_psi_mobile/screens/login_screen.dart';
+import 'package:hd_psi_mobile/screens/product_list_screen.dart';
+import 'package:hd_psi_mobile/screens/product_add_screen.dart';
+import 'package:hd_psi_mobile/screens/product_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/product_edit_screen.dart';
+import 'package:hd_psi_mobile/screens/member_list_screen.dart';
+import 'package:hd_psi_mobile/screens/member_add_screen.dart';
+import 'package:hd_psi_mobile/screens/member_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/member_edit_screen.dart';
+import 'package:hd_psi_mobile/screens/member_transactions_screen.dart';
+import 'package:hd_psi_mobile/screens/scan_checkout_screen.dart';
+import 'package:hd_psi_mobile/screens/scan_checkin_screen.dart';
+import 'package:hd_psi_mobile/screens/inventory_list_screen.dart';
+import 'package:hd_psi_mobile/screens/settings_screen.dart';
+import 'package:hd_psi_mobile/screens/sku_generator_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_list_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_detail_screen.dart';
+import 'package:hd_psi_mobile/screens/supplier_edit_screen.dart';
+import 'package:hd_psi_mobile/screens/inventory_detail_screen.dart';
+import 'package:hd_psi_mobile/models/supplier.dart';
+
 void main() {
   // 初始化日期格式化
   initializeDateFormatting('zh_CN');
@@ -36,6 +60,13 @@ void _initializeControllers() {
   Get.put(TransactionController(), permanent: true);
   Get.put(MemberController(), permanent: true);
   Get.put(SupplierController(), permanent: true);
+
+  // 打印调试信息
+  debugPrint('GetX控制器注册完成');
+  debugPrint('MemberController是否已注册: ${Get.isRegistered<MemberController>()}');
+  debugPrint(
+    'SupplierController是否已注册: ${Get.isRegistered<SupplierController>()}',
+  );
 }
 
 // 初始化应用配置
@@ -67,14 +98,93 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: '服装进销存系统',
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, // 添加全局导航键
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system, // 跟随系统设置
       initialRoute: AppRouter.splash,
-      getPages: [], // GetX路由，暂时为空，我们仍使用传统路由
-      routes: AppRouter.routes,
-      onGenerateRoute: AppRouter.onGenerateRoute,
+      getPages: [
+        // 基础页面
+        GetPage(name: AppRouter.splash, page: () => const SplashScreen()),
+        GetPage(name: AppRouter.login, page: () => const LoginScreen()),
+        GetPage(name: AppRouter.home, page: () => const MainContainer()),
+
+        // 商品相关页面
+        GetPage(
+          name: AppRouter.products,
+          page: () => const ProductListScreen(),
+        ),
+        GetPage(
+          name: AppRouter.productAdd,
+          page: () => const ProductAddScreen(),
+        ),
+        GetPage(
+          name: AppRouter.productDetail,
+          page: () => ProductDetailScreen(productId: Get.arguments as int),
+        ),
+        GetPage(
+          name: AppRouter.productEdit,
+          page: () => ProductEditScreen(productId: Get.arguments as int),
+        ),
+
+        // 会员相关页面
+        GetPage(name: AppRouter.members, page: () => const MemberListScreen()),
+        GetPage(name: AppRouter.memberAdd, page: () => const MemberAddScreen()),
+        GetPage(
+          name: AppRouter.memberDetail,
+          page: () => MemberDetailScreen(memberId: Get.arguments as int),
+        ),
+        GetPage(
+          name: AppRouter.memberEdit,
+          page: () => MemberEditScreen(memberId: Get.arguments as int),
+        ),
+        GetPage(
+          name: AppRouter.memberTransactions,
+          page: () => MemberTransactionsScreen(memberId: Get.arguments as int),
+        ),
+
+        // 其他页面
+        GetPage(
+          name: AppRouter.scanCheckout,
+          page: () => const ScanCheckoutScreen(),
+        ),
+        GetPage(
+          name: AppRouter.scanCheckin,
+          page: () => const ScanCheckinScreen(),
+        ),
+        GetPage(
+          name: AppRouter.inventory,
+          page: () => const InventoryListScreen(),
+        ),
+        GetPage(name: AppRouter.settings, page: () => const SettingsScreen()),
+        GetPage(
+          name: AppRouter.skuGenerator,
+          page: () => const SkuGeneratorScreen(),
+        ),
+        GetPage(
+          name: AppRouter.suppliers,
+          page: () => const SupplierListScreen(),
+        ),
+        GetPage(
+          name: AppRouter.supplierAdd,
+          page: () => const SupplierEditScreen(),
+        ),
+        GetPage(
+          name: AppRouter.supplierDetail,
+          page: () => SupplierDetailScreen(supplierId: Get.arguments as int),
+        ),
+        GetPage(
+          name: AppRouter.supplierEdit,
+          page: () => SupplierEditScreen(supplier: Get.arguments as Supplier),
+        ),
+        GetPage(
+          name: AppRouter.inventoryDetail,
+          page: () => InventoryDetailScreen(inventoryId: Get.arguments as int),
+        ),
+      ],
+      unknownRoute: GetPage(
+        name: '/notfound',
+        page: () => const SplashScreen(),
+      ),
     );
   }
 }

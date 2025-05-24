@@ -22,9 +22,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
   void initState() {
     super.initState();
     // 获取SupplierController实例
-    _supplierController = Get.find<SupplierController>(
-      tag: 'supplier_controller',
-    );
+    _supplierController = Get.find<SupplierController>();
     // 使用addPostFrameCallback确保在构建完成后再加载数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchSupplierDetails();
