@@ -55,15 +55,45 @@ api.interceptors.response.use(
       console.log('商品详情数据字段:', Object.keys(response.data))
     }
 
-    return response.data
+    // 处理统一API响应格式
+    const responseData = response.data
+
+    // 检查是否是新的统一响应格式
+    if (responseData && responseData.code !== undefined) {
+      // 如果是成功响应码（20000-29999）
+      if (responseData.code >= 20000 && responseData.code < 30000) {
+        // 返回data字段
+        return responseData.data
+      } else {
+        // 如果是错误响应码，抛出错误
+        const error = new Error(responseData.message || '请求失败')
+        error.response = {
+          status: response.status,
+          data: responseData
+        }
+        throw error
+      }
+    }
+
+    // 如果不是新的统一响应格式，直接返回数据
+    return responseData
   },
   async error => {
     // 注意: 不要在拦截器中使用 useMessage，因为它需要在组件中使用
     console.error('API 请求错误:', error)
 
     // 显示错误提示
-    if (error.response && error.response.data && error.response.data.error) {
-      handleError(error.response.data.error)
+    if (error.response && error.response.data) {
+      const errorData = error.response.data
+
+      // 检查是否是新的统一响应格式
+      if (errorData.code !== undefined && errorData.message) {
+        handleError(errorData.message)
+      } else if (errorData.error) {
+        handleError(errorData.error)
+      } else {
+        handleError(error.message || '请求失败')
+      }
     } else if (error.message) {
       handleError(error.message)
     } else {
@@ -100,6 +130,7 @@ api.interceptors.response.use(
           const response = await auth.refreshToken(refreshToken, rememberMe)
 
           // 更新本地存储
+          // 注意：response可能是从data字段提取的，所以直接使用
           localStorage.setItem('token', response.token)
           localStorage.setItem('refreshToken', response.refresh_token)
           localStorage.setItem('tokenExpires', response.expires_at)

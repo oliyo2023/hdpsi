@@ -178,10 +178,19 @@ export default {
   // 保存登录响应
   saveLoginResponse(response) {
     console.log('登录响应数据:', response)
+
+    // 检查响应格式
+    if (!response) {
+      console.error('登录响应为空')
+      return
+    }
+
+    // 保存令牌信息
     localStorage.setItem('token', response.token)
     localStorage.setItem('refreshToken', response.refresh_token)
     localStorage.setItem('tokenExpires', response.expires_at)
 
+    // 保存用户信息
     if (response.user) {
       try {
         localStorage.setItem('user', JSON.stringify(response.user))

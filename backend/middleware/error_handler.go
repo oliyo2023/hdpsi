@@ -3,7 +3,7 @@ package middleware
 import (
 	"hd_psi/backend/utils/errors"
 	"hd_psi/backend/utils/logger"
-	"net/http"
+	"hd_psi/backend/utils/response"
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
@@ -53,8 +53,7 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 				}
 
 				// 返回错误响应
-				status, response := errors.ToResponse(err)
-				c.JSON(status, response)
+				response.FromError(c, err)
 				c.Abort()
 			}
 		}()
@@ -91,8 +90,7 @@ func ValidationErrorMiddleware() gin.HandlerFunc {
 			logger.WithContext(c).WithError(err).Warn("请求参数验证失败")
 
 			// 返回错误响应
-			status, response := errors.ToResponse(err)
-			c.JSON(status, response)
+			response.FromError(c, err)
 			c.Abort()
 		}
 	}
@@ -118,11 +116,7 @@ func NotFoundHandler(c *gin.Context) {
 	logger.WithContext(c).WithError(err).Warn("请求的资源不存在")
 
 	// 返回错误响应
-	c.JSON(http.StatusNotFound, gin.H{
-		"error":      "资源不存在",
-		"details":    "请求的URL或资源不存在",
-		"request_id": requestID,
-	})
+	response.NotFound(c, "请求的URL或资源不存在")
 }
 
 // MethodNotAllowedHandler 处理405错误
@@ -145,9 +139,5 @@ func MethodNotAllowedHandler(c *gin.Context) {
 	logger.WithContext(c).WithError(err).Warn("不支持的HTTP方法")
 
 	// 返回错误响应
-	c.JSON(http.StatusMethodNotAllowed, gin.H{
-		"error":      "方法不允许",
-		"details":    "不支持的HTTP方法",
-		"request_id": requestID,
-	})
+	response.MethodNotAllowed(c, "不支持的HTTP方法")
 }

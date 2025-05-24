@@ -5,7 +5,7 @@ import (
 	"hd_psi/backend/utils"
 	"hd_psi/backend/utils/errors"
 	"hd_psi/backend/utils/logger"
-	"net/http"
+	"hd_psi/backend/utils/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -75,11 +75,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	var input LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Warn("登录请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的用户名和密码").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.BadRequest(c, "请提供有效的用户名和密码")
 		return
 	}
 
@@ -87,43 +83,37 @@ func (ac *AuthController) Login(c *gin.Context) {
 	var user models.User
 	if err := ac.db.Where("username = ?", input.Username).First(&user).Error; err != nil {
 		log.Warn("用户名不存在", logger.F("username", input.Username))
-		appErr := errors.New(errors.ErrInvalidCredentials).
-			WithDetails("请检查您的用户名是否正确").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeInvalidCredentials, "请检查您的用户名是否正确")
 		return
 	}
 
 	// 检查用户状态
 	if !user.Status {
 		log.Warn("用户已被禁用", logger.F("user_id", user.ID), logger.F("username", user.Username))
-		appErr := errors.New(errors.ErrUserDisabled).
-			WithDetails("请联系管理员解除账户限制").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeUserDisabled, "请联系管理员解除账户限制")
 		return
 	}
 
 	// 检查账户是否被锁定
 	locked, duration := user.IsLocked()
 	if locked {
-		log.Warn("账户已被锁定", 
-			logger.F("user_id", user.ID), 
+		log.Warn("账户已被锁定",
+			logger.F("user_id", user.ID),
 			logger.F("username", user.Username),
 			logger.F("locked_until", user.LockedUntil),
 			logger.F("wait_minutes", int(duration.Minutes())))
-		
-		appErr := errors.New(errors.ErrUserLocked).
-			WithDetails("由于多次登录失败，账户已被锁定").
-			WithRequestID(c.GetString("request_id"))
-		
-		// 添加锁定信息到响应
-		c.JSON(appErr.HTTPStatus(), gin.H{
-			"error":        appErr.Message,
-			"details":      appErr.Details,
-			"request_id":   appErr.RequestID,
+
+		// 构建锁定信息并使用统一响应格式
+		lockInfo := map[string]interface{}{
 			"locked_until": time.Now().Add(duration),
 			"wait_minutes": int(duration.Minutes()),
+		}
+
+		// 使用统一响应格式
+		c.JSON(errors.GetHTTPStatus(errors.CodeUserLocked), models.APIResponse{
+			Code:    errors.CodeUserLocked,
+			Message: "由于多次登录失败，账户已被锁定",
+			Data:    lockInfo,
 		})
 		return
 	}
@@ -138,42 +128,42 @@ func (ac *AuthController) Login(c *gin.Context) {
 		ac.db.Save(&user)
 
 		if locked {
-			log.Warn("账户因多次登录失败被锁定", 
-				logger.F("user_id", user.ID), 
+			log.Warn("账户因多次登录失败被锁定",
+				logger.F("user_id", user.ID),
 				logger.F("username", user.Username),
 				logger.F("locked_until", user.LockedUntil),
 				logger.F("lock_duration", lockDuration))
-			
-			appErr := errors.New(errors.ErrUserLocked).
-				WithDetails("由于多次登录失败，账户已被锁定15分钟").
-				WithRequestID(c.GetString("request_id"))
-			
-			// 添加锁定信息到响应
-			c.JSON(appErr.HTTPStatus(), gin.H{
-				"error":        appErr.Message,
-				"details":      appErr.Details,
-				"request_id":   appErr.RequestID,
+
+			// 构建锁定信息
+			lockInfo := map[string]interface{}{
 				"locked_until": time.Now().Add(lockDuration),
 				"wait_minutes": int(lockDuration.Minutes()),
+			}
+
+			// 使用统一响应格式
+			c.JSON(errors.GetHTTPStatus(errors.CodeUserLocked), models.APIResponse{
+				Code:    errors.CodeUserLocked,
+				Message: "由于多次登录失败，账户已被锁定15分钟",
+				Data:    lockInfo,
 			})
 		} else {
 			remainingAttempts := maxAttempts - user.LoginAttempts
-			log.Warn("密码错误", 
-				logger.F("user_id", user.ID), 
+			log.Warn("密码错误",
+				logger.F("user_id", user.ID),
 				logger.F("username", user.Username),
 				logger.F("login_attempts", user.LoginAttempts),
 				logger.F("remaining_attempts", remainingAttempts))
-			
-			appErr := errors.New(errors.ErrInvalidCredentials).
-				WithDetails("请检查您的密码是否正确").
-				WithRequestID(c.GetString("request_id"))
-			
-			// 添加剩余尝试次数到响应
-			c.JSON(appErr.HTTPStatus(), gin.H{
-				"error":              appErr.Message,
-				"details":            appErr.Details,
-				"request_id":         appErr.RequestID,
+
+			// 构建错误信息
+			errorInfo := map[string]interface{}{
 				"remaining_attempts": remainingAttempts,
+			}
+
+			// 使用统一响应格式
+			c.JSON(errors.GetHTTPStatus(errors.CodeInvalidCredentials), models.APIResponse{
+				Code:    errors.CodeInvalidCredentials,
+				Message: "请检查您的密码是否正确",
+				Data:    errorInfo,
 			})
 		}
 		return
@@ -185,16 +175,12 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 生成JWT令牌
 	token, expiresAt, err := utils.GenerateToken(user.ID, user.Username, string(user.Role), input.RememberMe)
 	if err != nil {
-		log.Error("生成令牌失败", 
-			logger.F("user_id", user.ID), 
+		log.Error("生成令牌失败",
+			logger.F("user_id", user.ID),
 			logger.F("username", user.Username),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrInternal).
-			WithDetails("生成令牌失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.InternalError(c, "生成令牌失败")
 		return
 	}
 
@@ -206,36 +192,35 @@ func (ac *AuthController) Login(c *gin.Context) {
 	user.LastLogin = &now
 	user.RememberMe = input.RememberMe
 	if err := ac.db.Save(&user).Error; err != nil {
-		log.Error("更新用户登录信息失败", 
-			logger.F("user_id", user.ID), 
+		log.Error("更新用户登录信息失败",
+			logger.F("user_id", user.ID),
 			logger.F("username", user.Username),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("更新用户登录信息失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.DatabaseError(c, "更新用户登录信息失败")
 		return
 	}
 
 	// 清除密码
 	user.Password = ""
 
-	log.Info("用户登录成功", 
-		logger.F("user_id", user.ID), 
+	log.Info("用户登录成功",
+		logger.F("user_id", user.ID),
 		logger.F("username", user.Username),
 		logger.F("role", user.Role),
 		logger.F("remember_me", input.RememberMe))
 
-	// 返回令牌和用户信息
-	c.JSON(http.StatusOK, LoginResponse{
+	// 构建登录响应数据
+	loginResponse := LoginResponse{
 		Token:                 token,
 		RefreshToken:          refreshToken,
 		User:                  user,
 		ExpiresAt:             expiresAt,
 		RefreshTokenExpiresAt: *user.RefreshTokenExpiresAt,
-	})
+	}
+
+	// 返回统一格式的成功响应
+	response.Success(c, loginResponse)
 }
 
 // Register 处理用户注册请求
@@ -251,11 +236,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	var input RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Warn("注册请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的注册信息").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.BadRequest(c, "请提供有效的注册信息")
 		return
 	}
 
@@ -263,10 +244,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	var existingUser models.User
 	if err := ac.db.Where("username = ?", input.Username).First(&existingUser).Error; err == nil {
 		log.Warn("用户名已存在", logger.F("username", input.Username))
-		appErr := errors.New(errors.ErrUserAlreadyExists).
-			WithDetails("该用户名已被使用，请选择其他用户名").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeUserAlreadyExists, "该用户名已被使用，请选择其他用户名")
 		return
 	}
 
@@ -283,28 +261,24 @@ func (ac *AuthController) Register(c *gin.Context) {
 	}
 
 	if err := ac.db.Create(&user).Error; err != nil {
-		log.Error("创建用户失败", 
+		log.Error("创建用户失败",
 			logger.F("username", input.Username),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrDatabaseInsert).
-			WithDetails("创建用户失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.DatabaseError(c, "创建用户失败")
 		return
 	}
 
 	// 清除密码
 	user.Password = ""
 
-	log.Info("用户注册成功", 
-		logger.F("user_id", user.ID), 
+	log.Info("用户注册成功",
+		logger.F("user_id", user.ID),
 		logger.F("username", user.Username),
 		logger.F("role", user.Role))
 
 	// 返回创建成功的用户信息
-	c.JSON(http.StatusCreated, user)
+	response.Created(c, user)
 }
 
 // GetProfile 获取当前登录用户的个人信息
@@ -320,10 +294,7 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.Warn("未授权的个人信息请求")
-		appErr := errors.New(errors.ErrUnauthorized).
-			WithDetails("请先登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Unauthorized(c, "请先登录")
 		return
 	}
 
@@ -331,11 +302,7 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	var user models.User
 	if err := ac.db.First(&user, userID).Error; err != nil {
 		log.Warn("用户不存在", logger.F("user_id", userID))
-		appErr := errors.New(errors.ErrUserNotFound).
-			WithDetails("用户不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeUserNotFound, "用户不存在或已被删除")
 		return
 	}
 
@@ -345,7 +312,7 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	log.Info("获取用户个人信息成功", logger.F("user_id", user.ID))
 
 	// 返回用户信息
-	c.JSON(http.StatusOK, user)
+	response.Success(c, user)
 }
 
 // UpdateProfile 更新当前登录用户的个人信息
@@ -361,10 +328,7 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.Warn("未授权的个人信息更新请求")
-		appErr := errors.New(errors.ErrUnauthorized).
-			WithDetails("请先登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Unauthorized(c, "请先登录")
 		return
 	}
 
@@ -372,11 +336,7 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	var user models.User
 	if err := ac.db.First(&user, userID).Error; err != nil {
 		log.Warn("用户不存在", logger.F("user_id", userID))
-		appErr := errors.New(errors.ErrUserNotFound).
-			WithDetails("用户不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeUserNotFound, "用户不存在或已被删除")
 		return
 	}
 
@@ -391,11 +351,7 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Warn("更新个人信息请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的个人信息").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.BadRequest(c, "请提供有效的个人信息")
 		return
 	}
 
@@ -405,15 +361,11 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	user.Phone = input.Phone
 
 	if err := ac.db.Save(&user).Error; err != nil {
-		log.Error("更新用户信息失败", 
+		log.Error("更新用户信息失败",
 			logger.F("user_id", user.ID),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("更新用户信息失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.DatabaseError(c, "更新用户信息失败")
 		return
 	}
 
@@ -423,7 +375,7 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 	log.Info("更新用户个人信息成功", logger.F("user_id", user.ID))
 
 	// 返回更新后的用户信息
-	c.JSON(http.StatusOK, user)
+	response.Success(c, user)
 }
 
 // ChangePassword 处理用户修改密码请求
@@ -439,10 +391,7 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.Warn("未授权的密码修改请求")
-		appErr := errors.New(errors.ErrUnauthorized).
-			WithDetails("请先登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Unauthorized(c, "请先登录")
 		return
 	}
 
@@ -450,11 +399,7 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 	var user models.User
 	if err := ac.db.First(&user, userID).Error; err != nil {
 		log.Warn("用户不存在", logger.F("user_id", userID))
-		appErr := errors.New(errors.ErrUserNotFound).
-			WithDetails("用户不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeUserNotFound, "用户不存在或已被删除")
 		return
 	}
 
@@ -467,67 +412,49 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Warn("密码修改请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供旧密码和新密码").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.BadRequest(c, "请提供旧密码和新密码")
 		return
 	}
 
 	// 验证旧密码
 	if !user.CheckPassword(input.OldPassword) {
 		log.Warn("旧密码错误", logger.F("user_id", user.ID))
-		appErr := errors.New(errors.ErrInvalidCredentials).
-			WithDetails("请输入正确的当前密码").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeInvalidCredentials, "请输入正确的当前密码")
 		return
 	}
 
 	// 检查新密码长度
 	if len(input.NewPassword) < 6 {
 		log.Warn("新密码太短", logger.F("user_id", user.ID))
-		appErr := errors.New(errors.ErrPasswordTooShort).
-			WithDetails("新密码长度不能少于6个字符").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodePasswordTooShort, "新密码长度不能少于6个字符")
 		return
 	}
 
 	// 手动对密码进行哈希处理
 	hashedPassword, err := utils.HashPassword(input.NewPassword)
 	if err != nil {
-		log.Error("密码加密失败", 
+		log.Error("密码加密失败",
 			logger.F("user_id", user.ID),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrInternal).
-			WithDetails("密码加密失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.InternalError(c, "密码加密失败")
 		return
 	}
 
 	// 直接更新已哈希的密码
 	if err := ac.db.Model(&user).Update("password", hashedPassword).Error; err != nil {
-		log.Error("更新密码失败", 
+		log.Error("更新密码失败",
 			logger.F("user_id", user.ID),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("更新密码失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.DatabaseError(c, "更新密码失败")
 		return
 	}
 
 	log.Info("用户密码修改成功", logger.F("user_id", user.ID))
 
 	// 返回成功消息
-	c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
+	response.Success(c, gin.H{"message": "密码修改成功"})
 }
 
 // RefreshToken 刷新访问令牌
@@ -548,11 +475,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Warn("刷新令牌请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的刷新令牌").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.BadRequest(c, "请提供有效的刷新令牌")
 		return
 	}
 
@@ -560,39 +483,28 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	var user models.User
 	if err := ac.db.Where("refresh_token = ?", input.RefreshToken).First(&user).Error; err != nil {
 		log.Warn("无效的刷新令牌", logger.F("refresh_token", input.RefreshToken))
-		appErr := errors.New(errors.ErrInvalidToken).
-			WithDetails("刷新令牌不存在或已过期").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		response.Fail(c, errors.CodeInvalidToken, "刷新令牌不存在或已过期")
 		return
 	}
 
 	// 验证刷新令牌
 	if !user.VerifyRefreshToken(input.RefreshToken) {
-		log.Warn("刷新令牌已过期", 
+		log.Warn("刷新令牌已过期",
 			logger.F("user_id", user.ID),
 			logger.F("refresh_token", input.RefreshToken))
-		
-		appErr := errors.New(errors.ErrTokenExpired).
-			WithDetails("刷新令牌已过期，请重新登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.Fail(c, errors.CodeTokenExpired, "刷新令牌已过期，请重新登录")
 		return
 	}
 
 	// 生成新的JWT令牌
 	token, expiresAt, err := utils.GenerateToken(user.ID, user.Username, string(user.Role), input.RememberMe)
 	if err != nil {
-		log.Error("生成令牌失败", 
+		log.Error("生成令牌失败",
 			logger.F("user_id", user.ID),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrInternal).
-			WithDetails("生成令牌失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.InternalError(c, "生成令牌失败")
 		return
 	}
 
@@ -604,15 +516,11 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	user.LastLogin = &now
 	user.RememberMe = input.RememberMe
 	if err := ac.db.Save(&user).Error; err != nil {
-		log.Error("更新用户信息失败", 
+		log.Error("更新用户信息失败",
 			logger.F("user_id", user.ID),
 			logger.F("error", err.Error()))
-		
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("更新用户信息失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+
+		response.DatabaseError(c, "更新用户信息失败")
 		return
 	}
 
@@ -621,12 +529,15 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 
 	log.Info("刷新令牌成功", logger.F("user_id", user.ID))
 
-	// 返回新的令牌和用户信息
-	c.JSON(http.StatusOK, LoginResponse{
+	// 构建登录响应数据
+	loginResponse := LoginResponse{
 		Token:                 token,
 		RefreshToken:          refreshToken,
 		User:                  user,
 		ExpiresAt:             expiresAt,
 		RefreshTokenExpiresAt: *user.RefreshTokenExpiresAt,
-	})
+	}
+
+	// 返回统一格式的成功响应
+	response.Success(c, loginResponse)
 }

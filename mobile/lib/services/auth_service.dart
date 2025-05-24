@@ -17,12 +17,15 @@ class AuthService {
         data: {'username': username, 'password': password},
       );
 
+      // 处理统一API响应格式
+      final responseData = _processApiResponse(response);
+
       // 保存令牌
-      final token = response['token'];
+      final token = responseData['token'];
       await _secureStorage.write(key: AppConfig.tokenKey, value: token);
       await _secureStorage.write(
         key: AppConfig.refreshTokenKey,
-        value: response['refresh_token'],
+        value: responseData['refresh_token'],
       );
 
       // 更新API适配器的认证头
@@ -30,7 +33,7 @@ class AuthService {
       await supplierAdapter.updateToken(token);
 
       // 保存用户信息
-      final user = User.fromJson(response['user']);
+      final user = User.fromJson(responseData['user']);
       await _secureStorage.write(
         key: AppConfig.userKey,
         value: jsonEncode(user.toJson()),
@@ -40,6 +43,28 @@ class AuthService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // 处理统一API响应格式
+  dynamic _processApiResponse(dynamic response) {
+    // 检查是否是新的统一响应格式
+    if (response is Map &&
+        response.containsKey('code') &&
+        response.containsKey('data')) {
+      // 检查是否是成功响应码
+      final code = response['code'];
+      if (code >= 20000 && code < 30000) {
+        // 返回data字段
+        return response['data'];
+      } else {
+        // 如果是错误响应码，抛出错误
+        final message = response['message'] ?? '请求失败';
+        throw Exception(message);
+      }
+    }
+
+    // 如果不是新的统一响应格式，直接返回数据
+    return response;
   }
 
   // 检查是否已登录
