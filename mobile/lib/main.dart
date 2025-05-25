@@ -10,12 +10,18 @@ import 'package:hd_psi_mobile/controllers/transaction_controller.dart';
 import 'package:hd_psi_mobile/controllers/member_controller.dart';
 import 'package:hd_psi_mobile/controllers/supplier_controller.dart';
 
+// 服务
+import 'package:hd_psi_mobile/services/permission_service.dart';
+import 'package:hd_psi_mobile/services/app_initialization_service.dart';
+
 import 'package:hd_psi_mobile/routes/app_router.dart';
 import 'package:hd_psi_mobile/theme/app_theme.dart';
 import 'package:hd_psi_mobile/utils/config.dart';
 
 // 页面导入
 import 'package:hd_psi_mobile/screens/splash_screen.dart';
+import 'package:hd_psi_mobile/pages/permission_guide_page.dart';
+import 'package:hd_psi_mobile/pages/privacy_policy_page.dart';
 import 'package:hd_psi_mobile/screens/main_container.dart';
 import 'package:hd_psi_mobile/screens/login_screen.dart';
 import 'package:hd_psi_mobile/screens/product_list_screen.dart';
@@ -51,8 +57,12 @@ void main() {
   runApp(const MyApp());
 }
 
-/// 初始化所有GetX控制器
+/// 初始化所有GetX控制器和服务
 void _initializeControllers() {
+  // 首先注册服务
+  Get.put(PermissionService(), permanent: true);
+  Get.put(AppInitializationService(), permanent: true);
+
   // 注册所有控制器为永久实例
   Get.put(AuthController(), permanent: true);
   Get.put(ProductController(), permanent: true);
@@ -62,7 +72,13 @@ void _initializeControllers() {
   Get.put(SupplierController(), permanent: true);
 
   // 打印调试信息
-  debugPrint('GetX控制器注册完成');
+  debugPrint('GetX控制器和服务注册完成');
+  debugPrint(
+    'PermissionService是否已注册: ${Get.isRegistered<PermissionService>()}',
+  );
+  debugPrint(
+    'AppInitializationService是否已注册: ${Get.isRegistered<AppInitializationService>()}',
+  );
   debugPrint('MemberController是否已注册: ${Get.isRegistered<MemberController>()}');
   debugPrint(
     'SupplierController是否已注册: ${Get.isRegistered<SupplierController>()}',
@@ -105,6 +121,11 @@ class MyApp extends StatelessWidget {
       getPages: [
         // 基础页面
         GetPage(name: AppRouter.splash, page: () => const SplashScreen()),
+        GetPage(
+          name: '/permission-guide',
+          page: () => const PermissionGuidePage(),
+        ),
+        GetPage(name: '/privacy-policy', page: () => const PrivacyPolicyPage()),
         GetPage(name: AppRouter.login, page: () => const LoginScreen()),
         GetPage(name: AppRouter.home, page: () => const MainContainer()),
 

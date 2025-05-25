@@ -48,6 +48,9 @@ dependencies:
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^10.0.0-beta.4
 
+  # 权限管理
+  permission_handler: ^11.3.1
+
   # 扫码功能
   mobile_scanner: ^7.0.0
 
