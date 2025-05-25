@@ -17,6 +17,7 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+
   late final ProductController _productController;
 
   @override
@@ -24,11 +25,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.initState();
     _productController = Get.find<ProductController>();
 
-    // 只有在数据为空时才加载商品列表，避免重复加载
+    // 加载商品列表
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_productController.products.isEmpty) {
-        _productController.loadProducts(refresh: true);
-      }
+      _productController.loadProducts(refresh: true);
     });
 
     // 添加滚动监听器，用于加载更多
@@ -73,7 +72,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              Get.toNamed('/products/add');
+              Navigator.of(context).pushNamed('/products/add');
             },
           ),
         ],
@@ -121,7 +120,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 return EmptyData(
                   message: '暂无商品数据',
                   icon: Icons.inventory,
-                  onAction: () => Get.toNamed('/products/add'),
+                  onAction:
+                      () => Navigator.of(context).pushNamed('/products/add'),
                   actionLabel: '添加商品',
                 );
               }
@@ -158,7 +158,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          Get.toNamed('/products/detail', arguments: product.id);
+          Navigator.of(
+            context,
+          ).pushNamed('/products/detail', arguments: product.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),

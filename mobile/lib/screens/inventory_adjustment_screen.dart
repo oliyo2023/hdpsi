@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../models/inventory.dart';
-import '../providers/inventory_provider.dart';
-import '../providers/auth_provider.dart';
+import '../controllers/inventory_controller.dart';
+import '../controllers/auth_controller.dart';
 import '../services/inventory_service.dart';
 import '../widgets/loading_indicator.dart';
 
@@ -24,9 +24,15 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
   bool _isLoading = false;
   String? _error;
 
+  late final AuthController _authController;
+  late final InventoryController _inventoryController;
+
   @override
   void initState() {
     super.initState();
+    // 获取控制器实例
+    _authController = Get.find<AuthController>();
+    _inventoryController = Get.find<InventoryController>();
     // 初始化数量为当前库存数量
     _quantityController.text = widget.inventory.quantity.toString();
   }
@@ -73,13 +79,8 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
     });
 
     try {
-      // 获取当前用户和库存提供者（在异步操作前）
-      final user =
-          Provider.of<AuthProvider>(context, listen: false).currentUser;
-      final inventoryProvider = Provider.of<InventoryProvider>(
-        context,
-        listen: false,
-      );
+      // 获取当前用户
+      final user = _authController.currentUser;
 
       if (user == null) throw Exception('用户信息获取失败');
 
@@ -89,7 +90,8 @@ class _InventoryAdjustmentScreenState extends State<InventoryAdjustmentScreen> {
         'reason': _reasonController.text,
       });
 
-      await inventoryProvider.createTransaction({
+      // 创建库存调整记录
+      await _inventoryController.createInventoryAdjustment({
         'TransactionType': 'adjustment',
         'ProductVariantID': widget.inventory.productVariantId,
         'StoreID': widget.inventory.storeId,

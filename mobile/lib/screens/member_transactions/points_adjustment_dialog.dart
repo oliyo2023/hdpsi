@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/transaction_provider.dart';
+import 'package:get/get.dart';
+import '../../controllers/transaction_controller.dart';
 
 class PointsAdjustmentDialog extends StatefulWidget {
   final int memberId;
   final Function({
-    required TransactionProvider provider,
+    required TransactionController controller,
     required int memberId,
     required int points,
     required String note,
@@ -28,6 +28,14 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
   int points = 0;
   String note = '';
   bool isPositive = true;
+
+  late final TransactionController _transactionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionController = Get.find<TransactionController>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,47 +119,45 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
           },
           child: const Text('取消'),
         ),
-        Consumer<TransactionProvider>(
-          builder: (context, provider, _) {
-            return ElevatedButton(
-              onPressed:
-                  provider.isLoading
-                      ? null
-                      : () {
-                        if (formKey.currentState!.validate()) {
-                          formKey.currentState!.save();
+        Obx(() {
+          return ElevatedButton(
+            onPressed:
+                _transactionController.isLoading
+                    ? null
+                    : () {
+                      if (formKey.currentState!.validate()) {
+                        formKey.currentState!.save();
 
-                          // 根据选择的方向调整积分值
-                          final adjustedPoints = isPositive ? points : -points;
+                        // 根据选择的方向调整积分值
+                        final adjustedPoints = isPositive ? points : -points;
 
-                          // 在异步操作前保存必要的变量
-                          final bool currentIsPositive = isPositive;
-                          final int currentMemberId = widget.memberId;
+                        // 在异步操作前保存必要的变量
+                        final bool currentIsPositive = isPositive;
+                        final int currentMemberId = widget.memberId;
 
-                          // 使用回调处理异步操作
-                          widget.onAdjustPoints(
-                            provider: provider,
-                            memberId: currentMemberId,
-                            points: adjustedPoints,
-                            note: note,
-                            isPositive: currentIsPositive,
-                          );
+                        // 使用回调处理异步操作
+                        widget.onAdjustPoints(
+                          controller: _transactionController,
+                          memberId: currentMemberId,
+                          points: adjustedPoints,
+                          note: note,
+                          isPositive: currentIsPositive,
+                        );
 
-                          // 立即关闭对话框
-                          Navigator.of(context).pop();
-                        }
-                      },
-              child:
-                  provider.isLoading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : const Text('确认'),
-            );
-          },
-        ),
+                        // 立即关闭对话框
+                        Navigator.of(context).pop();
+                      }
+                    },
+            child:
+                _transactionController.isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Text('确认'),
+          );
+        }),
       ],
     );
   }
