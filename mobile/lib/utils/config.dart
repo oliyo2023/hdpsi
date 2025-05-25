@@ -34,7 +34,7 @@ class AppConfig {
   static const String suppliersPath = '/api/suppliers';
 
   // 应用名称
-  static const String appName = '服装进销存系统';
+  static const String appName = '宏店';
 
   // 版本号
   static const String appVersion = '1.0.0';
