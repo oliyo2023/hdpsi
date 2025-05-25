@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/inventory_provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:get/get.dart';
+import '../controllers/inventory_controller.dart';
+import '../controllers/auth_controller.dart';
 import '../utils/scanner_util.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
@@ -21,6 +21,17 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
   final TextEditingController _noteController = TextEditingController();
   final int _selectedStoreId = 1; // 默认店铺ID，实际应该从配置或用户选择获取
 
+  late final InventoryController _inventoryController;
+  late final AuthController _authController;
+
+  @override
+  void initState() {
+    super.initState();
+    // 获取控制器实例
+    _inventoryController = Get.find<InventoryController>();
+    _authController = Get.find<AuthController>();
+  }
+
   @override
   void dispose() {
     _quantityController.dispose();
@@ -30,26 +41,18 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
 
   // 扫描条形码或二维码
   Future<void> _scanBarcode() async {
-    final barcode = await ScannerUtil.scanBarcode();
+    final barcode = await ScannerUtil.scanBarcode(context);
     if (barcode != null) {
       // 查找商品
       if (mounted) {
-        await Provider.of<InventoryProvider>(
-          context,
-          listen: false,
-        ).findProductByBarcode(barcode);
+        await _inventoryController.findProductByBarcode(barcode);
       }
     }
   }
 
   // 提交入库
   Future<void> _submitCheckin() async {
-    final inventoryProvider = Provider.of<InventoryProvider>(
-      context,
-      listen: false,
-    );
-
-    final scannedProduct = inventoryProvider.scannedProduct;
+    final scannedProduct = _inventoryController.scannedProduct;
     if (scannedProduct == null) {
       ScaffoldMessenger.of(
         context,
@@ -69,7 +72,7 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
       return;
     }
 
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final user = _authController.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(
         context,
@@ -78,7 +81,7 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
     }
 
     // 创建入库交易
-    final success = await inventoryProvider.createTransaction({
+    final success = await _inventoryController.createInventoryAdjustment({
       'TransactionType': 'purchase_in',
       'ProductVariantID': scannedProduct['ProductVariantID'],
       'StoreID': _selectedStoreId,
@@ -93,7 +96,7 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
       ).showSnackBar(const SnackBar(content: Text('入库成功')));
 
       // 清除扫描的商品
-      inventoryProvider.clearScannedProduct();
+      _inventoryController.clearScannedProduct();
 
       // 清空表单
       _quantityController.text = '1';
@@ -105,58 +108,56 @@ class _ScanCheckinScreenState extends State<ScanCheckinScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('扫码入库')),
-      body: Consumer<InventoryProvider>(
-        builder: (context, inventoryProvider, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 扫描按钮
-                ElevatedButton.icon(
-                  onPressed: inventoryProvider.isLoading ? null : _scanBarcode,
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('扫描商品条码'),
+      body: Obx(() {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 扫描按钮
+              ElevatedButton.icon(
+                onPressed: _inventoryController.isLoading ? null : _scanBarcode,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('扫描商品条码'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                ),
+              ),
+              const SizedBox(height: 24.0),
+
+              // 加载中
+              if (_inventoryController.isLoading)
+                const LoadingIndicator(message: '查找商品中...'),
+
+              // 错误信息
+              if (_inventoryController.hasError)
+                ErrorDisplay(
+                  error: _inventoryController.error,
+                  onRetry: () {
+                    _inventoryController.clearError();
+                  },
+                ),
+
+              // 扫描结果
+              if (_inventoryController.scannedProduct != null) ...[
+                _buildScannedProductCard(_inventoryController.scannedProduct!),
+                const SizedBox(height: 16.0),
+                _buildCheckinForm(),
+                const SizedBox(height: 24.0),
+                ElevatedButton(
+                  onPressed: _submitCheckin,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                   ),
+                  child: const Text('确认入库'),
                 ),
-                const SizedBox(height: 24.0),
-
-                // 加载中
-                if (inventoryProvider.isLoading)
-                  const LoadingIndicator(message: '查找商品中...'),
-
-                // 错误信息
-                if (inventoryProvider.error != null)
-                  ErrorDisplay(
-                    error: inventoryProvider.error!,
-                    onRetry: () {
-                      inventoryProvider.clearError();
-                    },
-                  ),
-
-                // 扫描结果
-                if (inventoryProvider.scannedProduct != null) ...[
-                  _buildScannedProductCard(inventoryProvider.scannedProduct!),
-                  const SizedBox(height: 16.0),
-                  _buildCheckinForm(),
-                  const SizedBox(height: 24.0),
-                  ElevatedButton(
-                    onPressed: _submitCheckin,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('确认入库'),
-                  ),
-                ],
               ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 

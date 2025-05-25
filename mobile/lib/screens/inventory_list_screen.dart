@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/inventory_provider.dart';
+import 'package:get/get.dart';
+import '../controllers/inventory_controller.dart';
 import '../widgets/animated_header.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
@@ -18,16 +18,16 @@ class InventoryListScreen extends StatefulWidget {
 class _InventoryListScreenState extends State<InventoryListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late final InventoryController _inventoryController;
 
   @override
   void initState() {
     super.initState();
+    // 获取InventoryController实例
+    _inventoryController = Get.find<InventoryController>();
     // 加载库存数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<InventoryProvider>(
-        context,
-        listen: false,
-      ).loadInventories(refresh: true);
+      _inventoryController.loadInventories(refresh: true);
     });
   }
 
@@ -86,128 +86,125 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 
           // 库存列表
           Expanded(
-            child: Consumer<InventoryProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return const LoadingIndicator();
-                }
+            child: Obx(() {
+              if (_inventoryController.isLoading) {
+                return const LoadingIndicator();
+              }
 
-                if (provider.error != null) {
-                  return ErrorDisplay(
-                    error: provider.error!,
-                    onRetry: () => provider.loadInventories(refresh: true),
-                  );
-                }
+              if (_inventoryController.hasError) {
+                return ErrorDisplay(
+                  error: _inventoryController.error,
+                  onRetry:
+                      () => _inventoryController.loadInventories(refresh: true),
+                );
+              }
 
-                final inventories = provider.inventories;
-                if (inventories.isEmpty) {
-                  return const EmptyData(
-                    message: '暂无库存数据',
-                    icon: Icons.inventory_2_outlined,
-                  );
-                }
+              final inventories = _inventoryController.inventories;
+              if (inventories.isEmpty) {
+                return const EmptyData(
+                  message: '暂无库存数据',
+                  icon: Icons.inventory_2_outlined,
+                );
+              }
 
-                // 过滤库存数据
-                final filteredInventories =
-                    inventories.where((inventory) {
-                      if (_searchQuery.isEmpty) return true;
+              // 过滤库存数据
+              final filteredInventories =
+                  inventories.where((inventory) {
+                    if (_searchQuery.isEmpty) return true;
 
-                      final productName =
-                          inventory.productVariant?['Product']?['Name']
-                              as String? ??
-                          '';
-                      final sku =
-                          inventory.productVariant?['SKU'] as String? ?? '';
-
-                      return productName.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          ) ||
-                          sku.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          );
-                    }).toList();
-
-                if (filteredInventories.isEmpty) {
-                  return const EmptyData(
-                    message: '没有找到匹配的库存数据',
-                    icon: Icons.search_off,
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(AppTheme.spacing),
-                  itemCount: filteredInventories.length,
-                  itemBuilder: (context, index) {
-                    final inventory = filteredInventories[index];
                     final productName =
                         inventory.productVariant?['Product']?['Name']
                             as String? ??
-                        '未知商品';
+                        '';
                     final sku =
-                        inventory.productVariant?['SKU'] as String? ?? '无SKU';
-                    final storeName =
-                        inventory.store?['Name'] as String? ?? '未知店铺';
+                        inventory.productVariant?['SKU'] as String? ?? '';
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: AppTheme.spacing),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.borderRadius,
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppTheme.spacingMedium,
-                          vertical: AppTheme.spacing,
-                        ),
-                        title: Text(
-                          productName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: AppTheme.fontSizeMedium,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text('SKU: $sku'),
-                            Text('店铺: $storeName'),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                _buildInventoryTag(
-                                  '库存: ${inventory.quantity}',
-                                  inventory.quantity > inventory.alertQuantity
-                                      ? Colors.green
-                                      : Colors.orange,
-                                ),
-                                const SizedBox(width: 8),
-                                _buildInventoryTag(
-                                  '预警: ${inventory.alertQuantity}',
-                                  Colors.grey,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => InventoryDetailScreen(
-                                    inventoryId: inventory.id,
-                                  ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
+                    return productName.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ) ||
+                        sku.toLowerCase().contains(_searchQuery.toLowerCase());
+                  }).toList();
+
+              if (filteredInventories.isEmpty) {
+                return const EmptyData(
+                  message: '没有找到匹配的库存数据',
+                  icon: Icons.search_off,
                 );
-              },
-            ),
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(AppTheme.spacing),
+                itemCount: filteredInventories.length,
+                itemBuilder: (context, index) {
+                  final inventory = filteredInventories[index];
+                  final productName =
+                      inventory.productVariant?['Product']?['Name']
+                          as String? ??
+                      '未知商品';
+                  final sku =
+                      inventory.productVariant?['SKU'] as String? ?? '无SKU';
+                  final storeName =
+                      inventory.store?['Name'] as String? ?? '未知店铺';
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: AppTheme.spacing),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadius,
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingMedium,
+                        vertical: AppTheme.spacing,
+                      ),
+                      title: Text(
+                        productName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTheme.fontSizeMedium,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text('SKU: $sku'),
+                          Text('店铺: $storeName'),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _buildInventoryTag(
+                                '库存: ${inventory.quantity}',
+                                inventory.quantity > inventory.alertQuantity
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                              const SizedBox(width: 8),
+                              _buildInventoryTag(
+                                '预警: ${inventory.alertQuantity}',
+                                Colors.grey,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (context) => InventoryDetailScreen(
+                                  inventoryId: inventory.id,
+                                ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),

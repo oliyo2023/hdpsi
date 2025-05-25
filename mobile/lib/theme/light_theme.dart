@@ -40,8 +40,8 @@ class LightTheme {
   }
 
   // 卡片主题
-  static CardTheme _buildCardTheme() {
-    return CardTheme(
+  static CardThemeData _buildCardTheme() {
+    return CardThemeData(
       color: AppColors.cardColor,
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -161,8 +161,8 @@ class LightTheme {
   }
 
   // 标签栏主题
-  static TabBarTheme _buildTabBarTheme() {
-    return TabBarTheme(
+  static TabBarThemeData _buildTabBarTheme() {
+    return TabBarThemeData(
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white.withAlpha(179),
       indicator: BoxDecoration(

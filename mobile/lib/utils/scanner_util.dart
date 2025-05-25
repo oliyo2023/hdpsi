@@ -4,14 +4,11 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScannerUtil {
   // 扫描条形码或二维码
-  static Future<String?> scanBarcode() async {
+  static Future<String?> scanBarcode(BuildContext context) async {
     // 在Web平台上使用模拟输入
     if (kIsWeb) {
-      return _showBarcodeInputDialog();
+      return _showBarcodeInputDialog(context);
     }
-
-    final context = navigatorKey.currentContext;
-    if (context == null) return null;
 
     String? barcodeScanRes;
 
@@ -74,14 +71,11 @@ class ScannerUtil {
   }
 
   // 扫描二维码
-  static Future<String?> scanQRCode() async {
+  static Future<String?> scanQRCode(BuildContext context) async {
     // 在Web平台上使用模拟输入
     if (kIsWeb) {
-      return _showBarcodeInputDialog();
+      return _showBarcodeInputDialog(context);
     }
-
-    final context = navigatorKey.currentContext;
-    if (context == null) return null;
 
     String? barcodeScanRes;
 
@@ -146,13 +140,9 @@ class ScannerUtil {
   }
 
   // Web平台上显示输入对话框
-  static Future<String?> _showBarcodeInputDialog() async {
+  static Future<String?> _showBarcodeInputDialog(BuildContext context) async {
     final TextEditingController controller = TextEditingController();
     String? result;
-
-    // 获取全局上下文
-    final context = navigatorKey.currentContext;
-    if (context == null) return null;
 
     await showDialog(
       context: context,
@@ -196,6 +186,3 @@ class ScannerUtil {
     return result;
   }
 }
-
-// 全局导航键，用于获取上下文
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
