@@ -97,14 +97,11 @@ class AppInitializationService extends GetxService {
 
   /// 获取权限状态摘要
   Future<Map<String, bool>> getPermissionSummary() async {
-    final permissionService = PermissionService.to;
-
-    // 这里可以添加具体的权限检查逻辑
-    // 由于permission_handler的限制，这里只是示例
+    // 直接使用 PermissionService.to 而不创建未使用的局部变量
     return {
-      'camera': false, // await Permission.camera.isGranted,
-      'storage': false, // await Permission.storage.isGranted,
-      'photos': false, // await Permission.photos.isGranted,
+      'camera': await PermissionService.to.checkCameraPermission(),
+      'storage': await PermissionService.to.checkStoragePermission(),
+      'photos': await PermissionService.to.checkPhotosPermission(),
     };
   }
 

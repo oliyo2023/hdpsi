@@ -7,15 +7,22 @@ import 'package:permission_handler/permission_handler.dart';
 class PermissionService extends GetxService {
   static PermissionService get to => Get.find();
 
+  /// 检查相机权限状态（不请求权限）
+  /// 返回当前相机权限是否已授权
+  Future<bool> checkCameraPermission() async {
+    final status = await Permission.camera.status;
+    return status.isGranted;
+  }
+
   /// 检查并请求相机权限
   /// 用于扫描商品条码功能
   Future<bool> requestCameraPermission() async {
     final status = await Permission.camera.status;
-    
+
     if (status.isGranted) {
       return true;
     }
-    
+
     if (status.isDenied) {
       // 显示权限说明对话框
       final shouldRequest = await _showPermissionDialog(
@@ -24,13 +31,13 @@ class PermissionService extends GetxService {
         permission: '相机',
         usage: '扫描商品条码、拍摄商品图片',
       );
-      
+
       if (!shouldRequest) return false;
-      
+
       final result = await Permission.camera.request();
       return result.isGranted;
     }
-    
+
     if (status.isPermanentlyDenied) {
       await _showSettingsDialog(
         title: '相机权限被拒绝',
@@ -38,8 +45,21 @@ class PermissionService extends GetxService {
       );
       return false;
     }
-    
+
     return false;
+  }
+
+  /// 检查存储权限状态（不请求权限）
+  /// 返回当前存储权限是否已授权
+  Future<bool> checkStoragePermission() async {
+    // Android 13+ 使用新的权限模型
+    Permission permission = Permission.storage;
+    if (await _isAndroid13OrHigher()) {
+      permission = Permission.photos;
+    }
+
+    final status = await permission.status;
+    return status.isGranted;
   }
 
   /// 检查并请求存储权限
@@ -50,13 +70,13 @@ class PermissionService extends GetxService {
     if (await _isAndroid13OrHigher()) {
       permission = Permission.photos;
     }
-    
+
     final status = await permission.status;
-    
+
     if (status.isGranted) {
       return true;
     }
-    
+
     if (status.isDenied) {
       final shouldRequest = await _showPermissionDialog(
         title: '存储权限',
@@ -64,13 +84,13 @@ class PermissionService extends GetxService {
         permission: '存储',
         usage: '保存商品图片、缓存数据、导出报表',
       );
-      
+
       if (!shouldRequest) return false;
-      
+
       final result = await permission.request();
       return result.isGranted;
     }
-    
+
     if (status.isPermanentlyDenied) {
       await _showSettingsDialog(
         title: '存储权限被拒绝',
@@ -78,21 +98,28 @@ class PermissionService extends GetxService {
       );
       return false;
     }
-    
+
     return false;
+  }
+
+  /// 检查相册权限状态（不请求权限）
+  /// 返回当前相册权限是否已授权
+  Future<bool> checkPhotosPermission() async {
+    final status = await Permission.photos.status;
+    return status.isGranted;
   }
 
   /// 检查并请求图片选择权限
   /// 用于从相册选择商品图片
   Future<bool> requestPhotosPermission() async {
     Permission permission = Permission.photos;
-    
+
     final status = await permission.status;
-    
+
     if (status.isGranted) {
       return true;
     }
-    
+
     if (status.isDenied) {
       final shouldRequest = await _showPermissionDialog(
         title: '相册权限',
@@ -100,13 +127,13 @@ class PermissionService extends GetxService {
         permission: '相册',
         usage: '选择商品图片、上传商品照片',
       );
-      
+
       if (!shouldRequest) return false;
-      
+
       final result = await permission.request();
       return result.isGranted;
     }
-    
+
     if (status.isPermanentlyDenied) {
       await _showSettingsDialog(
         title: '相册权限被拒绝',
@@ -114,7 +141,7 @@ class PermissionService extends GetxService {
       );
       return false;
     }
-    
+
     return false;
   }
 
@@ -236,10 +263,7 @@ class PermissionService extends GetxService {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    usage,
-                    style: TextStyle(color: Colors.blue.shade600),
-                  ),
+                  Text(usage, style: TextStyle(color: Colors.blue.shade600)),
                 ],
               ),
             ),
@@ -270,10 +294,7 @@ class PermissionService extends GetxService {
         title: Text(title),
         content: Text(content),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('取消'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('取消')),
           ElevatedButton(
             onPressed: () {
               Get.back();
