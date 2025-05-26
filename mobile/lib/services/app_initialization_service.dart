@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'permission_service.dart';
@@ -23,13 +24,13 @@ class AppInitializationService extends GetxService {
     try {
       // 检查是否首次启动
       await _checkFirstLaunch();
-      
+
       // 检查权限引导是否完成
       await _checkPermissionGuideStatus();
-      
+
       // 初始化权限服务
       await _initializePermissionService();
-      
+
       isInitialized.value = true;
     } catch (e) {
       print('应用初始化失败: $e');
@@ -41,9 +42,9 @@ class AppInitializationService extends GetxService {
   Future<void> _checkFirstLaunch() async {
     final prefs = await SharedPreferences.getInstance();
     final hasLaunchedBefore = prefs.getBool('has_launched_before') ?? false;
-    
+
     isFirstLaunch.value = !hasLaunchedBefore;
-    
+
     if (isFirstLaunch.value) {
       // 标记已启动过
       await prefs.setBool('has_launched_before', true);
@@ -97,7 +98,7 @@ class AppInitializationService extends GetxService {
   /// 获取权限状态摘要
   Future<Map<String, bool>> getPermissionSummary() async {
     final permissionService = PermissionService.to;
-    
+
     // 这里可以添加具体的权限检查逻辑
     // 由于permission_handler的限制，这里只是示例
     return {
@@ -110,7 +111,7 @@ class AppInitializationService extends GetxService {
   /// 显示权限状态
   void showPermissionStatus() async {
     final summary = await getPermissionSummary();
-    
+
     Get.dialog(
       AlertDialog(
         title: const Text('权限状态'),
@@ -124,10 +125,7 @@ class AppInitializationService extends GetxService {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('确定'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('确定')),
           if (summary.values.any((granted) => !granted))
             ElevatedButton(
               onPressed: () {
