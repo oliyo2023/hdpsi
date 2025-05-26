@@ -1,9 +1,9 @@
-# HD-PSI 服装进销存系统配置文件
+# HD-PSI 服装进销存系统配置文件 - SQLite版本
 
 # 服务器配置
 server:
   port: 8081
-  mode: release  # debug, release, test
+  mode: debug  # debug, release, test
   timeout: 30  # 请求超时时间（秒）
 
 # API配置
@@ -50,10 +50,11 @@ wechat_official_account:
 
 # 日志配置
 log:
-  level: info  # debug, info, warn, error
+  level: debug  # debug, info, warn, error
   format: text # text, json
-  output: file  # stdout, file
-  file_path: ./logs/hd_psi.log  # 日志文件路径（当output为file时有效）
+  output: both  # stdout, file, both
+  directory: ./logs  # 日志目录
+  filename: hd_psi.log  # 日志文件名
   max_size: 100  # 单个日志文件最大大小（MB）
   max_age: 30    # 日志文件保留天数
   max_backups: 10  # 最大备份数量
@@ -61,9 +62,25 @@ log:
 
 # CORS配置
 cors:
-  allowed_origins: ["*"]  # 允许的来源域名，可以设置为具体的域名，如 http://localhost:3000
-  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
-  allowed_headers: ["Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"]
-  exposed_headers: ["Content-Length"]
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    - "http://127.0.0.1:3000"
+    - "http://127.0.0.1:5173"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Accept"
+    - "Authorization"
+    - "X-Requested-With"
+    - "X-API-Version"
+  exposed_headers:
+    - "X-API-Version"
   allow_credentials: true
-  max_age: 86400  # 预检请求结果缓存时间（秒）
+  max_age: 86400
