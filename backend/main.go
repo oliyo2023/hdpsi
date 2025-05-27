@@ -8,6 +8,7 @@ import (
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
 	"hd_psi/backend/routes"
+	"hd_psi/backend/services"
 	"hd_psi/backend/utils/logger"
 	"net/http"
 	"os"
@@ -18,6 +19,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/mysql"
+
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -40,13 +43,35 @@ func main() {
 	log.Info("Gin模式设置为", logger.F("mode", config.GetServerMode()))
 
 	// 初始化数据库连接
-	// 确保在DSN中设置parseTime=true以正确处理datetime类型
-	dsn := config.GetDBConfig()
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		NowFunc: func() time.Time {
-			return time.Now().Local() // 使用本地时间
-		},
-	})
+	dbType, dsn := config.GetDBConfig()
+	log.Info("数据库配置", logger.F("type", dbType), logger.F("dsn", dsn))
+
+	var db *gorm.DB
+	var err error
+
+	// 根据数据库类型选择驱动
+	switch dbType {
+	case "sqlite":
+		// 确保数据目录存在
+		if err := os.MkdirAll("./data", 0755); err != nil {
+			log.Error("创建数据目录失败", logger.F("error", err.Error()))
+		}
+		log.Info("使用SQLite数据库")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{
+			NowFunc: func() time.Time {
+				return time.Now().Local() // 使用本地时间
+			},
+		})
+	case "mysql":
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			NowFunc: func() time.Time {
+				return time.Now().Local() // 使用本地时间
+			},
+		})
+	default:
+		log.Error("不支持的数据库类型", logger.F("type", dbType))
+		panic("Unsupported database type: " + dbType)
+	}
 	if err != nil {
 		log.Error("数据库连接失败", logger.F("error", err.Error()))
 		panic("Database connection failed: " + err.Error())
@@ -76,9 +101,13 @@ func main() {
 	log.Info("自动迁移设置", logger.F("auto_migrate", autoMigrate))
 
 	if autoMigrate {
-		// 禁用外键约束检查
-		db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 		log.Info("开始自动迁移数据模型")
+
+		// 只对MySQL禁用外键约束检查
+		if dbType == "mysql" {
+			db.Exec("SET FOREIGN_KEY_CHECKS = 0")
+		}
+
 		db.AutoMigrate(
 			&models.User{},
 			&models.Dictionary{},
@@ -106,8 +135,12 @@ func main() {
 			&models.ExchangeOrderItem{},
 			&models.ReturnOrderLog{},
 		)
-		// 重新启用外键约束检查
-		db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+
+		// 只对MySQL重新启用外键约束检查
+		if dbType == "mysql" {
+			db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+		}
+
 		log.Info("数据模型自动迁移完成")
 	} else {
 		log.Info("自动迁移已禁用，跳过数据模型迁移")
@@ -181,6 +214,14 @@ func main() {
 			c.File(indexPath)
 		}
 	})
+
+	// 初始化默认用户
+	userInitService := services.NewUserInitService(db)
+	if err := userInitService.InitDefaultUsers(); err != nil {
+		log.Error("初始化默认用户失败", logger.F("error", err.Error()))
+	} else {
+		log.Info("默认用户初始化成功")
+	}
 
 	// 初始化字典数据
 	dictionaryController := controllers.NewDictionaryController(db)
