@@ -13,7 +13,7 @@ class AppConfig {
   // 预定义的环境配置
   static const Map<String, String> environments = {
     'local': 'http://localhost:8080',
-    'dev': 'http://192.168.1.4:8081',
+    'dev': 'http://8.140.206.248:8081',
     'test': 'http://test-api.example.com',
     'prod': 'https://api.example.com',
   };
