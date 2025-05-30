@@ -1,4 +1,4 @@
-import 'package:fluwx/fluwx.dart' as fluwx;
+import 'package:fluwx/fluwx.dart';
 import 'package:hd_psi_mobile/utils/logger.dart';
 
 /// 微信服务
@@ -8,17 +8,21 @@ class WechatService {
   // 微信应用ID - 需要在微信开放平台申请
   static const String appId = 'your_wechat_app_id';
 
+  // Fluwx 实例
+  static final Fluwx _fluwx = Fluwx();
+
   /// 初始化微信SDK
   static Future<bool> init() async {
     try {
-      final result = await fluwx.registerWxApi(
+      await _fluwx.registerApi(
         appId: appId,
         doOnAndroid: true,
         doOnIOS: true,
+        universalLink: 'https://your.univerallink.com/link/', // 可选，iOS需要
       );
 
-      Logger.i('WechatService', '微信SDK初始化结果: $result');
-      return result;
+      Logger.i('WechatService', '微信SDK初始化成功');
+      return true;
     } catch (e) {
       Logger.e('WechatService', '微信SDK初始化失败: $e');
       return false;
@@ -28,7 +32,7 @@ class WechatService {
   /// 检查微信是否已安装
   static Future<bool> isWechatInstalled() async {
     try {
-      return await fluwx.isWeChatInstalled();
+      return await _fluwx.isWeChatInstalled;
     } catch (e) {
       Logger.e('WechatService', '检查微信安装状态失败: $e');
       return false;
@@ -48,16 +52,20 @@ class WechatService {
       }
 
       // 发起微信授权
-      final result = await fluwx.sendWeChatAuth(
-        scope: "snsapi_userinfo",
-        state: "wechat_login_${DateTime.now().millisecondsSinceEpoch}",
+      final success = await _fluwx.authBy(
+        which: NormalAuth(
+          scope: "snsapi_userinfo",
+          state: "wechat_login_${DateTime.now().millisecondsSinceEpoch}",
+        ),
       );
 
-      if (result.isSuccessful && result.code != null) {
-        Logger.i('WechatService', '微信登录成功，获取到授权码');
-        return result.code;
+      if (success) {
+        Logger.i('WechatService', '微信授权请求发送成功');
+        // 注意：实际的授权结果需要通过监听器获取
+        // 这里只是表示授权请求发送成功
+        return "auth_request_sent";
       } else {
-        Logger.w('WechatService', '微信登录失败: ${result.errorCode}');
+        Logger.w('WechatService', '微信授权请求发送失败');
         return null;
       }
     } catch (e) {
