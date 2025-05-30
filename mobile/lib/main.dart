@@ -13,6 +13,7 @@ import 'package:hd_psi_mobile/controllers/supplier_controller.dart';
 // 服务
 import 'package:hd_psi_mobile/services/permission_service.dart';
 import 'package:hd_psi_mobile/services/app_initialization_service.dart';
+import 'package:hd_psi_mobile/services/wechat_service.dart';
 
 import 'package:hd_psi_mobile/routes/app_router.dart';
 import 'package:hd_psi_mobile/theme/app_theme.dart';
@@ -44,12 +45,18 @@ import 'package:hd_psi_mobile/screens/supplier_edit_screen.dart';
 import 'package:hd_psi_mobile/screens/inventory_detail_screen.dart';
 import 'package:hd_psi_mobile/models/supplier.dart';
 
-void main() {
+void main() async {
+  // 确保Flutter绑定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+
   // 初始化日期格式化
   initializeDateFormatting('zh_CN');
 
   // 初始化应用配置
   initializeAppConfig();
+
+  // 初始化微信SDK
+  await WechatService.init();
 
   // 初始化所有GetX控制器
   _initializeControllers();

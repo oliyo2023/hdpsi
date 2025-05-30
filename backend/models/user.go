@@ -41,8 +41,16 @@ type User struct {
 	Email string `gorm:"size:100"`
 	// Phone 用户手机号码
 	Phone string `gorm:"size:20"`
-    // WechatOpenID 微信公众号用户唯一标识
-    WechatOpenID *string `gorm:"size:128;uniqueIndex;default:null"` // 添加此行
+	// Nickname 用户昵称
+	Nickname string `gorm:"size:100"`
+	// WechatOpenID 微信开放平台用户唯一标识
+	WechatOpenID *string `gorm:"size:128;uniqueIndex;default:null"`
+	// WechatUnionID 微信开放平台用户统一标识
+	WechatUnionID *string `gorm:"size:128;default:null"`
+	// WechatNickname 微信昵称
+	WechatNickname string `gorm:"size:100"`
+	// WechatAvatar 微信头像URL
+	WechatAvatar string `gorm:"size:255"`
 	// Role 用户角色，决定用户权限
 	Role Role `gorm:"size:20;not null;default:'staff'"`
 	// StoreID 用户所属店铺ID，可以为空表示总部人员

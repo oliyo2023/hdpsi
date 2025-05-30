@@ -62,9 +62,9 @@ class AuthController extends GetxController {
 
       // 显示成功消息
       if (Get.context != null) {
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          const SnackBar(content: Text('登录成功')),
-        );
+        ScaffoldMessenger.of(
+          Get.context!,
+        ).showSnackBar(const SnackBar(content: Text('登录成功')));
       }
 
       return true;
@@ -74,9 +74,45 @@ class AuthController extends GetxController {
 
       // 显示错误消息
       if (Get.context != null) {
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          SnackBar(content: Text('登录失败: ${_error.value}')),
-        );
+        ScaffoldMessenger.of(
+          Get.context!,
+        ).showSnackBar(SnackBar(content: Text('登录失败: ${_error.value}')));
+      }
+
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// 微信登录
+  Future<bool> wechatLogin() async {
+    try {
+      _isLoading.value = true;
+      _error.value = '';
+
+      final user = await _authService.wechatLogin();
+      _currentUser.value = user;
+
+      Logger.i('AuthController', '微信登录成功: ${user.username}');
+
+      // 显示成功消息
+      if (Get.context != null) {
+        ScaffoldMessenger.of(
+          Get.context!,
+        ).showSnackBar(const SnackBar(content: Text('微信登录成功')));
+      }
+
+      return true;
+    } catch (e) {
+      _error.value = ErrorHandler.getFriendlyMessage(e);
+      Logger.e('AuthController', '微信登录失败: $e');
+
+      // 显示错误消息
+      if (Get.context != null) {
+        ScaffoldMessenger.of(
+          Get.context!,
+        ).showSnackBar(SnackBar(content: Text('微信登录失败: ${_error.value}')));
       }
 
       return false;
@@ -98,9 +134,9 @@ class AuthController extends GetxController {
 
       // 显示成功消息
       if (Get.context != null) {
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          const SnackBar(content: Text('已退出登录')),
-        );
+        ScaffoldMessenger.of(
+          Get.context!,
+        ).showSnackBar(const SnackBar(content: Text('已退出登录')));
       }
     } catch (e) {
       _error.value = ErrorHandler.getFriendlyMessage(e);

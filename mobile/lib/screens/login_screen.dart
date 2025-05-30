@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hd_psi_mobile/controllers/auth_controller.dart';
+import 'package:hd_psi_mobile/services/wechat_service.dart';
 import 'package:hd_psi_mobile/widgets/friendly_error_display.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -35,6 +36,27 @@ class _LoginScreenState extends State<LoginScreen> {
         // 登录成功，导航到主页
         Get.offNamed('/home');
       }
+    }
+  }
+
+  Future<void> _wechatLogin() async {
+    // 检查微信是否已安装
+    final isInstalled = await WechatService.isWechatInstalled();
+    if (!isInstalled) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('请先安装微信客户端')));
+      }
+      return;
+    }
+
+    final authController = Get.find<AuthController>();
+    final success = await authController.wechatLogin();
+
+    if (success && mounted) {
+      // 登录成功，导航到主页
+      Get.offNamed('/home');
     }
   }
 
@@ -146,6 +168,51 @@ class _LoginScreenState extends State<LoginScreen> {
                                       '登录',
                                       style: TextStyle(fontSize: 16),
                                     ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // 分割线
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Colors.grey[300])),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(
+                                '或',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: Colors.grey[300])),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // 微信登录按钮
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                authController.isLoading ? null : _wechatLogin,
+                            icon: const Icon(
+                              Icons.wechat,
+                              color: Color(0xFF07C160),
+                            ),
+                            label: const Text(
+                              '微信登录',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF07C160),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF07C160)),
+                            ),
                           ),
                         ),
 

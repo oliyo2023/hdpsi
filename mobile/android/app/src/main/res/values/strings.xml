@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">hd_psi_mobile</string>
+    <!-- 微信AppID，需要替换为实际的微信应用ID -->
+    <string name="wechat_app_id">your_wechat_app_id</string>
+</resources>

@@ -21,6 +21,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
+	wechatLoginController := controllers.NewWechatLoginController(db)
 	// 认证路由
 	r.POST("/auth/login", authController.Login)
 	r.POST("/auth/register", authController.Register)
@@ -45,6 +46,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		authGroup.POST("/login", authController.Login)
 		authGroup.POST("/register", authController.Register)
 		authGroup.POST("/refresh-token", authController.RefreshToken)
+		authGroup.POST("/wechat/login", wechatLoginController.Login)
 	}
 
 	// 字典管理路由 - 不需要认证
