@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../controllers/product_controller.dart';
 import '../utils/validators.dart';
@@ -645,8 +646,8 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
         costPrice: costPrice,
         retailPrice: retailPrice,
         status: formData['status'] ?? true,
-        createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String(),
+        createdAt: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        updatedAt: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       );
 
       // 创建变体列表

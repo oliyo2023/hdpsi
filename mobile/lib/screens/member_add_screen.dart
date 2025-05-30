@@ -406,12 +406,13 @@ class _MemberAddScreenState extends State<MemberAddScreen> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.saveAndValidate()) {
-      final formData = _formKey.currentState!.value;
+      // 创建可修改的表单数据副本
+      final formData = Map<String, dynamic>.from(_formKey.currentState!.value);
 
-      // 处理日期格式
+      // 处理日期格式 - 转换为 YYYY-MM-DD 格式以适配 Golang 后端
       if (formData['birthday'] != null && formData['birthday'] is DateTime) {
-        formData['birthday'] =
-            (formData['birthday'] as DateTime).toIso8601String();
+        final birthday = formData['birthday'] as DateTime;
+        formData['birthday'] = DateFormat('yyyy-MM-dd').format(birthday);
       }
 
       // 转换数字字段

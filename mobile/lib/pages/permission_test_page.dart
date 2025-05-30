@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/permission_service.dart';
 import '../services/app_initialization_service.dart';
 import '../utils/permission_helper.dart';
 import '../widgets/scan_button_widget.dart';
@@ -16,7 +15,6 @@ class PermissionTestPage extends StatefulWidget {
 
 class _PermissionTestPageState extends State<PermissionTestPage> {
   final AppInitializationService _appService = AppInitializationService.to;
-  final PermissionService _permissionService = PermissionService.to;
 
   @override
   Widget build(BuildContext context) {
@@ -41,26 +39,44 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
             _buildSection(
               title: '应用状态',
               children: [
-                Obx(() => _buildStatusCard(
-                  title: '首次启动',
-                  value: _appService.isFirstLaunch.value ? '是' : '否',
-                  color: _appService.isFirstLaunch.value ? Colors.orange : Colors.green,
-                )),
-                Obx(() => _buildStatusCard(
-                  title: '权限引导完成',
-                  value: _appService.isPermissionGuideCompleted.value ? '是' : '否',
-                  color: _appService.isPermissionGuideCompleted.value ? Colors.green : Colors.orange,
-                )),
-                Obx(() => _buildStatusCard(
-                  title: '应用初始化',
-                  value: _appService.isInitialized.value ? '完成' : '进行中',
-                  color: _appService.isInitialized.value ? Colors.green : Colors.blue,
-                )),
+                Obx(
+                  () => _buildStatusCard(
+                    title: '首次启动',
+                    value: _appService.isFirstLaunch.value ? '是' : '否',
+                    color:
+                        _appService.isFirstLaunch.value
+                            ? Colors.orange
+                            : Colors.green,
+                  ),
+                ),
+                Obx(
+                  () => _buildStatusCard(
+                    title: '权限引导完成',
+                    value:
+                        _appService.isPermissionGuideCompleted.value
+                            ? '是'
+                            : '否',
+                    color:
+                        _appService.isPermissionGuideCompleted.value
+                            ? Colors.green
+                            : Colors.orange,
+                  ),
+                ),
+                Obx(
+                  () => _buildStatusCard(
+                    title: '应用初始化',
+                    value: _appService.isInitialized.value ? '完成' : '进行中',
+                    color:
+                        _appService.isInitialized.value
+                            ? Colors.green
+                            : Colors.blue,
+                  ),
+                ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             _buildSection(
               title: '权限测试',
               children: [
@@ -68,7 +84,8 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
                   title: '相机权限（扫码）',
                   description: '测试扫码功能的相机权限',
                   onTest: () async {
-                    final granted = await PermissionHelper.checkCameraForScanning();
+                    final granted =
+                        await PermissionHelper.checkCameraForScanning();
                     _showResult('相机权限（扫码）', granted);
                   },
                 ),
@@ -76,7 +93,8 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
                   title: '相机权限（拍照）',
                   description: '测试拍照功能的相机权限',
                   onTest: () async {
-                    final granted = await PermissionHelper.checkCameraForPhoto();
+                    final granted =
+                        await PermissionHelper.checkCameraForPhoto();
                     _showResult('相机权限（拍照）', granted);
                   },
                 ),
@@ -84,7 +102,8 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
                   title: '相册权限',
                   description: '测试图片选择功能的相册权限',
                   onTest: () async {
-                    final granted = await PermissionHelper.checkPhotosPermission();
+                    final granted =
+                        await PermissionHelper.checkPhotosPermission();
                     _showResult('相册权限', granted);
                   },
                 ),
@@ -92,15 +111,16 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
                   title: '存储权限',
                   description: '测试文件保存功能的存储权限',
                   onTest: () async {
-                    final granted = await PermissionHelper.checkStoragePermission();
+                    final granted =
+                        await PermissionHelper.checkStoragePermission();
                     _showResult('存储权限', granted);
                   },
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             _buildSection(
               title: '功能组件测试',
               children: [
@@ -183,9 +203,9 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             _buildSection(
               title: '开发工具',
               children: [
@@ -245,7 +265,10 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
     );
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -276,23 +299,14 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
             Container(
               width: 12,
               height: 12,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
             const Spacer(),
             Text(
               value,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -311,20 +325,11 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(
-              description,
-              style: const TextStyle(color: Colors.grey),
-            ),
+            Text(description, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: onTest,
-              child: const Text('测试权限'),
-            ),
+            ElevatedButton(onPressed: onTest, child: const Text('测试权限')),
           ],
         ),
       ),

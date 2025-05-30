@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../controllers/product_controller.dart';
 import '../utils/validators.dart';
@@ -796,7 +797,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         retailPrice: retailPrice,
         status: formData['status'] ?? true,
         createdAt: product.createdAt,
-        updatedAt: DateTime.now().toUtc().toIso8601String(),
+        updatedAt: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       );
 
       // 创建变体列表
