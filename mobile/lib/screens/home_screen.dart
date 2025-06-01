@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hd_psi_mobile/theme/app_colors.dart';
-import 'package:hd_psi_mobile/theme/app_theme.dart';
-import 'package:hd_psi_mobile/widgets/chinese_style_action.dart';
-import 'package:hd_psi_mobile/widgets/chinese_style_header.dart';
-import 'package:hd_psi_mobile/widgets/chinese_pattern_painter.dart';
 
 /// 首页界面
 class HomeScreen extends StatefulWidget {
@@ -659,19 +655,5 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
     );
-  }
-
-  /// 格式化角色显示
-  String _formatRole(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return '管理员';
-      case 'manager':
-        return '经理';
-      case 'staff':
-        return '员工';
-      default:
-        return '用户';
-    }
   }
 }
