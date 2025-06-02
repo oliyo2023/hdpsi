@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/app_initialization_service.dart';
+import '../services/permission_service.dart';
 import '../utils/permission_helper.dart';
 import '../widgets/scan_button_widget.dart';
 
@@ -350,8 +352,85 @@ class _PermissionTestPageState extends State<PermissionTestPage> {
     );
   }
 
-  void _showPermissionStatus() {
-    _appService.showPermissionStatus();
+  void _showPermissionStatus() async {
+    // 获取所有权限状态
+    final permissionService = PermissionService.to;
+    final cameraGranted = await permissionService.checkCameraPermission();
+    final storageGranted = await permissionService.checkStoragePermission();
+    final photosGranted = await permissionService.checkPhotosPermission();
+
+    // 显示权限状态对话框
+    Get.dialog(
+      AlertDialog(
+        title: const Text('权限状态'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPermissionStatusItem(
+                icon: Icons.camera_alt,
+                title: '相机权限',
+                granted: cameraGranted,
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionStatusItem(
+                icon: Icons.storage,
+                title: '存储权限',
+                granted: storageGranted,
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionStatusItem(
+                icon: Icons.photo_library,
+                title: '相册权限',
+                granted: photosGranted,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('关闭')),
+          if (!cameraGranted || !storageGranted || !photosGranted)
+            ElevatedButton(
+              onPressed: () {
+                Get.back();
+                // 跳转到系统设置
+                openAppSettings();
+              },
+              child: const Text('去设置'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionStatusItem({
+    required IconData icon,
+    required String title,
+    required bool granted,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: granted ? Colors.green : Colors.red, size: 24),
+        const SizedBox(width: 12),
+        Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: granted ? Colors.green.shade100 : Colors.red.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            granted ? '已授权' : '未授权',
+            style: TextStyle(
+              color: granted ? Colors.green.shade800 : Colors.red.shade800,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _resetAppStatus() async {
