@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android signing files (重要: 密钥文件不应提交到版本控制)
+/android/key.properties
+/android/*.keystore
+/android/*.jks
