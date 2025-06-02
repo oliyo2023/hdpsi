@@ -398,54 +398,139 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required Color color,
     required VoidCallback onTap,
   }) {
+    // 根据不同功能设置不同的渐变背景
+    List<Color> gradientColors = _getGradientColors(title, color);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+            stops: const [0.0, 0.7, 1.0],
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryColor,
+            // 背景装饰图案
+            Positioned(
+              right: -10,
+              top: -10,
+              child: Opacity(
+                opacity: 0.1,
+                child: Icon(icon, size: 80, color: Colors.white),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondaryColor,
-              ),
+            // 卡片内容
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                        color: Colors.black26,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: const [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                        color: Colors.black26,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// 根据功能类型获取渐变颜色
+  List<Color> _getGradientColors(String title, Color baseColor) {
+    switch (title) {
+      case '商品管理':
+        return [
+          const Color(0xFF667eea),
+          const Color(0xFF764ba2),
+          const Color(0xFF8B5CF6),
+        ];
+      case '会员管理':
+        return [
+          const Color(0xFF11998e),
+          const Color(0xFF38ef7d),
+          const Color(0xFF10B981),
+        ];
+      case '供应商管理':
+        return [
+          const Color(0xFF3B82F6),
+          const Color(0xFF1E40AF),
+          const Color(0xFF1E3A8A),
+        ];
+      case '销售统计':
+        return [
+          const Color(0xFFf093fb),
+          const Color(0xFFf5576c),
+          const Color(0xFFEF4444),
+        ];
+      default:
+        return [
+          baseColor.withValues(alpha: 0.8),
+          baseColor,
+          baseColor.withValues(alpha: 1.2),
+        ];
+    }
   }
 
   /// 构建数据统计卡片
