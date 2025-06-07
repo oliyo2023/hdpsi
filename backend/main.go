@@ -172,6 +172,8 @@ func main() {
 
 	// 注册路由
 	routes.RegisterRoutes(r, db)
+	routes.SetupFileRoutes(r)
+	routes.SetupProductImageRoutes(r, db)
 	log.Info("路由注册完成")
 
 	// 静态文件服务
@@ -187,7 +189,7 @@ func main() {
 	}
 
 	// 创建上传目录
-	uploadDirs := []string{"./public/uploads/images", "./public/uploads/editor"}
+	uploadDirs := []string{"./public/uploads/images", "./public/uploads/editor", "./public/uploads/products"}
 	for _, dir := range uploadDirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Error("创建上传目录失败", logger.F("dir", dir), logger.F("error", err.Error()))
