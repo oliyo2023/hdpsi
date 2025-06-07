@@ -111,25 +111,14 @@
         </n-card>
 
         <n-card title="商品图片" class="mb-4">
-          <n-upload
-            list-type="image-card"
-            :default-upload="false"
-            :max="5"
-            :on-before-upload="beforeUpload"
-            :on-change="handleUploadChange"
-          >
-            <div style="margin-bottom: 8px">
-              <n-icon size="48" :depth="3">
-                <CloudUploadOutline />
-              </n-icon>
-            </div>
-            <n-text style="font-size: 16px">
-              点击或拖动文件到此区域上传
-            </n-text>
-            <n-p depth="3" style="margin: 8px 0 0 0">
-              支持单个或批量上传，最多5张图片
-            </n-p>
-          </n-upload>
+          <ProductImageUpload 
+            :product-id="formData.sku || productId" 
+            @images-updated="handleImagesUpdated"
+            :disabled="!formData.sku && !productId"
+          />
+          <n-text depth="3" style="font-size: 12px; margin-top: 8px; display: block;">
+            提示: 使用商品SKU或ID作为图片存储标识
+          </n-text>
         </n-card>
 
         <n-card title="商品描述" class="mb-4">
@@ -164,6 +153,7 @@ import {
 import { ArrowBackOutline, CloudUploadOutline } from '@vicons/ionicons5'
 import productService from '../services/product'
 import { generateSKU as genSKU, generateVariantSKU } from '../utils/skuGenerator'
+import ProductImageUpload from '../components/ProductImageUpload.vue'
 
 // 路由和消息
 const router = useRouter()
@@ -193,6 +183,9 @@ const formData = reactive({
   image: '',
   description: ''
 })
+
+// 商品图片列表
+const productImages = ref([])
 
 // 移除表单验证规则，改为手动验证
 const rules = {}
@@ -470,6 +463,17 @@ const handleSave = async () => {
     message.error('保存失败: ' + (error.response?.data?.error || '未知错误'))
   } finally {
     saving.value = false
+  }
+}
+
+// 处理图片更新
+const handleImagesUpdated = (images) => {
+  productImages.value = images
+  // 如果有图片，将第一张图片设置为主图
+  if (images.length > 0) {
+    formData.image = images[0].url
+  } else {
+    formData.image = ''
   }
 }
 
