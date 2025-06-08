@@ -35,7 +35,7 @@ flutter build appbundle --release --shrink --obfuscate --split-debug-info=build/
 
 # 构建优化的 APK
 Write-Host "构建优化的 APK..." -ForegroundColor Cyan
-flutter build apk --release --shrink --obfuscate --split-debug-info=build/app/outputs/symbols --target-platform android-arm64
+flutter build apk --release --shrink --obfuscate --split-debug-info=build/app/outputs/symbols --split-per-abi --target-platform android-arm64
 
 # 5. 显示构建结果
 Write-Host "📈 构建结果:" -ForegroundColor Green
