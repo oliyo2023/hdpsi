@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	"hd_psi/backend/utils"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +43,7 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 
 	// 检查文件类型
 	contentType := header.Header.Get("Content-Type")
-	if !isAllowedImageType(contentType) {
+	if !utils.IsAllowedImageType(contentType) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "不支持的文件类型，仅支持 jpg、png、gif 和 webp 格式"})
 		return
 	}
@@ -103,7 +103,7 @@ func (c *FileController) UploadEditorImage(ctx *gin.Context) {
 
 	// 检查文件类型
 	contentType := header.Header.Get("Content-Type")
-	if !isAllowedImageType(contentType) {
+	if !utils.IsAllowedImageType(contentType) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "不支持的文件类型，仅支持 jpg、png、gif 和 webp 格式"})
 		return
 	}
@@ -150,22 +150,4 @@ func (c *FileController) UploadEditorImage(ctx *gin.Context) {
 			"url": fileURL,
 		},
 	})
-}
-
-// isAllowedImageType 检查文件类型是否为允许的图片类型
-func isAllowedImageType(contentType string) bool {
-	allowedTypes := []string{
-		"image/jpeg",
-		"image/png",
-		"image/gif",
-		"image/webp",
-	}
-
-	for _, t := range allowedTypes {
-		if strings.EqualFold(contentType, t) {
-			return true
-		}
-	}
-
-	return false
 }

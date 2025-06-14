@@ -86,10 +86,7 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
                   const SizedBox(height: 8),
                   const Text(
                     '专业的进销存管理系统',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
@@ -116,18 +113,14 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: item.color.withOpacity(0.1),
+                            color: item.color.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: item.color.withOpacity(0.3),
+                              color: item.color.withValues(alpha: 0.3),
                               width: 2,
                             ),
                           ),
-                          child: Icon(
-                            item.icon,
-                            size: 60,
-                            color: item.color,
-                          ),
+                          child: Icon(item.icon, size: 60, color: item.color),
                         ),
                         const SizedBox(height: 32),
                         Text(
@@ -165,9 +158,10 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
                   width: _currentPage == index ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _currentPage == index
-                        ? Colors.blue
-                        : Colors.grey.shade300,
+                    color:
+                        _currentPage == index
+                            ? Colors.blue
+                            : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -182,9 +176,10 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _currentPage == _guideItems.length - 1
-                          ? _showPermissionDialog
-                          : _nextPage,
+                      onPressed:
+                          _currentPage == _guideItems.length - 1
+                              ? _showPermissionDialog
+                              : _nextPage,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -194,9 +189,7 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
                         ),
                       ),
                       child: Text(
-                        _currentPage == _guideItems.length - 1
-                            ? '开始使用'
-                            : '下一步',
+                        _currentPage == _guideItems.length - 1 ? '开始使用' : '下一步',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -273,7 +266,7 @@ class _PermissionGuidePageState extends State<PermissionGuidePage> {
     // SharedPreferences.getInstance().then((prefs) {
     //   prefs.setBool('permission_guide_completed', true);
     // });
-    
+
     // 跳转到主页面
     Get.offAllNamed('/login'); // 或者其他主页面路由
   }

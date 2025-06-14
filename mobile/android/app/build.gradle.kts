@@ -10,7 +10,7 @@ plugins {
 
 // 加载密钥配置
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("android/key.properties")
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
@@ -52,7 +52,7 @@ android {
             if (keyAlias != null && keyPassword != null && storeFile != null && storePassword != null) {
                 this.keyAlias = keyAlias
                 this.keyPassword = keyPassword
-                this.storeFile = file(storeFile)
+                this.storeFile = rootProject.file(storeFile)
                 this.storePassword = storePassword
             } else {
                 // 如果缺少签名配置，输出警告信息
@@ -92,8 +92,27 @@ android {
                 signingConfig = signingConfigs.getByName("debug")
             }
 
-            // 可选：启用R8全模式以获得更好的优化
+            // 启用R8全模式以获得更好的优化
             isDebuggable = false
+
+            // 启用 ZIP 对齐
+            isZipAlignEnabled = true
+
+            // 启用 Crunch PNG 优化
+            isCrunchPngs = true
+        }
+    }
+
+    // 添加 APK 分包配置
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
         }
     }
 }
