@@ -134,6 +134,11 @@ func main() {
 			&models.ReturnOrderItem{},
 			&models.ExchangeOrderItem{},
 			&models.ReturnOrderLog{},
+			&models.SalesOrder{},
+			&models.SalesOrderItem{},
+			&models.SalesOrderPayment{},
+			&models.SalesOrderLog{},
+			&models.NegotiationLog{},
 		)
 
 		// 只对MySQL重新启用外键约束检查
