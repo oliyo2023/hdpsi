@@ -686,3 +686,22 @@ func (soc *SalesOrderController) GetSalesOrderStatistics(c *gin.Context) {
 
 	c.JSON(http.StatusOK, stats)
 }
+
+// GetRecentSalesOrders 获取最近的销售订单
+func (soc *SalesOrderController) GetRecentSalesOrders(c *gin.Context) {
+	var salesOrders []models.SalesOrder
+
+	// 获取最近10个销售订单
+	if err := soc.db.Preload("Store").Preload("Member").Preload("Salesperson").
+		Order("created_at DESC").
+		Limit(10).
+		Find(&salesOrders).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询最近销售订单失败: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items": salesOrders,
+		"total": len(salesOrders),
+	})
+}

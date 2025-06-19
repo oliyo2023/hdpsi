@@ -139,6 +139,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		salesGroup := apiAuth.Group("/sales")
 		{
 			salesGroup.GET("", salesOrderController.ListSalesOrders)
+			salesGroup.GET("/recent", salesOrderController.GetRecentSalesOrders)
 			salesGroup.GET("/:id", salesOrderController.GetSalesOrder)
 			salesGroup.POST("", salesOrderController.CreateSalesOrder)
 			salesGroup.PUT("/:id", salesOrderController.UpdateSalesOrder)

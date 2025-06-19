@@ -2,7 +2,7 @@
 
 # 服务器配置
 server:
-  port: 8081
+  port: 8082
   mode: release  # debug, release, test
   timeout: 30  # 请求超时时间（秒）
 

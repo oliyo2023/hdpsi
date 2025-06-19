@@ -242,9 +242,9 @@ import {
   TrashOutline
 } from '@vicons/ionicons5'
 import salesOrderService from '../services/salesOrderService'
-import productService from '../services/productService'
+import productService from '../services/product'
 import storeService from '../services/storeService'
-import memberService from '../services/memberService'
+import memberService from '../services/member'
 
 const route = useRoute()
 const router = useRouter()
@@ -500,7 +500,8 @@ const initializeData = async () => {
 const loadStoreOptions = async () => {
   try {
     const response = await storeService.getStores()
-    storeOptions.value = response.map(store => ({
+    const stores = response.items || response || []
+    storeOptions.value = stores.map(store => ({
       label: store.name,
       value: store.id
     }))
@@ -520,7 +521,7 @@ const loadPaymentMethodOptions = () => {
 const loadProducts = async () => {
   try {
     const response = await productService.getProducts({ page_size: 1000 })
-    products.value = response.items || []
+    products.value = response.items || response || []
   } catch (error) {
     console.error('加载商品列表失败:', error)
   }

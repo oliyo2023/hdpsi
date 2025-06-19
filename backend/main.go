@@ -163,10 +163,7 @@ func main() {
 	r.Use(middleware.APIVersionMiddleware())       // API版本中间件
 	r.Use(middleware.APIVersionHeaderMiddleware()) // API版本响应头中间件
 
-	// 设置404和405处理器
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "路由不存在"})
-	})
+	// 设置405处理器
 	r.NoMethod(func(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "方法不允许"})
 	})
