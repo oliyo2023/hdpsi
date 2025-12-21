@@ -247,7 +247,7 @@ class _ScanCheckoutScreenState extends State<ScanCheckoutScreen> {
                                     labelText: '出库店铺',
                                     border: OutlineInputBorder(),
                                   ),
-                                  value: _selectedStoreId,
+                                  initialValue: _selectedStoreId,
                                   items: const [
                                     DropdownMenuItem(
                                       value: 1,

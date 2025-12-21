@@ -401,7 +401,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
 
                     // 消费类型
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: const InputDecoration(
                         labelText: '消费类型',
                         border: OutlineInputBorder(),

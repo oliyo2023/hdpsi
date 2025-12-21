@@ -47,33 +47,25 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // 积分调整方向
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('增加'),
-                    value: true,
-                    groupValue: isPositive,
-                    onChanged: (value) {
-                      setState(() {
-                        isPositive = value!;
-                      });
-                    },
-                  ),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment<bool>(
+                  value: true,
+                  label: Text('增加'),
+                  icon: Icon(Icons.add),
                 ),
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('减少'),
-                    value: false,
-                    groupValue: isPositive,
-                    onChanged: (value) {
-                      setState(() {
-                        isPositive = value!;
-                      });
-                    },
-                  ),
+                ButtonSegment<bool>(
+                  value: false,
+                  label: Text('减少'),
+                  icon: Icon(Icons.remove),
                 ),
               ],
+              selected: {isPositive},
+              onSelectionChanged: (Set<bool> newSelection) {
+                setState(() {
+                  isPositive = newSelection.first;
+                });
+              },
             ),
 
             // 积分数量
