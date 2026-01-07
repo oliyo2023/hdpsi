@@ -2,8 +2,8 @@
 
 # 服务器配置
 server:
-  port: 8082
-  mode: release  # debug, release, test
+  port: 8081
+  mode: debug  # debug, release, test
   timeout: 30  # 请求超时时间（秒）
 
 # API配置
@@ -52,8 +52,9 @@ wechat_official_account:
 log:
   level: info  # debug, info, warn, error
   format: text # text, json
-  output: file  # stdout, file
-  file_path: ./logs/hd_psi.log  # 日志文件路径（当output为file时有效）
+  output: both  # stdout, file, both
+  directory: ./logs  # 日志目录
+  filename: hd_psi.log  # 日志文件名
   max_size: 100  # 单个日志文件最大大小（MB）
   max_age: 30    # 日志文件保留天数
   max_backups: 10  # 最大备份数量

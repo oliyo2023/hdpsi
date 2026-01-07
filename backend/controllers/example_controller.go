@@ -7,7 +7,7 @@ import (
 	"hd_psi/backend/utils/response"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -35,13 +35,13 @@ func NewExampleController(db *gorm.DB) *ExampleController {
 // @Failure 500 {object} models.APIResponse "服务器内部错误"
 // @Router /examples/users/{id} [get]
 // @Security BearerAuth
-func (ec *ExampleController) GetUser(c *gin.Context) {
+func (ec *ExampleController) GetUser(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("获取用户信息")
 
 	// 获取用户ID
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	userID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		log.Warn("无效的用户ID格式", logger.F("id", id))
@@ -57,7 +57,7 @@ func (ec *ExampleController) GetUser(c *gin.Context) {
 			response.NotFound(c, "用户不存在")
 			return
 		}
-		log.Error("获取用户信息失败", 
+		log.Error("获取用户信息失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "获取用户信息失败")
@@ -77,22 +77,31 @@ func (ec *ExampleController) GetUser(c *gin.Context) {
 // @Produce json
 // @Param page query int false "页码" default:"1"
 // @Param pageSize query int false "每页记录数" default:"10"
-// @Param name query string false "用户名" 
+// @Param name query string false "用户名"
 // @Success 200 {object} models.APIResponse{data=models.PaginatedResponse{items=[]models.User}} "成功获取用户列表"
 // @Failure 400 {object} models.APIResponse "请求参数错误"
 // @Failure 401 {object} models.APIResponse "未授权"
 // @Failure 500 {object} models.APIResponse "服务器内部错误"
 // @Router /examples/users [get]
 // @Security BearerAuth
-func (ec *ExampleController) ListUsers(c *gin.Context) {
+func (ec *ExampleController) ListUsers(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("获取用户列表")
 
 	// 获取查询参数
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-	name := c.Query("name")
+	pageStr := c.URLParam("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	pageSizeStr := c.URLParam("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "10"
+	}
+	name := c.URLParam("name")
+
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
 
 	// 构建查询
 	query := ec.db.Model(&models.User{})
@@ -118,7 +127,7 @@ func (ec *ExampleController) ListUsers(c *gin.Context) {
 	}
 
 	// 返回分页响应
-	log.Info("获取用户列表成功", 
+	log.Info("获取用户列表成功",
 		logger.F("total", total),
 		logger.F("page", page),
 		logger.F("pageSize", pageSize))
@@ -139,14 +148,14 @@ func (ec *ExampleController) ListUsers(c *gin.Context) {
 // @Failure 500 {object} models.APIResponse "服务器内部错误"
 // @Router /examples/users [post]
 // @Security BearerAuth
-func (ec *ExampleController) CreateUser(c *gin.Context) {
+func (ec *ExampleController) CreateUser(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("创建用户")
 
 	// 解析请求参数
 	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.ReadJSON(&user); err != nil {
 		log.Warn("无效的用户信息", logger.F("error", err.Error()))
 		response.BadRequest(c, "无效的用户信息")
 		return
@@ -155,7 +164,7 @@ func (ec *ExampleController) CreateUser(c *gin.Context) {
 	// 检查用户名是否已存在
 	var count int64
 	if err := ec.db.Model(&models.User{}).Where("username = ?", user.Username).Count(&count).Error; err != nil {
-		log.Error("检查用户名是否存在失败", 
+		log.Error("检查用户名是否存在失败",
 			logger.F("username", user.Username),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "检查用户名是否存在失败")
@@ -170,7 +179,7 @@ func (ec *ExampleController) CreateUser(c *gin.Context) {
 
 	// 创建用户
 	if err := ec.db.Create(&user).Error; err != nil {
-		log.Error("创建用户失败", 
+		log.Error("创建用户失败",
 			logger.F("username", user.Username),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "创建用户失败")
@@ -178,7 +187,7 @@ func (ec *ExampleController) CreateUser(c *gin.Context) {
 	}
 
 	// 返回创建成功响应
-	log.Info("创建用户成功", 
+	log.Info("创建用户成功",
 		logger.F("user_id", user.ID),
 		logger.F("username", user.Username))
 	response.Created(c, user)
@@ -199,13 +208,13 @@ func (ec *ExampleController) CreateUser(c *gin.Context) {
 // @Failure 500 {object} models.APIResponse "服务器内部错误"
 // @Router /examples/users/{id} [put]
 // @Security BearerAuth
-func (ec *ExampleController) UpdateUser(c *gin.Context) {
+func (ec *ExampleController) UpdateUser(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("更新用户信息")
 
 	// 获取用户ID
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	userID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		log.Warn("无效的用户ID格式", logger.F("id", id))
@@ -215,7 +224,7 @@ func (ec *ExampleController) UpdateUser(c *gin.Context) {
 
 	// 解析请求参数
 	var updateData models.User
-	if err := c.ShouldBindJSON(&updateData); err != nil {
+	if err := c.ReadJSON(&updateData); err != nil {
 		log.Warn("无效的用户信息", logger.F("error", err.Error()))
 		response.BadRequest(c, "无效的用户信息")
 		return
@@ -229,7 +238,7 @@ func (ec *ExampleController) UpdateUser(c *gin.Context) {
 			response.NotFound(c, "用户不存在")
 			return
 		}
-		log.Error("查询用户失败", 
+		log.Error("查询用户失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "查询用户失败")
@@ -238,7 +247,7 @@ func (ec *ExampleController) UpdateUser(c *gin.Context) {
 
 	// 更新用户信息
 	if err := ec.db.Model(&user).Updates(updateData).Error; err != nil {
-		log.Error("更新用户信息失败", 
+		log.Error("更新用户信息失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "更新用户信息失败")
@@ -247,7 +256,7 @@ func (ec *ExampleController) UpdateUser(c *gin.Context) {
 
 	// 重新获取更新后的用户信息
 	if err := ec.db.First(&user, userID).Error; err != nil {
-		log.Error("获取更新后的用户信息失败", 
+		log.Error("获取更新后的用户信息失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "获取更新后的用户信息失败")
@@ -273,13 +282,13 @@ func (ec *ExampleController) UpdateUser(c *gin.Context) {
 // @Failure 500 {object} models.APIResponse "服务器内部错误"
 // @Router /examples/users/{id} [delete]
 // @Security BearerAuth
-func (ec *ExampleController) DeleteUser(c *gin.Context) {
+func (ec *ExampleController) DeleteUser(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("删除用户")
 
 	// 获取用户ID
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	userID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		log.Warn("无效的用户ID格式", logger.F("id", id))
@@ -295,7 +304,7 @@ func (ec *ExampleController) DeleteUser(c *gin.Context) {
 			response.NotFound(c, "用户不存在")
 			return
 		}
-		log.Error("查询用户失败", 
+		log.Error("查询用户失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "查询用户失败")
@@ -304,7 +313,7 @@ func (ec *ExampleController) DeleteUser(c *gin.Context) {
 
 	// 删除用户
 	if err := ec.db.Delete(&user).Error; err != nil {
-		log.Error("删除用户失败", 
+		log.Error("删除用户失败",
 			logger.F("user_id", userID),
 			logger.F("error", err.Error()))
 		response.DatabaseError(c, "删除用户失败")

@@ -7,7 +7,7 @@ import { createDiscreteApi } from 'naive-ui'
  * 不要创建新的axios实例，以保持代码一致性
  */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081',
   timeout: 15000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'
@@ -50,7 +50,7 @@ api.interceptors.response.use(
     })
 
     // 如果是单个商品请求，打印更详细的信息
-    if (response.config.url.includes('/api/products/') && !response.config.url.includes('/list')) {
+    if (response.config.url.includes('/api/v1/products/') && !response.config.url.includes('/list')) {
       console.log('商品详情原始数据:', response.data)
       console.log('商品详情数据字段:', Object.keys(response.data))
     }

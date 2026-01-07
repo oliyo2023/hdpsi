@@ -6,253 +6,269 @@ import (
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/services"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes 注册所有路由
-func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
+func RegisterRoutes(app *iris.Application, db *gorm.DB) {
 	// 添加API版本中间件
-	r.Use(middleware.APIVersionMiddleware())
-	r.Use(middleware.APIVersionHeaderMiddleware())
+	app.Use(middleware.APIVersionMiddleware())
+	app.Use(middleware.APIVersionHeaderMiddleware())
 
 	// 添加API弃用中间件（如果有弃用的版本）
-	// r.Use(middleware.APIDeprecationMiddleware([]string{"v0"}))
+	// app.Use(middleware.APIDeprecationMiddleware([]string{"v0"}))
 
 	// 认证路由 - 不需要认证
 	authController := controllers.NewAuthController(db)
 	wechatLoginController := controllers.NewWechatLoginController(db)
 	// 认证路由
-	r.POST("/auth/login", authController.Login)
-	r.POST("/auth/register", authController.Register)
+	app.Post("/auth/login", authController.Login)
+	app.Post("/auth/register", authController.Register)
 
 	// 系统设置路由 - 公开访问
 	systemSettingController := controllers.NewSystemSettingController(db)
-	r.GET("/api/settings/theme", systemSettingController.GetUserTheme)
+	app.Get("/api/settings/theme", systemSettingController.GetUserTheme)
 
 	// 微信公众号事件接收路由 - 不需要认证
 	wechatController := controllers.NewWechatController(db)
-	r.POST("/wechat/event", wechatController.HandleWechatEvent)
+	app.Post("/wechat/event", wechatController.HandleWechatEvent)
 
 	// 获取API基础路径
 	apiBasePath := config.GetAPIBasePath()
 
 	// API路由组 - 使用版本前缀
-	api := r.Group(apiBasePath)
+	api := app.Party(apiBasePath)
+
+	// 添加CORS头到所有响应
+	api.Use(func(ctx iris.Context) {
+		origin := ctx.GetHeader("Origin")
+		ctx.Header("Access-Control-Allow-Origin", origin)
+		ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		ctx.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		ctx.Header("Access-Control-Max-Age", "86400")
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+
+		if ctx.Method() == "OPTIONS" {
+			ctx.StatusCode(204)
+			return
+		}
+
+		ctx.Next()
+	})
 
 	// 认证API路由
-	authGroup := api.Group("/auth")
-	{
-		authGroup.POST("/login", authController.Login)
-		authGroup.POST("/register", authController.Register)
-		authGroup.POST("/refresh-token", authController.RefreshToken)
-		authGroup.POST("/wechat/login", wechatLoginController.Login)
-	}
+	authGroup := api.Party("/auth")
+
+	authGroup.Post("/login", authController.Login)
+	authGroup.Post("/register", authController.Register)
+	authGroup.Post("/refresh-token", authController.RefreshToken)
+	authGroup.Post("/wechat/login", wechatLoginController.Login)
 
 	// 字典管理路由 - 不需要认证
 	dictionaryController := controllers.NewDictionaryController(db)
-	dictGroup := api.Group("/dictionaries")
+	dictGroup := api.Party("/dictionaries")
 	{
 		// 字典类型路由
-		dictGroup.GET("", dictionaryController.ListDictionaries)
-		dictGroup.GET("/:code", dictionaryController.GetDictionary)
-		dictGroup.POST("", dictionaryController.CreateDictionary)
-		dictGroup.PUT("/:code", dictionaryController.UpdateDictionary)
-		dictGroup.DELETE("/:code", dictionaryController.DeleteDictionary)
+		dictGroup.Get("", dictionaryController.ListDictionaries)
+		dictGroup.Get("/{code:string}", dictionaryController.GetDictionary)
+		dictGroup.Post("", dictionaryController.CreateDictionary)
+		dictGroup.Put("/{code:string}", dictionaryController.UpdateDictionary)
+		dictGroup.Delete("/{code:string}", dictionaryController.DeleteDictionary)
 
 		// 字典项路由
-		dictGroup.GET("/:code/items", dictionaryController.ListDictionaryItems)
-		dictGroup.GET("/:code/items/:itemId", dictionaryController.GetDictionaryItem)
-		dictGroup.POST("/:code/items", dictionaryController.CreateDictionaryItem)
-		dictGroup.PUT("/:code/items/:itemId", dictionaryController.UpdateDictionaryItem)
-		dictGroup.DELETE("/:code/items/:itemId", dictionaryController.DeleteDictionaryItem)
+		dictGroup.Get("/{code:string}/items", dictionaryController.ListDictionaryItems)
+		dictGroup.Get("/{code:string}/items/{itemId:uint}", dictionaryController.GetDictionaryItem)
+		dictGroup.Post("/{code:string}/items", dictionaryController.CreateDictionaryItem)
+		dictGroup.Put("/{code:string}/items/{itemId:uint}", dictionaryController.UpdateDictionaryItem)
+		dictGroup.Delete("/{code:string}/items/{itemId:uint}", dictionaryController.DeleteDictionaryItem)
 	}
 
 	// 需要认证的路由
-	apiAuth := api.Group("/")
+	apiAuth := api.Party("/")
 	apiAuth.Use(middleware.JWTAuth())
 	{
 		// 仪表盘路由
 		dashboardController := controllers.NewDashboardController(db)
-		apiAuth.GET("/dashboard/statistics", dashboardController.GetStatistics)
+		apiAuth.Get("/dashboard/statistics", dashboardController.GetStatistics)
 		// 用户信息路由
-		apiAuth.GET("/profile", authController.GetProfile)
-		apiAuth.PUT("/profile", authController.UpdateProfile)
-		apiAuth.PUT("/change-password", authController.ChangePassword)
+		apiAuth.Get("/profile", authController.GetProfile)
+		apiAuth.Put("/profile", authController.UpdateProfile)
+		apiAuth.Put("/change-password", authController.ChangePassword)
 
 		// 系统设置路由
-		apiAuth.GET("/settings", systemSettingController.GetSettings)
-		apiAuth.PUT("/settings", middleware.RoleAuth("admin"), systemSettingController.UpdateSettings)
-		apiAuth.PUT("/settings/theme", systemSettingController.UpdateUserTheme)
+		apiAuth.Get("/settings", systemSettingController.GetSettings)
+		apiAuth.Put("/settings", middleware.RoleAuth("admin"), systemSettingController.UpdateSettings)
+		apiAuth.Put("/settings/theme", systemSettingController.UpdateUserTheme)
 
 		// 商品管理路由
 		productController := controllers.NewProductController(db)
-		productGroup := apiAuth.Group("/products")
+		productGroup := apiAuth.Party("/products")
 		{
-			productGroup.GET("", productController.ListProducts)
-			productGroup.GET("/:id", productController.GetProduct)
-			productGroup.POST("", middleware.RoleAuth("admin", "manager"), productController.CreateProduct)
-			productGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), productController.UpdateProduct)
-			productGroup.DELETE("/:id", middleware.RoleAuth("admin"), productController.DeleteProduct)
+			productGroup.Get("", productController.ListProducts)
+			productGroup.Get("/{id:uint}", productController.GetProduct)
+			productGroup.Post("", middleware.RoleAuth("admin", "manager"), productController.CreateProduct)
+			productGroup.Put("/{id:uint}", middleware.RoleAuth("admin", "manager"), productController.UpdateProduct)
+			productGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), productController.DeleteProduct)
 
 			// 已删除商品管理路由
-			productGroup.GET("/deleted/list", middleware.RoleAuth("admin"), productController.ListDeletedProducts)
-			productGroup.POST("/deleted/:id/restore", middleware.RoleAuth("admin"), productController.RestoreProduct)
+			productGroup.Get("/deleted/list", middleware.RoleAuth("admin"), productController.ListDeletedProducts)
+			productGroup.Post("/deleted/{id:uint}/restore", middleware.RoleAuth("admin"), productController.RestoreProduct)
 		}
 
 		// 库存管理路由
 		inventoryController := controllers.NewInventoryController(db)
-		inventoryGroup := apiAuth.Group("/inventory")
+		inventoryGroup := apiAuth.Party("/inventory")
 		{
-			inventoryGroup.GET("", inventoryController.ListInventories)
-			inventoryGroup.GET("/:id", inventoryController.GetInventory)
-			inventoryGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
-			inventoryGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
-			inventoryGroup.DELETE("/:id", middleware.RoleAuth("admin"), inventoryController.DeleteInventory)
+			inventoryGroup.Get("", inventoryController.ListInventories)
+			inventoryGroup.Get("/{id:uint}", inventoryController.GetInventory)
+			inventoryGroup.Post("", middleware.RoleAuth("admin", "manager"), inventoryController.CreateInventory)
+			inventoryGroup.Put("/{id:uint}", middleware.RoleAuth("admin", "manager"), inventoryController.UpdateInventory)
+			inventoryGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), inventoryController.DeleteInventory)
 		}
 
 		// 供应商管理路由
 		supplierController := controllers.NewSupplierController(db)
-		supplierGroup := apiAuth.Group("/suppliers")
+		supplierGroup := apiAuth.Party("/suppliers")
 		{
-			supplierGroup.GET("", supplierController.ListSuppliers)
-			supplierGroup.GET("/:id", supplierController.GetSupplier)
-			supplierGroup.POST("", middleware.RoleAuth("admin", "manager"), supplierController.CreateSupplier)
-			supplierGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), supplierController.UpdateSupplier)
-			supplierGroup.DELETE("/:id", middleware.RoleAuth("admin"), supplierController.DeleteSupplier)
+			supplierGroup.Get("", supplierController.ListSuppliers)
+			supplierGroup.Get("/{id:uint}", supplierController.GetSupplier)
+			supplierGroup.Post("", middleware.RoleAuth("admin", "manager"), supplierController.CreateSupplier)
+			supplierGroup.Put("/{id:uint}", middleware.RoleAuth("admin", "manager"), supplierController.UpdateSupplier)
+			supplierGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), supplierController.DeleteSupplier)
 		}
 
 		// 采购管理路由
 		purchaseController := controllers.NewPurchaseController(db)
-		purchaseGroup := apiAuth.Group("/purchases")
+		purchaseGroup := apiAuth.Party("/purchases")
 		{
-			purchaseGroup.GET("", purchaseController.ListPurchaseOrders)
-			purchaseGroup.GET("/:id", purchaseController.GetPurchaseOrder)
-			purchaseGroup.POST("", middleware.RoleAuth("admin", "manager"), purchaseController.CreatePurchaseOrder)
-			purchaseGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), purchaseController.UpdatePurchaseOrder)
-			purchaseGroup.PUT("/:id/status", middleware.RoleAuth("admin", "manager"), purchaseController.UpdatePurchaseOrderStatus)
-			purchaseGroup.DELETE("/:id", middleware.RoleAuth("admin"), purchaseController.DeletePurchaseOrder)
+			purchaseGroup.Get("", purchaseController.ListPurchaseOrders)
+			purchaseGroup.Get("/{id:uint}", purchaseController.GetPurchaseOrder)
+			purchaseGroup.Post("", middleware.RoleAuth("admin", "manager"), purchaseController.CreatePurchaseOrder)
+			purchaseGroup.Put("/{id:uint}", middleware.RoleAuth("admin", "manager"), purchaseController.UpdatePurchaseOrder)
+			purchaseGroup.Put("/{id:uint}/status", middleware.RoleAuth("admin", "manager"), purchaseController.UpdatePurchaseOrderStatus)
+			purchaseGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), purchaseController.DeletePurchaseOrder)
 		}
 
 		// 销售管理路由
 		salesOrderController := controllers.NewSalesOrderController(db)
-		salesGroup := apiAuth.Group("/sales")
+		salesGroup := apiAuth.Party("/sales")
 		{
-			salesGroup.GET("", salesOrderController.ListSalesOrders)
-			salesGroup.GET("/recent", salesOrderController.GetRecentSalesOrders)
-			salesGroup.GET("/:id", salesOrderController.GetSalesOrder)
-			salesGroup.POST("", salesOrderController.CreateSalesOrder)
-			salesGroup.PUT("/:id", salesOrderController.UpdateSalesOrder)
-			salesGroup.PUT("/:id/status", salesOrderController.UpdateSalesOrderStatus)
-			salesGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), salesOrderController.DeleteSalesOrder)
-			salesGroup.POST("/:id/payments", salesOrderController.AddPayment)
-			salesGroup.GET("/statistics", salesOrderController.GetSalesOrderStatistics)
+			salesGroup.Get("", salesOrderController.ListSalesOrders)
+			salesGroup.Get("/recent", salesOrderController.GetRecentSalesOrders)
+			salesGroup.Get("/{id:uint}", salesOrderController.GetSalesOrder)
+			salesGroup.Post("", salesOrderController.CreateSalesOrder)
+			salesGroup.Put("/{id:uint}", salesOrderController.UpdateSalesOrder)
+			salesGroup.Put("/{id:uint}/status", salesOrderController.UpdateSalesOrderStatus)
+			salesGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), salesOrderController.DeleteSalesOrder)
+			salesGroup.Post("/{id:uint}/payments", salesOrderController.AddPayment)
+			salesGroup.Get("/statistics", salesOrderController.GetSalesOrderStatistics)
 		}
 
 		// 采购入库路由
 		purchaseReceivingController := controllers.NewPurchaseReceivingController(db)
-		receivingGroup := apiAuth.Group("/purchase-receivings")
+		receivingGroup := apiAuth.Party("/purchase-receivings")
 		{
-			receivingGroup.GET("", purchaseReceivingController.ListPurchaseReceivings)
-			receivingGroup.GET("/:id", purchaseReceivingController.GetPurchaseReceiving)
-			receivingGroup.POST("", middleware.RoleAuth("admin", "manager", "staff"), purchaseReceivingController.CreatePurchaseReceiving)
-			receivingGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), purchaseReceivingController.DeletePurchaseReceiving)
+			receivingGroup.Get("", purchaseReceivingController.ListPurchaseReceivings)
+			receivingGroup.Get("/{id:uint}", purchaseReceivingController.GetPurchaseReceiving)
+			receivingGroup.Post("", middleware.RoleAuth("admin", "manager", "staff"), purchaseReceivingController.CreatePurchaseReceiving)
+			receivingGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), purchaseReceivingController.DeletePurchaseReceiving)
 		}
 
 		// 会员管理路由 - 暂时移除权限控制以便于开发
 		memberController := controllers.NewMemberController(db)
-		memberGroup := apiAuth.Group("/members")
+		memberGroup := apiAuth.Party("/members")
 		{
-			memberGroup.GET("", memberController.ListMembers)
-			memberGroup.GET("/:id", memberController.GetMember)
-			memberGroup.POST("", memberController.CreateMember)
-			memberGroup.PUT("/:id", memberController.UpdateMember)
-			memberGroup.DELETE("/:id", memberController.DeleteMember)
+			memberGroup.Get("", memberController.ListMembers)
+			memberGroup.Get("/{id:uint}", memberController.GetMember)
+			memberGroup.Post("", memberController.CreateMember)
+			memberGroup.Put("/{id:uint}", memberController.UpdateMember)
+			memberGroup.Delete("/{id:uint}", memberController.DeleteMember)
 
 			// 会员积分路由
 			memberPointsController := controllers.NewMemberPointsController(db)
-			memberGroup.GET("/:id/points", memberPointsController.GetMemberPoints)
-			memberGroup.GET("/:id/points/transactions", memberPointsController.ListPointsTransactions)
-			memberGroup.POST("/:id/points/add", memberPointsController.AddPoints)
-			memberGroup.POST("/:id/points/deduct", memberPointsController.DeductPoints)
-			memberGroup.POST("/:id/level/calculate", memberPointsController.CalculateMemberLevel)
+			memberGroup.Get("/{id:uint}/points", memberPointsController.GetMemberPoints)
+			memberGroup.Get("/{id:uint}/points/transactions", memberPointsController.ListPointsTransactions)
+			memberGroup.Post("/{id:uint}/points/add", memberPointsController.AddPoints)
+			memberGroup.Post("/{id:uint}/points/deduct", memberPointsController.DeductPoints)
+			memberGroup.Post("/{id:uint}/level/calculate", memberPointsController.CalculateMemberLevel)
 		}
 
 		// 店铺管理路由
 		storeController := controllers.NewStoreController(db)
-		storeGroup := apiAuth.Group("/stores")
+		storeGroup := apiAuth.Party("/stores")
 		{
-			storeGroup.GET("", storeController.ListStores)
-			storeGroup.GET("/:id", storeController.GetStore)
-			storeGroup.POST("", middleware.RoleAuth("admin"), storeController.CreateStore)
-			storeGroup.PUT("/:id", middleware.RoleAuth("admin"), storeController.UpdateStore)
-			storeGroup.DELETE("/:id", middleware.RoleAuth("admin"), storeController.DeleteStore)
+			storeGroup.Get("", storeController.ListStores)
+			storeGroup.Get("/{id:uint}", storeController.GetStore)
+			storeGroup.Post("", middleware.RoleAuth("admin"), storeController.CreateStore)
+			storeGroup.Put("/{id:uint}", middleware.RoleAuth("admin"), storeController.UpdateStore)
+			storeGroup.Delete("/{id:uint}", middleware.RoleAuth("admin"), storeController.DeleteStore)
 		}
 
 		// 库存交易路由
 		inventoryTransactionController := controllers.NewInventoryTransactionController(db)
-		transactionGroup := apiAuth.Group("/inventory-transactions")
+		transactionGroup := apiAuth.Party("/inventory-transactions")
 		{
-			transactionGroup.GET("", inventoryTransactionController.ListTransactions)
-			transactionGroup.GET("/:id", inventoryTransactionController.GetTransaction)
-			transactionGroup.POST("", middleware.RoleAuth("admin", "manager", "staff"), inventoryTransactionController.CreateTransaction)
-			transactionGroup.GET("/store/:storeId", inventoryTransactionController.GetStoreTransactions)
-			transactionGroup.GET("/product/:productId", inventoryTransactionController.GetProductTransactions)
+			transactionGroup.Get("", inventoryTransactionController.ListTransactions)
+			transactionGroup.Get("/{id:uint}", inventoryTransactionController.GetTransaction)
+			transactionGroup.Post("", middleware.RoleAuth("admin", "manager", "staff"), inventoryTransactionController.CreateTransaction)
+			transactionGroup.Get("/store/{storeId:uint}", inventoryTransactionController.GetStoreTransactions)
+			transactionGroup.Get("/product/{productId:uint}", inventoryTransactionController.GetProductTransactions)
 		}
 
 		// 库存预警路由
 		inventoryAlertController := controllers.NewInventoryAlertController(db)
-		alertGroup := apiAuth.Group("/inventory-alerts")
+		alertGroup := apiAuth.Party("/inventory-alerts")
 		{
-			alertGroup.GET("", inventoryAlertController.ListAlerts)
-			alertGroup.GET("/:id", inventoryAlertController.GetAlert)
-			alertGroup.PUT("/:id/status", middleware.RoleAuth("admin", "manager"), inventoryAlertController.UpdateAlertStatus)
-			alertGroup.POST("/check", inventoryAlertController.CheckInventoryLevels)
+			alertGroup.Get("", inventoryAlertController.ListAlerts)
+			alertGroup.Get("/{id:uint}", inventoryAlertController.GetAlert)
+			alertGroup.Put("/{id:uint}/status", middleware.RoleAuth("admin", "manager"), inventoryAlertController.UpdateAlertStatus)
+			alertGroup.Post("/check", inventoryAlertController.CheckInventoryLevels)
 		}
 
 		// 库存阈值路由
 		inventoryThresholdController := controllers.NewInventoryThresholdController(db)
-		thresholdGroup := apiAuth.Group("/inventory-thresholds")
+		thresholdGroup := apiAuth.Party("/inventory-thresholds")
 		{
-			thresholdGroup.GET("", inventoryThresholdController.ListThresholds)
-			thresholdGroup.GET("/:id", inventoryThresholdController.GetThreshold)
-			thresholdGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.CreateThreshold)
-			thresholdGroup.PUT("/:id", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.UpdateThreshold)
-			thresholdGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.DeleteThreshold)
+			thresholdGroup.Get("", inventoryThresholdController.ListThresholds)
+			thresholdGroup.Get("/{id:uint}", inventoryThresholdController.GetThreshold)
+			thresholdGroup.Post("", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.CreateThreshold)
+			thresholdGroup.Put("/{id:uint}", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.UpdateThreshold)
+			thresholdGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), inventoryThresholdController.DeleteThreshold)
 		}
 
 		// 退换货管理路由
 		returnController := controllers.NewReturnController(services.NewReturnService(db))
-		returnGroup := apiAuth.Group("/returns")
+		returnGroup := apiAuth.Party("/returns")
 		{
-			returnGroup.POST("", returnController.CreateReturnOrder)                                                       // 创建退换货申请
-			returnGroup.GET("", returnController.GetReturnOrderList)                                                       // 获取退换货列表
-			returnGroup.GET("/:id", returnController.GetReturnOrderByID)                                                   // 获取单个退换货详情
-			returnGroup.PUT("/:id/status", returnController.UpdateReturnOrderStatus)                                       // 更新退换货状态 (通用)
-			returnGroup.POST("/:id/approve", middleware.RoleAuth("admin", "manager"), returnController.ApproveReturnOrder) // 审批通过
-			returnGroup.POST("/:id/reject", middleware.RoleAuth("admin", "manager"), returnController.RejectReturnOrder)
-			returnGroup.DELETE("/:id", middleware.RoleAuth("admin", "manager"), returnController.DeleteReturnOrder)
+			returnGroup.Post("", returnController.CreateReturnOrder)                                                             // 创建退换货申请
+			returnGroup.Get("", returnController.GetReturnOrderList)                                                             // 获取退换货列表
+			returnGroup.Get("/{id:uint}", returnController.GetReturnOrderByID)                                                   // 获取单个退换货详情
+			returnGroup.Put("/{id:uint}/status", returnController.UpdateReturnOrderStatus)                                       // 更新退换货状态 (通用)
+			returnGroup.Post("/{id:uint}/approve", middleware.RoleAuth("admin", "manager"), returnController.ApproveReturnOrder) // 审批通过
+			returnGroup.Post("/{id:uint}/reject", middleware.RoleAuth("admin", "manager"), returnController.RejectReturnOrder)
+			returnGroup.Delete("/{id:uint}", middleware.RoleAuth("admin", "manager"), returnController.DeleteReturnOrder)
 
 			// More specific status updates
-			returnGroup.POST("/:id/goods-received", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkGoodsReceived)
-			returnGroup.POST("/:id/exchange-shipped", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkExchangeShipped)
-			returnGroup.POST("/:id/process-refund", middleware.RoleAuth("admin", "manager"), returnController.ProcessRefund)
-			returnGroup.POST("/:id/complete", middleware.RoleAuth("admin", "manager"), returnController.CompleteReturnOrder)
+			returnGroup.Post("/{id:uint}/goods-received", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkGoodsReceived)
+			returnGroup.Post("/{id:uint}/exchange-shipped", middleware.RoleAuth("admin", "manager", "staff"), returnController.MarkExchangeShipped)
+			returnGroup.Post("/{id:uint}/process-refund", middleware.RoleAuth("admin", "manager"), returnController.ProcessRefund)
+			returnGroup.Post("/{id:uint}/complete", middleware.RoleAuth("admin", "manager"), returnController.CompleteReturnOrder)
 		}
 
 		// 文件上传路由
 		inventoryCheckController := controllers.NewInventoryCheckController(db)
-		checkGroup := apiAuth.Group("/inventory-checks")
+		checkGroup := apiAuth.Party("/inventory-checks")
 		{
-			checkGroup.GET("", inventoryCheckController.ListChecks)
-			checkGroup.GET("/:id", inventoryCheckController.GetCheck)
-			checkGroup.POST("", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CreateCheck)
-			checkGroup.PUT("/:id/start", middleware.RoleAuth("admin", "manager"), inventoryCheckController.StartCheck)
-			checkGroup.PUT("/:id/complete", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CompleteCheck)
-			checkGroup.PUT("/:id/cancel", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CancelCheck)
-			checkGroup.PUT("/:id/items/:itemId", middleware.RoleAuth("admin", "manager", "staff"), inventoryCheckController.UpdateCheckItem)
-			checkGroup.POST("/:id/adjustments", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CreateAdjustment)
-			checkGroup.PUT("/adjustments/:adjustmentId/approve", middleware.RoleAuth("admin", "manager"), inventoryCheckController.ApproveAdjustment)
+			checkGroup.Get("", inventoryCheckController.ListChecks)
+			checkGroup.Get("/{id:uint}", inventoryCheckController.GetCheck)
+			checkGroup.Post("", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CreateCheck)
+			checkGroup.Put("/{id:uint}/start", middleware.RoleAuth("admin", "manager"), inventoryCheckController.StartCheck)
+			checkGroup.Put("/{id:uint}/complete", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CompleteCheck)
+			checkGroup.Put("/{id:uint}/cancel", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CancelCheck)
+			checkGroup.Put("/{id:uint}/items/{itemId:uint}", middleware.RoleAuth("admin", "manager", "staff"), inventoryCheckController.UpdateCheckItem)
+			checkGroup.Post("/{id:uint}/adjustments", middleware.RoleAuth("admin", "manager"), inventoryCheckController.CreateAdjustment)
+			checkGroup.Put("/adjustments/{adjustmentId:uint}/approve", middleware.RoleAuth("admin", "manager"), inventoryCheckController.ApproveAdjustment)
 		}
 
 	}

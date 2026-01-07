@@ -4,17 +4,17 @@ import api from './api'
 export default {
   // 用户登录
   login(username, password, rememberMe = false) {
-    return api.post('/api/auth/login', { username, password, remember_me: rememberMe })
+    return api.post('/api/v1/auth/login', { username, password, remember_me: rememberMe })
   },
 
   // 用户注册
   register(userData) {
-    return api.post('/api/auth/register', userData)
+    return api.post('/api/v1/auth/register', userData)
   },
 
   // 获取当前用户信息
   getProfile() {
-    return api.get('/api/profile')
+    return api.get('/api/v1/profile')
   },
 
   // 获取并更新当前用户信息
@@ -39,12 +39,12 @@ export default {
 
   // 更新用户信息
   updateProfile(userData) {
-    return api.put('/api/profile', userData)
+    return api.put('/api/v1/profile', userData)
   },
 
   // 修改密码
   changePassword(oldPassword, newPassword) {
-    return api.put('/api/change-password', {
+    return api.put('/api/v1/change-password', {
       old_password: oldPassword,
       new_password: newPassword
     })
@@ -59,7 +59,7 @@ export default {
 
     console.log('发送刷新令牌请求:', { refresh_token: refreshToken, remember_me: rememberMe });
 
-    return api.post('/api/auth/refresh-token', {
+    return api.post('/api/v1/auth/refresh-token', {
       refresh_token: refreshToken,
       remember_me: rememberMe
     });
@@ -67,12 +67,12 @@ export default {
 
   // 忘记密码
   forgotPassword(email) {
-    return api.post('/api/auth/forgot-password', { email })
+    return api.post('/api/v1/auth/forgot-password', { email })
   },
 
   // 重置密码
   resetPassword(token, newPassword) {
-    return api.post('/api/auth/reset-password', {
+    return api.post('/api/v1/auth/reset-password', {
       token,
       new_password: newPassword
     })

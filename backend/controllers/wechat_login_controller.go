@@ -11,7 +11,7 @@ import (
 	"hd_psi/backend/services"
 	"hd_psi/backend/utils/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +31,7 @@ func NewWechatLoginController(db *gorm.DB) *WechatLoginController {
 
 // WechatLoginRequest 微信登录请求
 type WechatLoginRequest struct {
-	Code string `json:"code" binding:"required"`
+	Code string `json:"code"`
 }
 
 // WechatUserInfo 微信用户信息
@@ -59,9 +59,9 @@ type WechatAccessTokenResponse struct {
 }
 
 // Login 微信登录
-func (wc *WechatLoginController) Login(c *gin.Context) {
+func (wc *WechatLoginController) Login(c iris.Context) {
 	var req WechatLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ReadJSON(&req); err != nil {
 		response.BadRequest(c, "参数错误")
 		return
 	}
@@ -99,7 +99,7 @@ func (wc *WechatLoginController) Login(c *gin.Context) {
 	}
 
 	// 5. 返回登录结果
-	response.Success(c, gin.H{
+	response.Success(c, iris.Map{
 		"token":         token,
 		"refresh_token": refreshToken,
 		"user":          user,

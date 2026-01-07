@@ -6,58 +6,61 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 )
 
 // JWTAuth 创建JWT认证中间件
 // 用于验证请求中的JWT令牌，并将用户信息添加到请求上下文中
 // 返回：
-//   - gin.HandlerFunc: Gin中间件函数
-func JWTAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
+//   - iris.Handler: Iris中间件函数
+func JWTAuth() iris.Handler {
+	return func(ctx iris.Context) {
 		// 从请求头获取令牌
-		authHeader := c.GetHeader("Authorization")
+		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "未提供授权令牌"})
-			c.Abort()
+			ctx.StatusCode(http.StatusUnauthorized)
+			ctx.JSON(iris.Map{"error": "未提供授权令牌"})
+			ctx.StopExecution()
 			return
 		}
 
 		// 检查令牌格式
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "授权格式无效"})
-			c.Abort()
+			ctx.StatusCode(http.StatusUnauthorized)
+			ctx.JSON(iris.Map{"error": "授权格式无效"})
+			ctx.StopExecution()
 			return
 		}
 
 		// 解析令牌
 		claims, err := utils.ParseToken(parts[1])
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的令牌"})
-			c.Abort()
+			ctx.StatusCode(http.StatusUnauthorized)
+			ctx.JSON(iris.Map{"error": "无效的令牌"})
+			ctx.StopExecution()
 			return
 		}
 
 		// 将用户信息存储在上下文中
-		c.Set("userID", claims.UserID)
-		c.Set("username", claims.Username)
-		c.Set("role", claims.Role)
+		ctx.Values().Set("userID", claims.UserID)
+		ctx.Values().Set("username", claims.Username)
+		ctx.Values().Set("role", claims.Role)
 
-		c.Next()
+		ctx.Next()
 	}
 }
 
-// GetUserFromContext retrieves userID and username from Gin context
+// GetUserFromContext retrieves userID and username from Iris context
 // It's a helper function to be used by controllers after JWTAuth middleware has run.
-func GetUserFromContext(c *gin.Context) (uint, string, error) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
+func GetUserFromContext(ctx iris.Context) (uint, string, error) {
+	userIDVal := ctx.Values().Get("userID")
+	if userIDVal == nil {
 		return 0, "", errors.New("userID not found in context")
 	}
 
-	usernameVal, exists := c.Get("username")
-	if !exists {
+	usernameVal := ctx.Values().Get("username")
+	if usernameVal == nil {
 		return 0, "", errors.New("username not found in context")
 	}
 
@@ -80,14 +83,15 @@ func GetUserFromContext(c *gin.Context) (uint, string, error) {
 //   - roles: 允许访问的角色列表，可变参数
 //
 // 返回：
-//   - gin.HandlerFunc: Gin中间件函数
-func RoleAuth(roles ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+//   - iris.Handler: Iris中间件函数
+func RoleAuth(roles ...string) iris.Handler {
+	return func(ctx iris.Context) {
 		// 获取用户角色
-		role, exists := c.Get("role")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
-			c.Abort()
+		role := ctx.Values().Get("role")
+		if role == nil {
+			ctx.StatusCode(http.StatusUnauthorized)
+			ctx.JSON(iris.Map{"error": "未授权"})
+			ctx.StopExecution()
 			return
 		}
 
@@ -102,11 +106,12 @@ func RoleAuth(roles ...string) gin.HandlerFunc {
 		}
 
 		if !allowed {
-			c.JSON(http.StatusForbidden, gin.H{"error": "权限不足"})
-			c.Abort()
+			ctx.StatusCode(http.StatusForbidden)
+			ctx.JSON(iris.Map{"error": "权限不足"})
+			ctx.StopExecution()
 			return
 		}
 
-		c.Next()
+		ctx.Next()
 	}
 }

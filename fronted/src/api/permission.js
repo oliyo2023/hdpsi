@@ -6,7 +6,7 @@ import api from '@/services/api'
  */
 export function fetchRoles() {
   return api({
-    url: '/api/permissions/roles',
+    url: '/api/v1/permissions/roles',
     method: 'get'
   })
 }
@@ -19,7 +19,7 @@ export function fetchRoles() {
  */
 export function addRole(role, description) {
   return api({
-    url: '/api/permissions/roles',
+    url: '/api/v1/permissions/roles',
     method: 'post',
     data: {
       role,
@@ -36,7 +36,7 @@ export function addRole(role, description) {
 export function deleteRole(role) {
   // 使用特殊用户名 'role_delete' 来表示这是一个角色删除操作
   return api({
-    url: '/api/permissions/roles',
+    url: '/api/v1/permissions/roles',
     method: 'delete',
     data: {
       user: 'role_delete',
@@ -51,7 +51,7 @@ export function deleteRole(role) {
  */
 export function fetchPolicies() {
   return api({
-    url: '/api/permissions/policies',
+    url: '/api/v1/permissions/policies',
     method: 'get'
   })
 }
@@ -65,7 +65,7 @@ export function fetchPolicies() {
  */
 export function addPolicy(role, path, method) {
   return api({
-    url: '/api/permissions/policies',
+    url: '/api/v1/permissions/policies',
     method: 'post',
     data: {
       role,
@@ -84,7 +84,7 @@ export function addPolicy(role, path, method) {
  */
 export function removePolicy(role, path, method) {
   return api({
-    url: '/api/permissions/policies',
+    url: '/api/v1/permissions/policies',
     method: 'delete',
     data: {
       role,
@@ -101,7 +101,7 @@ export function removePolicy(role, path, method) {
  */
 export function getRolePermissions(role) {
   return api({
-    url: `/api/permissions/roles/${role}`,
+    url: `/api/v1/v1/permissions/roles/${role}`,
     method: 'get'
   })
 }
@@ -112,7 +112,7 @@ export function getRolePermissions(role) {
  */
 export function fetchUsers() {
   return api({
-    url: '/api/users',
+    url: '/api/v1/users',
     method: 'get'
   })
 }
@@ -124,7 +124,7 @@ export function fetchUsers() {
  */
 export function getUserRoles(username) {
   return api({
-    url: `/api/permissions/users/${username}/roles`,
+    url: `/api/v1/v1/permissions/users/${username}/roles`,
     method: 'get'
   })
 }
@@ -137,7 +137,7 @@ export function getUserRoles(username) {
  */
 export function addRoleForUser(username, role) {
   return api({
-    url: '/api/permissions/roles',
+    url: '/api/v1/permissions/roles',
     method: 'post',
     data: {
       user: username,
@@ -154,7 +154,7 @@ export function addRoleForUser(username, role) {
  */
 export function deleteRoleForUser(username, role) {
   return api({
-    url: '/api/permissions/roles',
+    url: '/api/v1/permissions/roles',
     method: 'delete',
     data: {
       user: username,
@@ -172,7 +172,7 @@ export function deleteRoleForUser(username, role) {
  */
 export function checkPermission(role, path, method) {
   return api({
-    url: '/api/permissions/check',
+    url: '/api/v1/permissions/check',
     method: 'post',
     data: {
       role,
@@ -189,7 +189,7 @@ export function checkPermission(role, path, method) {
  */
 export function fetchAuditLogs(params) {
   return api({
-    url: '/api/permissions/audit-logs',
+    url: '/api/v1/permissions/audit-logs',
     method: 'get',
     params
   })

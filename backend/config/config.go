@@ -23,9 +23,9 @@ type Config struct {
 
 // APIConfig API配置
 type APIConfig struct {
-	Version             string // API版本，如 v1
-	Prefix              string // API前缀，如 /api
-	EnableVersionPrefix bool   // 是否启用版本前缀，如 /api/v1
+	Version             string `yaml:"version"`               // API版本，如 v1
+	Prefix              string `yaml:"prefix"`                // API前缀，如 /api
+	EnableVersionPrefix bool   `yaml:"enable_version_prefix"` // 是否启用版本前缀，如 /api/v1
 }
 
 // WechatOfficialAccountConfig 微信公众号配置 (修改结构体名称和字段)
@@ -148,6 +148,9 @@ func InitConfig() {
 	if err := viper.Unmarshal(&AppConfig); err != nil {
 		log.Fatalf("解析配置文件失败: %v", err)
 	}
+
+	// 手动设置API配置
+	AppConfig.API.EnableVersionPrefix = viper.GetBool("api.enable_version_prefix")
 
 	// 确保数据库自动迁移设置被正确读取
 	AppConfig.Database.AutoMigrate = viper.GetBool("database.auto_migrate")

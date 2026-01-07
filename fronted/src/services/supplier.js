@@ -4,12 +4,12 @@ import api from './api'
 export default {
   // 获取供应商列表
   getSuppliers(params = {}) {
-    return api.get('/api/suppliers', { params })
+    return api.get('/api/v1/suppliers', { params })
   },
 
   // 获取单个供应商
   getSupplier(id) {
-    return api.get(`/api/suppliers/${id}`)
+    return api.get(`/api/v1/suppliers/${id}`)
   },
 
   // 创建供应商
@@ -33,7 +33,7 @@ export default {
     }
 
     console.log('发送到后端的供应商数据:', apiData)
-    return api.post('/api/suppliers', apiData)
+    return api.post('/api/v1/suppliers', apiData)
   },
 
   // 更新供应商
@@ -57,11 +57,11 @@ export default {
     }
 
     console.log('更新供应商数据:', apiData)
-    return api.put(`/api/suppliers/${id}`, apiData)
+    return api.put(`/api/v1/suppliers/${id}`, apiData)
   },
 
   // 删除供应商
   deleteSupplier(id) {
-    return api.delete(`/api/suppliers/${id}`)
+    return api.delete(`/api/v1/suppliers/${id}`)
   }
 }

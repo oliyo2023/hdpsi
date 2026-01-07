@@ -5,13 +5,13 @@ import { convertBackendFields, convertFrontendFields } from '../utils/fieldConve
 export default {
   // 获取商品列表
   async getProducts(params = {}) {
-    const response = await api.get('/api/products', { params })
+    const response = await api.get('/api/v1/products', { params })
     return convertBackendFields(response)
   },
 
   // 获取单个商品
   async getProduct(id) {
-    const response = await api.get(`/api/products/${id}`)
+    const response = await api.get(`/api/v1/products/${id}`)
     console.log('产品服务收到的原始响应:', response)
 
     // 后端返回的是包含product和variants的对象
@@ -27,7 +27,7 @@ export default {
 
   // 创建商品
   async createProduct(productData) {
-    const response = await api.post('/api/products', convertFrontendFields(productData))
+    const response = await api.post('/api/v1/products', convertFrontendFields(productData))
     return convertBackendFields(response)
   },
 
@@ -38,25 +38,25 @@ export default {
     delete cleanData.createdAt;
     delete cleanData.updatedAt;
 
-    const response = await api.put(`/api/products/${id}`, convertFrontendFields(cleanData))
+    const response = await api.put(`/api/v1/products/${id}`, convertFrontendFields(cleanData))
     return convertBackendFields(response)
   },
 
   // 删除商品
   async deleteProduct(id) {
-    const response = await api.delete(`/api/products/${id}`)
+    const response = await api.delete(`/api/v1/products/${id}`)
     return convertBackendFields(response)
   },
 
   // 获取已删除的商品列表
   async getDeletedProducts(params = {}) {
-    const response = await api.get('/api/products/deleted/list', { params })
+    const response = await api.get('/api/v1/products/deleted/list', { params })
     return convertBackendFields(response)
   },
 
   // 恢复已删除的商品
   async restoreProduct(id) {
-    const response = await api.post(`/api/products/deleted/${id}/restore`)
+    const response = await api.post(`/api/v1/products/deleted/${id}/restore`)
     return convertBackendFields(response)
   }
 }

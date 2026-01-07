@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -18,13 +18,13 @@ func NewInventoryAlertController(db *gorm.DB) *InventoryAlertController {
 }
 
 // ListAlerts 获取所有预警
-func (iac *InventoryAlertController) ListAlerts(c *gin.Context) {
+func (iac *InventoryAlertController) ListAlerts(c iris.Context) {
 	var alerts []models.InventoryAlert
 
 	// 获取查询参数
-	status := c.Query("status")
-	storeID := c.Query("store_id")
-	alertType := c.Query("alert_type")
+	status := c.URLParam("status")
+	storeID := c.URLParam("store_id")
+	alertType := c.URLParam("alert_type")
 
 	// 构建查询
 	query := iac.db.Model(&models.InventoryAlert{})
@@ -43,40 +43,46 @@ func (iac *InventoryAlertController) ListAlerts(c *gin.Context) {
 
 	// 执行查询
 	if err := query.Find(&alerts).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, alerts)
+	c.StatusCode(http.StatusOK)
+	c.JSON(alerts)
 }
 
 // GetAlert 获取单个预警
-func (iac *InventoryAlertController) GetAlert(c *gin.Context) {
-	id := c.Param("id")
+func (iac *InventoryAlertController) GetAlert(c iris.Context) {
+	id := c.Params().Get("id")
 	var alert models.InventoryAlert
 	if err := iac.db.First(&alert, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Alert not found"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "Alert not found"})
 		return
 	}
-	c.JSON(http.StatusOK, alert)
+	c.StatusCode(http.StatusOK)
+	c.JSON(alert)
 }
 
 // UpdateAlertStatus 更新预警状态
-func (iac *InventoryAlertController) UpdateAlertStatus(c *gin.Context) {
-	id := c.Param("id")
+func (iac *InventoryAlertController) UpdateAlertStatus(c iris.Context) {
+	id := c.Params().Get("id")
 	var alert models.InventoryAlert
 	if err := iac.db.First(&alert, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Alert not found"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "Alert not found"})
 		return
 	}
 
 	// 绑定请求数据
 	var input struct {
-		Status string `json:"status" binding:"required"`
+		Status string `json:"status"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -90,16 +96,18 @@ func (iac *InventoryAlertController) UpdateAlertStatus(c *gin.Context) {
 	}
 
 	if err := iac.db.Save(&alert).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, alert)
+	c.StatusCode(http.StatusOK)
+	c.JSON(alert)
 }
 
 // CheckInventoryLevels 检查库存水平并生成预警
 // 这个方法可以通过定时任务调用，或者在库存变动后调用
-func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
+func (iac *InventoryAlertController) CheckInventoryLevels(c iris.Context) {
 	// 获取所有库存记录
 	var inventories []struct {
 		StoreID   uint
@@ -115,7 +123,8 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 		Joins("JOIN products ON product_variants.product_id = products.id").
 		Joins("LEFT JOIN dictionary_items ON products.category_id = dictionary_items.id").
 		Scan(&inventories).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -213,12 +222,14 @@ func (iac *InventoryAlertController) CheckInventoryLevels(c *gin.Context) {
 	// 批量创建新预警
 	if len(newAlerts) > 0 {
 		if err := iac.db.Create(&newAlerts).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": err.Error()})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{
 		"message":    "库存检查完成",
 		"new_alerts": len(newAlerts),
 	})

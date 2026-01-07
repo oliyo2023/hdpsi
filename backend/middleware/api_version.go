@@ -5,17 +5,17 @@ import (
 	"hd_psi/backend/utils/logger"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 )
 
 // APIVersionMiddleware 处理API版本的中间件
-func APIVersionMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func APIVersionMiddleware() iris.Handler {
+	return func(ctx iris.Context) {
 		// 获取当前API版本
 		currentVersion := config.GetAPIVersion()
 
 		// 从请求路径中提取版本信息
-		path := c.Request.URL.Path
+		path := ctx.Path()
 
 		// 检查路径是否包含版本信息
 		if strings.HasPrefix(path, config.AppConfig.API.Prefix) {
@@ -23,7 +23,7 @@ func APIVersionMiddleware() gin.HandlerFunc {
 			versionPath := strings.TrimPrefix(path, config.AppConfig.API.Prefix)
 			if versionPath == "" || versionPath == "/" {
 				// 如果路径只有前缀，直接通过
-				c.Next()
+				ctx.Next()
 				return
 			}
 
@@ -36,21 +36,21 @@ func APIVersionMiddleware() gin.HandlerFunc {
 				if isValidVersion(requestedVersion) {
 					// 如果请求的版本与当前版本不同，记录警告
 					if requestedVersion != currentVersion {
-						log := logger.WithContext(c)
+						log := logger.WithContext(ctx)
 						log.Warn("使用非当前版本的API",
 							logger.F("requested_version", requestedVersion),
 							logger.F("current_version", currentVersion))
 					}
 
 					// 继续处理请求
-					c.Next()
+					ctx.Next()
 					return
 				}
 			}
 		}
 
 		// 如果没有指定版本或版本无效，使用当前版本
-		c.Next()
+		ctx.Next()
 	}
 }
 
@@ -61,21 +61,21 @@ func isValidVersion(version string) bool {
 }
 
 // APIVersionHeaderMiddleware 添加API版本响应头的中间件
-func APIVersionHeaderMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func APIVersionHeaderMiddleware() iris.Handler {
+	return func(ctx iris.Context) {
 		// 添加API版本响应头
-		c.Header("X-API-Version", config.GetAPIVersion())
+		ctx.Header("X-API-Version", config.GetAPIVersion())
 
 		// 继续处理请求
-		c.Next()
+		ctx.Next()
 	}
 }
 
 // APIDeprecationMiddleware 处理API弃用的中间件
-func APIDeprecationMiddleware(deprecatedVersions []string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func APIDeprecationMiddleware(deprecatedVersions []string) iris.Handler {
+	return func(ctx iris.Context) {
 		// 从请求路径中提取版本信息
-		path := c.Request.URL.Path
+		path := ctx.Path()
 
 		// 检查路径是否包含版本信息
 		if strings.HasPrefix(path, config.AppConfig.API.Prefix) {
@@ -91,14 +91,14 @@ func APIDeprecationMiddleware(deprecatedVersions []string) gin.HandlerFunc {
 					for _, deprecatedVersion := range deprecatedVersions {
 						if requestedVersion == deprecatedVersion {
 							// 添加弃用警告响应头
-							c.Header("X-API-Deprecated", "true")
-							c.Header("X-API-Deprecated-Warning", "This API version is deprecated and will be removed in the future. Please upgrade to the latest version.")
+							ctx.Header("X-API-Deprecated", "true")
+							ctx.Header("X-API-Deprecated-Warning", "This API version is deprecated and will be removed in future. Please upgrade to the latest version.")
 
 							// 记录警告日志
-							log := logger.WithContext(c)
+							log := logger.WithContext(ctx)
 							log.Warn("使用已弃用的API版本",
 								logger.F("deprecated_version", requestedVersion),
-								logger.F("path", c.Request.URL.Path))
+								logger.F("path", ctx.Path()))
 
 							break
 						}
@@ -108,6 +108,6 @@ func APIDeprecationMiddleware(deprecatedVersions []string) gin.HandlerFunc {
 		}
 
 		// 继续处理请求
-		c.Next()
+		ctx.Next()
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"hd_psi/backend/models"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -16,29 +16,34 @@ func NewInventoryTransactionController(db *gorm.DB) *InventoryTransactionControl
 	return &InventoryTransactionController{db: db}
 }
 
-func (itc *InventoryTransactionController) ListTransactions(c *gin.Context) {
+func (itc *InventoryTransactionController) ListTransactions(c iris.Context) {
 	var transactions []models.InventoryTransaction
 	if err := itc.db.Find(&transactions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, transactions)
+	c.StatusCode(http.StatusOK)
+	c.JSON(transactions)
 }
 
-func (itc *InventoryTransactionController) GetTransaction(c *gin.Context) {
-	id := c.Param("id")
+func (itc *InventoryTransactionController) GetTransaction(c iris.Context) {
+	id := c.Params().Get("id")
 	var transaction models.InventoryTransaction
 	if err := itc.db.First(&transaction, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "Transaction not found"})
 		return
 	}
-	c.JSON(http.StatusOK, transaction)
+	c.StatusCode(http.StatusOK)
+	c.JSON(transaction)
 }
 
-func (itc *InventoryTransactionController) CreateTransaction(c *gin.Context) {
+func (itc *InventoryTransactionController) CreateTransaction(c iris.Context) {
 	var transaction models.InventoryTransaction
-	if err := c.ShouldBindJSON(&transaction); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&transaction); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -48,7 +53,8 @@ func (itc *InventoryTransactionController) CreateTransaction(c *gin.Context) {
 	// 创建库存交易记录
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -66,12 +72,14 @@ func (itc *InventoryTransactionController) CreateTransaction(c *gin.Context) {
 			}
 			if err := tx.Create(&newInventory).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory record: " + err.Error()})
+				c.StatusCode(http.StatusInternalServerError)
+				c.JSON(iris.Map{"error": "Failed to create inventory record: " + err.Error()})
 				return
 			}
 		} else {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find inventory record: " + result.Error.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "Failed to find inventory record: " + result.Error.Error()})
 			return
 		}
 	} else {
@@ -79,38 +87,45 @@ func (itc *InventoryTransactionController) CreateTransaction(c *gin.Context) {
 		inventory.Quantity += transaction.Quantity
 		if err := tx.Save(&inventory).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "Failed to update inventory: " + err.Error()})
 			return
 		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "Failed to commit transaction: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, transaction)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(transaction)
 }
 
 // 获取指定店铺的库存交易记录
-func (itc *InventoryTransactionController) GetStoreTransactions(c *gin.Context) {
-	storeID := c.Param("storeId")
+func (itc *InventoryTransactionController) GetStoreTransactions(c iris.Context) {
+	storeID := c.Params().Get("storeId")
 	var transactions []models.InventoryTransaction
 	if err := itc.db.Where("store_id = ?", storeID).Find(&transactions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, transactions)
+	c.StatusCode(http.StatusOK)
+	c.JSON(transactions)
 }
 
 // 获取指定产品的库存交易记录
-func (itc *InventoryTransactionController) GetProductTransactions(c *gin.Context) {
-	productID := c.Param("productId")
+func (itc *InventoryTransactionController) GetProductTransactions(c iris.Context) {
+	productID := c.Params().Get("productId")
 	var transactions []models.InventoryTransaction
 	if err := itc.db.Where("product_id = ?", productID).Find(&transactions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, transactions)
+	c.StatusCode(http.StatusOK)
+	c.JSON(transactions)
 }

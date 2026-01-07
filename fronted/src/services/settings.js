@@ -15,7 +15,7 @@ const settingsService = {
         params.group = group
       }
 
-      return await api.get('/api/settings', { params })
+      return await api.get('/api/v1/settings', { params })
     } catch (error) {
       console.error('获取系统设置失败:', error)
       throw error
@@ -30,7 +30,7 @@ const settingsService = {
    */
   async updateSettings(group, settings) {
     try {
-      return await api.put('/api/settings', { group, settings })
+      return await api.put('/api/v1/settings', { group, settings })
     } catch (error) {
       console.error('更新系统设置失败:', error)
       throw error
@@ -43,7 +43,7 @@ const settingsService = {
    */
   async getUserTheme() {
     try {
-      const response = await api.get('/api/settings/theme')
+      const response = await api.get('/api/v1/settings/theme')
       return response.theme
     } catch (error) {
       console.error('获取用户主题设置失败:', error)
@@ -58,7 +58,7 @@ const settingsService = {
    */
   async updateUserTheme(theme) {
     try {
-      return await api.put('/api/settings/theme', { theme })
+      return await api.put('/api/v1/settings/theme', { theme })
     } catch (error) {
       console.error('更新用户主题设置失败:', error)
       throw error

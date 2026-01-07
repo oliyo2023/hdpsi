@@ -6,19 +6,19 @@ import (
 	"hd_psi/backend/utils/response"
 	"runtime/debug"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 )
 
 // ErrorHandlerMiddleware 创建错误处理中间件
 // 捕获请求处理过程中的panic，并将其转换为适当的HTTP响应
 // 返回：
-//   - gin.HandlerFunc: Gin中间件函数
-func ErrorHandlerMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+//   - iris.Handler: Iris中间件函数
+func ErrorHandlerMiddleware() iris.Handler {
+	return func(ctx iris.Context) {
 		defer func() {
 			if r := recover(); r != nil {
 				// 获取请求ID
-				requestID, _ := c.Get("request_id")
+				requestID := ctx.Values().GetString("request_id")
 
 				// 获取堆栈跟踪
 				stack := string(debug.Stack())
@@ -35,12 +35,12 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 				}
 
 				// 添加请求ID
-				if requestID != nil {
-					err.WithRequestID(requestID.(string))
+				if requestID != "" {
+					err.WithRequestID(requestID)
 				}
 
 				// 记录错误日志
-				log := logger.WithContext(c).WithFields(
+				log := logger.WithContext(ctx).WithFields(
 					logger.F("error", err.Error()),
 					logger.F("stack", stack),
 				)
@@ -53,45 +53,45 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 				}
 
 				// 返回错误响应
-				response.FromError(c, err)
-				c.Abort()
+				response.FromError(ctx, err)
+				ctx.StopExecution()
 			}
 		}()
 
-		c.Next()
+		ctx.Next()
 	}
 }
 
 // ValidationErrorMiddleware 创建验证错误处理中间件
 // 处理请求参数验证错误，将其转换为统一的错误响应格式
 // 返回：
-//   - gin.HandlerFunc: Gin中间件函数
-func ValidationErrorMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
+//   - iris.Handler: Iris中间件函数
+func ValidationErrorMiddleware() iris.Handler {
+	return func(ctx iris.Context) {
+		ctx.Next()
 
 		// 检查是否有验证错误
-		if len(c.Errors) > 0 {
+		if ctx.GetErr() != nil {
 			// 获取请求ID
-			requestID, _ := c.Get("request_id")
+			requestID := ctx.Values().GetString("request_id")
 
 			// 创建错误对象
 			err := errors.New(errors.ErrInvalidInput)
-			if c.Errors.Last() != nil {
-				err.WithDetails(c.Errors.Last().Error())
+			if ctx.GetErr() != nil {
+				err.WithDetails(ctx.GetErr().Error())
 			}
 
 			// 添加请求ID
-			if requestID != nil {
-				err.WithRequestID(requestID.(string))
+			if requestID != "" {
+				err.WithRequestID(requestID)
 			}
 
 			// 记录错误日志
-			logger.WithContext(c).WithError(err).Warn("请求参数验证失败")
+			logger.WithContext(ctx).WithError(err).Warn("请求参数验证失败")
 
 			// 返回错误响应
-			response.FromError(c, err)
-			c.Abort()
+			response.FromError(ctx, err)
+			ctx.StopExecution()
 		}
 	}
 }
@@ -99,45 +99,45 @@ func ValidationErrorMiddleware() gin.HandlerFunc {
 // NotFoundHandler 处理404错误
 // 当请求的路由不存在时调用
 // 参数：
-//   - c: Gin上下文对象
-func NotFoundHandler(c *gin.Context) {
+//   - ctx: Iris上下文对象
+func NotFoundHandler(ctx iris.Context) {
 	// 获取请求ID
-	requestID, exists := c.Get("request_id")
-	if !exists {
+	requestID := ctx.Values().GetString("request_id")
+	if requestID == "" {
 		requestID = "unknown"
 	}
 
 	// 创建错误对象
 	err := errors.New(errors.ErrNotFound).
 		WithDetails("请求的资源不存在").
-		WithRequestID(requestID.(string))
+		WithRequestID(requestID)
 
 	// 记录错误日志
-	logger.WithContext(c).WithError(err).Warn("请求的资源不存在")
+	logger.WithContext(ctx).WithError(err).Warn("请求的资源不存在")
 
 	// 返回错误响应
-	response.NotFound(c, "请求的URL或资源不存在")
+	response.NotFound(ctx, "请求的URL或资源不存在")
 }
 
 // MethodNotAllowedHandler 处理405错误
 // 当请求的HTTP方法不被允许时调用
 // 参数：
-//   - c: Gin上下文对象
-func MethodNotAllowedHandler(c *gin.Context) {
+//   - ctx: Iris上下文对象
+func MethodNotAllowedHandler(ctx iris.Context) {
 	// 获取请求ID
-	requestID, exists := c.Get("request_id")
-	if !exists {
+	requestID := ctx.Values().GetString("request_id")
+	if requestID == "" {
 		requestID = "unknown"
 	}
 
 	// 创建错误对象
 	err := errors.New(errors.ErrInvalidOperation).
 		WithDetails("不支持的HTTP方法").
-		WithRequestID(requestID.(string))
+		WithRequestID(requestID)
 
 	// 记录错误日志
-	logger.WithContext(c).WithError(err).Warn("不支持的HTTP方法")
+	logger.WithContext(ctx).WithError(err).Warn("不支持的HTTP方法")
 
 	// 返回错误响应
-	response.MethodNotAllowed(c, "不支持的HTTP方法")
+	response.MethodNotAllowed(ctx, "不支持的HTTP方法")
 }

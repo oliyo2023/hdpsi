@@ -3,10 +3,9 @@ package controllers
 import (
 	"fmt"
 	"hd_psi/backend/models"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -19,13 +18,13 @@ func NewInventoryCheckController(db *gorm.DB) *InventoryCheckController {
 }
 
 // ListChecks 获取盘点单列表
-func (icc *InventoryCheckController) ListChecks(c *gin.Context) {
+func (icc *InventoryCheckController) ListChecks(c iris.Context) {
 	var checks []models.InventoryCheck
 
 	// 获取查询参数
-	storeID := c.Query("store_id")
-	status := c.Query("status")
-	checkType := c.Query("check_type")
+	storeID := c.URLParam("store_id")
+	status := c.URLParam("status")
+	checkType := c.URLParam("check_type")
 
 	// 构建查询
 	query := icc.db.Model(&models.InventoryCheck{})
@@ -44,37 +43,37 @@ func (icc *InventoryCheckController) ListChecks(c *gin.Context) {
 
 	// 执行查询
 	if err := query.Order("created_at DESC").Find(&checks).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, checks)
+	c.JSON(checks)
 }
 
 // GetCheck 获取盘点单详情
-func (icc *InventoryCheckController) GetCheck(c *gin.Context) {
-	id := c.Param("id")
+func (icc *InventoryCheckController) GetCheck(c iris.Context) {
+	id := c.Params().Get("id")
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 获取盘点明细
 	var items []models.InventoryCheckItem
 	if err := icc.db.Where("check_id = ?", check.ID).Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(map[string]interface{}{
 		"check": check,
 		"items": items,
 	})
 }
 
 // CreateCheck 创建盘点单
-func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
+func (icc *InventoryCheckController) CreateCheck(c iris.Context) {
 	var input struct {
 		StoreID     uint      `json:"store_id" binding:"required"`
 		CheckType   string    `json:"check_type" binding:"required"`
@@ -84,8 +83,8 @@ func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
 		ProductIDs  []uint    `json:"product_ids"` // 抽盘时指定的商品ID列表
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
@@ -111,7 +110,7 @@ func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
 
 	if err := tx.Create(&check).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory check: " + err.Error()})
+		c.JSON(map[string]interface{}{"error": "Failed to create inventory check: " + err.Error()})
 		return
 	}
 
@@ -131,7 +130,7 @@ func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
 			Where("store_id = ? AND quantity > 0", check.StoreID).
 			Scan(&inventories).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get inventory data: " + err.Error()})
+			c.JSON(map[string]interface{}{"error": "Failed to get inventory data: " + err.Error()})
 			return
 		}
 
@@ -158,7 +157,7 @@ func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
 				})
 			} else if result.Error != gorm.ErrRecordNotFound {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get inventory data: " + result.Error.Error()})
+				c.JSON(map[string]interface{}{"error": "Failed to get inventory data: " + result.Error.Error()})
 				return
 			}
 		}
@@ -168,35 +167,35 @@ func (icc *InventoryCheckController) CreateCheck(c *gin.Context) {
 	if len(items) > 0 {
 		if err := tx.Create(&items).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory check items: " + err.Error()})
+			c.JSON(map[string]interface{}{"error": "Failed to create inventory check items: " + err.Error()})
 			return
 		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction: " + err.Error()})
+		c.JSON(map[string]interface{}{"error": "Failed to commit transaction: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(map[string]interface{}{
 		"check":       check,
 		"items_count": len(items),
 	})
 }
 
 // StartCheck 开始盘点
-func (icc *InventoryCheckController) StartCheck(c *gin.Context) {
-	id := c.Param("id")
+func (icc *InventoryCheckController) StartCheck(c iris.Context) {
+	id := c.Params().Get("id")
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 检查状态
 	if check.Status != models.Planned {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only planned inventory checks can be started"})
+		c.JSON(map[string]interface{}{"error": "Only planned inventory checks can be started"})
 		return
 	}
 
@@ -206,35 +205,35 @@ func (icc *InventoryCheckController) StartCheck(c *gin.Context) {
 	check.StartTime = &now
 
 	if err := icc.db.Save(&check).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, check)
+	c.JSON(check)
 }
 
 // UpdateCheckItem 更新盘点明细
-func (icc *InventoryCheckController) UpdateCheckItem(c *gin.Context) {
-	checkID := c.Param("id")
-	itemID := c.Param("itemId")
+func (icc *InventoryCheckController) UpdateCheckItem(c iris.Context) {
+	checkID := c.Params().Get("id")
+	itemID := c.Params().Get("itemId")
 
 	// 验证盘点单存在
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, checkID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 检查状态
 	if check.Status != models.InProcess {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only in-process inventory checks can be updated"})
+		c.JSON(map[string]interface{}{"error": "Only in-process inventory checks can be updated"})
 		return
 	}
 
 	// 验证盘点明细存在
 	var item models.InventoryCheckItem
 	if err := icc.db.Where("id = ? AND check_id = ?", itemID, checkID).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check item not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check item not found"})
 		return
 	}
 
@@ -244,8 +243,8 @@ func (icc *InventoryCheckController) UpdateCheckItem(c *gin.Context) {
 		Note           string `json:"note"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
@@ -256,25 +255,25 @@ func (icc *InventoryCheckController) UpdateCheckItem(c *gin.Context) {
 	item.Status = "checked"
 
 	if err := icc.db.Save(&item).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, item)
+	c.JSON(item)
 }
 
 // CompleteCheck 完成盘点
-func (icc *InventoryCheckController) CompleteCheck(c *gin.Context) {
-	id := c.Param("id")
+func (icc *InventoryCheckController) CompleteCheck(c iris.Context) {
+	id := c.Params().Get("id")
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 检查状态
 	if check.Status != models.InProcess {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only in-process inventory checks can be completed"})
+		c.JSON(map[string]interface{}{"error": "Only in-process inventory checks can be completed"})
 		return
 	}
 
@@ -283,12 +282,12 @@ func (icc *InventoryCheckController) CompleteCheck(c *gin.Context) {
 	if err := icc.db.Model(&models.InventoryCheckItem{}).
 		Where("check_id = ? AND status = 'pending'", check.ID).
 		Count(&pendingCount).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	if pendingCount > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot complete inventory check with pending items"})
+		c.JSON(map[string]interface{}{"error": "Cannot complete inventory check with pending items"})
 		return
 	}
 
@@ -302,31 +301,31 @@ func (icc *InventoryCheckController) CompleteCheck(c *gin.Context) {
 
 	if err := tx.Save(&check).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction: " + err.Error()})
+		c.JSON(map[string]interface{}{"error": "Failed to commit transaction: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, check)
+	c.JSON(check)
 }
 
 // CancelCheck 取消盘点
-func (icc *InventoryCheckController) CancelCheck(c *gin.Context) {
-	id := c.Param("id")
+func (icc *InventoryCheckController) CancelCheck(c iris.Context) {
+	id := c.Params().Get("id")
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 检查状态
 	if check.Status == models.Completed {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Completed inventory checks cannot be cancelled"})
+		c.JSON(map[string]interface{}{"error": "Completed inventory checks cannot be cancelled"})
 		return
 	}
 
@@ -334,27 +333,27 @@ func (icc *InventoryCheckController) CancelCheck(c *gin.Context) {
 	check.Status = models.Cancelled
 
 	if err := icc.db.Save(&check).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, check)
+	c.JSON(check)
 }
 
 // CreateAdjustment 创建库存调整
-func (icc *InventoryCheckController) CreateAdjustment(c *gin.Context) {
-	checkID := c.Param("id")
+func (icc *InventoryCheckController) CreateAdjustment(c iris.Context) {
+	checkID := c.Params().Get("id")
 
 	// 验证盘点单存在
 	var check models.InventoryCheck
 	if err := icc.db.First(&check, checkID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check not found"})
 		return
 	}
 
 	// 检查状态
 	if check.Status != models.Completed {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only completed inventory checks can have adjustments"})
+		c.JSON(map[string]interface{}{"error": "Only completed inventory checks can have adjustments"})
 		return
 	}
 
@@ -365,15 +364,15 @@ func (icc *InventoryCheckController) CreateAdjustment(c *gin.Context) {
 		Reason         string `json:"reason" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	// 验证盘点明细存在
 	var item models.InventoryCheckItem
 	if err := icc.db.Where("id = ? AND check_id = ?", input.CheckItemID, checkID).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory check item not found"})
+		c.JSON(map[string]interface{}{"error": "Inventory check item not found"})
 		return
 	}
 
@@ -388,27 +387,27 @@ func (icc *InventoryCheckController) CreateAdjustment(c *gin.Context) {
 	}
 
 	if err := icc.db.Create(&adjustment).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, adjustment)
+	c.JSON(adjustment)
 }
 
 // ApproveAdjustment 审批库存调整
-func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
-	adjustmentID := c.Param("adjustmentId")
+func (icc *InventoryCheckController) ApproveAdjustment(c iris.Context) {
+	adjustmentID := c.Params().Get("adjustmentId")
 
 	// 验证调整记录存在
 	var adjustment models.InventoryCheckAdjustment
 	if err := icc.db.First(&adjustment, adjustmentID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Adjustment not found"})
+		c.JSON(map[string]interface{}{"error": "Adjustment not found"})
 		return
 	}
 
 	// 检查状态
 	if adjustment.ApprovalStatus != "pending" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only pending adjustments can be approved"})
+		c.JSON(map[string]interface{}{"error": "Only pending adjustments can be approved"})
 		return
 	}
 
@@ -419,8 +418,8 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 		ApprovalNote   string `json:"approval_note"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
@@ -436,7 +435,7 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 
 	if err := tx.Save(&adjustment).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
@@ -446,7 +445,7 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 		var check models.InventoryCheck
 		if err := tx.First(&check, adjustment.CheckID).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get inventory check: " + err.Error()})
+			c.JSON(map[string]interface{}{"error": "Failed to get inventory check: " + err.Error()})
 			return
 		}
 
@@ -465,17 +464,17 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 					}
 					if err := tx.Create(&newInventory).Error; err != nil {
 						tx.Rollback()
-						c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory: " + err.Error()})
+						c.JSON(map[string]interface{}{"error": "Failed to create inventory: " + err.Error()})
 						return
 					}
 				} else {
 					tx.Rollback()
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot adjust non-existent inventory"})
+					c.JSON(map[string]interface{}{"error": "Cannot adjust non-existent inventory"})
 					return
 				}
 			} else {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get inventory: " + result.Error.Error()})
+				c.JSON(map[string]interface{}{"error": "Failed to get inventory: " + result.Error.Error()})
 				return
 			}
 		} else {
@@ -483,13 +482,13 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 			inventory.Quantity += adjustment.AdjustQuantity
 			if inventory.Quantity < 0 {
 				tx.Rollback()
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Adjustment would result in negative inventory"})
+				c.JSON(map[string]interface{}{"error": "Adjustment would result in negative inventory"})
 				return
 			}
 
 			if err := tx.Save(&inventory).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory: " + err.Error()})
+				c.JSON(map[string]interface{}{"error": "Failed to update inventory: " + err.Error()})
 				return
 			}
 		}
@@ -508,16 +507,16 @@ func (icc *InventoryCheckController) ApproveAdjustment(c *gin.Context) {
 
 		if err := tx.Create(&transaction).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create transaction: " + err.Error()})
+			c.JSON(map[string]interface{}{"error": "Failed to create transaction: " + err.Error()})
 			return
 		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction: " + err.Error()})
+		c.JSON(map[string]interface{}{"error": "Failed to commit transaction: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, adjustment)
+	c.JSON(adjustment)
 }

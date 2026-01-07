@@ -11,7 +11,7 @@ export default {
    */
   async getProductImages(productId) {
     try {
-      const response = await api.get(`/api/v1/products/${productId}/images`)
+      const response = await api.get(`/api/v1/v1/products/${productId}/images`)
       return response || []
     } catch (error) {
       console.error('获取商品图片失败:', error)
@@ -33,7 +33,7 @@ export default {
       formData.append('sort', sort)
 
       const response = await api.post(
-        `/api/v1/products/${productId}/images`,
+        `/api/v1/v1/products/${productId}/images`,
         formData,
         {
           headers: {
@@ -62,7 +62,7 @@ export default {
       })
 
       const response = await api.post(
-        `/api/v1/products/${productId}/images/batch`,
+        `/api/v1/v1/products/${productId}/images/batch`,
         formData,
         {
           headers: {
@@ -87,7 +87,7 @@ export default {
   async updateImageSort(productId, imageId, sort) {
     try {
       const response = await api.put(
-        `/api/v1/products/${productId}/images/${imageId}/sort`,
+        `/api/v1/v1/products/${productId}/images/${imageId}/sort`,
         { sort }
       )
       return response
@@ -106,7 +106,7 @@ export default {
   async deleteProductImage(productId, imageId) {
     try {
       const response = await api.delete(
-        `/api/v1/products/${productId}/images/${imageId}`
+        `/api/v1/v1/products/${productId}/images/${imageId}`
       )
       return response
     } catch (error) {

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -37,16 +37,24 @@ func NewInventoryController(db *gorm.DB) *InventoryController {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /inventory [get]
 // @Security BearerAuth
-func (ic *InventoryController) ListInventories(c *gin.Context) {
+func (ic *InventoryController) ListInventories(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("获取库存列表")
 
 	// 获取查询参数
-	productVariantID := c.Query("product_variant_id")
-	storeID := c.Query("store_id")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	productVariantID := c.URLParam("product_variant_id")
+	storeID := c.URLParam("store_id")
+	pageStr := c.URLParam("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	pageSizeStr := c.URLParam("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "10"
+	}
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
 
 	// 构建查询
 	query := ic.db.Model(&models.Inventory{})
@@ -63,11 +71,12 @@ func (ic *InventoryController) ListInventories(c *gin.Context) {
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		log.Error("获取库存总数失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseQuery).
-			WithDetails("获取库存总数失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"code":    errors.CodeDatabaseQuery,
+			"message": "获取库存总数失败",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -76,11 +85,12 @@ func (ic *InventoryController) ListInventories(c *gin.Context) {
 	var inventories []models.Inventory
 	if err := query.Preload("ProductVariant").Preload("ProductVariant.Product").Preload("Store").Offset(offset).Limit(pageSize).Find(&inventories).Error; err != nil {
 		log.Error("获取库存列表失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseQuery).
-			WithDetails("获取库存列表失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"code":    errors.CodeDatabaseQuery,
+			"message": "获取库存列表失败",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -88,7 +98,8 @@ func (ic *InventoryController) ListInventories(c *gin.Context) {
 		logger.F("total", total),
 		logger.F("count", len(inventories)))
 
-	c.JSON(http.StatusOK, gin.H{
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{
 		"items":    inventories,
 		"total":    total,
 		"page":     page,
@@ -109,21 +120,23 @@ func (ic *InventoryController) ListInventories(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /inventory/{id} [get]
 // @Security BearerAuth
-func (ic *InventoryController) GetInventory(c *gin.Context) {
+func (ic *InventoryController) GetInventory(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	log.Info("获取库存详情", logger.F("inventory_id", id))
 
 	var inventory models.Inventory
 	if err := ic.db.Preload("ProductVariant").Preload("ProductVariant.Product").Preload("Store").First(&inventory, id).Error; err != nil {
 		log.Warn("库存不存在", logger.F("inventory_id", id), logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrNotFound).
-			WithDetails("库存不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		// For Iris, we can return an error response directly
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{
+			"code":    errors.CodeNotFound,
+			"message": "库存不存在或已被删除",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -133,7 +146,8 @@ func (ic *InventoryController) GetInventory(c *gin.Context) {
 		logger.F("store_id", inventory.StoreID),
 		logger.F("quantity", inventory.Quantity))
 
-	c.JSON(http.StatusOK, inventory)
+	c.StatusCode(http.StatusOK)
+	c.JSON(inventory)
 }
 
 // CreateInventory godoc
@@ -158,19 +172,20 @@ func (ic *InventoryController) GetInventory(c *gin.Context) {
 //	  "store_id": 1,
 //	  "quantity": 100
 //	}
-func (ic *InventoryController) CreateInventory(c *gin.Context) {
+func (ic *InventoryController) CreateInventory(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("创建库存")
 
 	var inventory models.Inventory
-	if err := c.ShouldBindJSON(&inventory); err != nil {
+	if err := c.ReadJSON(&inventory); err != nil {
 		log.Warn("创建库存请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的库存信息").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"code":    errors.CodeBadRequest,
+			"message": "请提供有效的库存信息",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -184,11 +199,12 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 	var productVariant models.ProductVariant
 	if err := ic.db.First(&productVariant, inventory.ProductVariantID).Error; err != nil {
 		log.Warn("产品变体不存在", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrNotFound).
-			WithDetails("指定的产品变体不存在").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{
+			"code":    errors.CodeNotFound,
+			"message": "指定的产品变体不存在",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -196,11 +212,12 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 	var store models.Store
 	if err := ic.db.First(&store, inventory.StoreID).Error; err != nil {
 		log.Warn("店铺不存在", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrNotFound).
-			WithDetails("指定的店铺不存在").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{
+			"code":    errors.CodeNotFound,
+			"message": "指定的店铺不存在",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -211,21 +228,23 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 		log.Warn("库存记录已存在",
 			logger.F("existing_inventory_id", existingInventory.ID),
 			logger.F("quantity", existingInventory.Quantity))
-		appErr := errors.New(errors.ErrConflict).
-			WithDetails("该产品在指定店铺中已有库存记录，请使用更新操作").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusConflict)
+		c.JSON(iris.Map{
+			"code":    errors.CodeConflict,
+			"message": "该产品在指定店铺中已有库存记录，请使用更新操作",
+		})
 		return
 	}
 
 	// 创建库存记录
 	if err := ic.db.Create(&inventory).Error; err != nil {
 		log.Error("创建库存失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseInsert).
-			WithDetails("创建库存失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"code":    errors.CodeDatabaseInsert,
+			"message": "创建库存失败",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -234,7 +253,8 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 	// 加载关联数据
 	ic.db.Preload("ProductVariant").Preload("ProductVariant.Product").Preload("Store").First(&inventory, inventory.ID)
 
-	c.JSON(http.StatusCreated, inventory)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(inventory)
 }
 
 // UpdateInventory godoc
@@ -258,22 +278,23 @@ func (ic *InventoryController) CreateInventory(c *gin.Context) {
 //	  "quantity": 120,
 //	  "reason": "补货入库"
 //	}
-func (ic *InventoryController) UpdateInventory(c *gin.Context) {
+func (ic *InventoryController) UpdateInventory(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	log.Info("更新库存", logger.F("inventory_id", id))
 
 	// 查找现有库存
 	var existingInventory models.Inventory
 	if err := ic.db.First(&existingInventory, id).Error; err != nil {
 		log.Warn("库存不存在", logger.F("inventory_id", id), logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrNotFound).
-			WithDetails("库存不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{
+			"code":    errors.CodeNotFound,
+			"message": "库存不存在或已被删除",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -283,13 +304,14 @@ func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 		Reason   string `json:"reason"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := c.ReadJSON(&input); err != nil {
 		log.Warn("更新库存请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的库存信息").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"code":    errors.CodeBadRequest,
+			"message": "请提供有效的库存信息",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -306,11 +328,12 @@ func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 	existingInventory.Quantity = input.Quantity
 	if err := ic.db.Save(&existingInventory).Error; err != nil {
 		log.Error("更新库存失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("更新库存失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"code":    errors.CodeDatabaseUpdate,
+			"message": "更新库存失败",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -321,7 +344,8 @@ func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 	// 加载关联数据
 	ic.db.Preload("ProductVariant").Preload("ProductVariant.Product").Preload("Store").First(&existingInventory, existingInventory.ID)
 
-	c.JSON(http.StatusOK, existingInventory)
+	c.StatusCode(http.StatusOK)
+	c.JSON(existingInventory)
 }
 
 // DeleteInventory godoc
@@ -337,33 +361,35 @@ func (ic *InventoryController) UpdateInventory(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /inventory/{id} [delete]
 // @Security BearerAuth
-func (ic *InventoryController) DeleteInventory(c *gin.Context) {
+func (ic *InventoryController) DeleteInventory(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 
-	id := c.Param("id")
+	id := c.Params().Get("id")
 	log.Info("删除库存", logger.F("inventory_id", id))
 
 	// 查找现有库存
 	var inventory models.Inventory
 	if err := ic.db.First(&inventory, id).Error; err != nil {
 		log.Warn("库存不存在", logger.F("inventory_id", id), logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrNotFound).
-			WithDetails("库存不存在或已被删除").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{
+			"code":    errors.CodeNotFound,
+			"message": "库存不存在或已被删除",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	// 删除库存
 	if err := ic.db.Delete(&inventory).Error; err != nil {
 		log.Error("删除库存失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseDelete).
-			WithDetails("删除库存失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"code":    errors.CodeDatabaseDelete,
+			"message": "删除库存失败",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -372,5 +398,6 @@ func (ic *InventoryController) DeleteInventory(c *gin.Context) {
 		logger.F("product_variant_id", inventory.ProductVariantID),
 		logger.F("store_id", inventory.StoreID))
 
-	c.JSON(http.StatusOK, gin.H{"message": "库存已删除"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "库存已删除"})
 }

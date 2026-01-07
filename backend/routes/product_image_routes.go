@@ -4,38 +4,38 @@ import (
 	"hd_psi/backend/controllers"
 	"hd_psi/backend/middleware"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
 // SetupProductImageRoutes 设置商品图片管理相关路由
-func SetupProductImageRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupProductImageRoutes(app *iris.Application, db *gorm.DB) {
 	productImageController := controllers.NewProductImageController(db)
 
 	// 获取API基础路径
 	apiBasePath := "/api/v1"
-	api := router.Group(apiBasePath)
+	api := app.Party(apiBasePath)
 
 	// 需要认证的路由
-	apiAuth := api.Group("/")
+	apiAuth := api.Party("/")
 	apiAuth.Use(middleware.JWTAuth())
 
 	// 商品图片管理路由组
-	productImages := apiAuth.Group("/products/:product_id/images")
+	productImages := apiAuth.Party("/products/{product_id:uint}/images")
 	{
 		// 获取商品图片列表
-		productImages.GET("", productImageController.GetProductImages)
-		
+		productImages.Get("", productImageController.GetProductImages)
+
 		// 上传单张商品图片
-		productImages.POST("", productImageController.UploadProductImage)
-		
+		productImages.Post("", productImageController.UploadProductImage)
+
 		// 批量上传商品图片
-		productImages.POST("/batch", productImageController.BatchUploadProductImages)
-		
+		productImages.Post("/batch", productImageController.BatchUploadProductImages)
+
 		// 更新图片排序
-		productImages.PUT("/:image_id/sort", productImageController.UpdateProductImageSort)
-		
+		productImages.Put("/{image_id:uint}/sort", productImageController.UpdateProductImageSort)
+
 		// 删除商品图片
-		productImages.DELETE("/:image_id", productImageController.DeleteProductImage)
+		productImages.Delete("/{image_id:uint}", productImageController.DeleteProductImage)
 	}
 }

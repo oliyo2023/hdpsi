@@ -4,7 +4,7 @@ import (
 	"hd_psi/backend/models"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -16,64 +16,77 @@ func NewStoreController(db *gorm.DB) *StoreController {
 	return &StoreController{db: db}
 }
 
-func (sc *StoreController) ListStores(c *gin.Context) {
+func (sc *StoreController) ListStores(c iris.Context) {
 	var stores []models.Store
 	if err := sc.db.Find(&stores).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, stores)
+	c.StatusCode(http.StatusOK)
+	c.JSON(stores)
 }
 
-func (sc *StoreController) GetStore(c *gin.Context) {
-	id := c.Param("id")
+func (sc *StoreController) GetStore(c iris.Context) {
+	id := c.Params().Get("id")
 	var store models.Store
 	if err := sc.db.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "Store not found"})
 		return
 	}
-	c.JSON(http.StatusOK, store)
+	c.StatusCode(http.StatusOK)
+	c.JSON(store)
 }
 
-func (sc *StoreController) CreateStore(c *gin.Context) {
+func (sc *StoreController) CreateStore(c iris.Context) {
 	var store models.Store
-	if err := c.ShouldBindJSON(&store); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&store); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	if err := sc.db.Create(&store).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, store)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(store)
 }
 
-func (sc *StoreController) UpdateStore(c *gin.Context) {
-	id := c.Param("id")
+func (sc *StoreController) UpdateStore(c iris.Context) {
+	id := c.Params().Get("id")
 	var store models.Store
 	if err := sc.db.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "Store not found"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&store); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&store); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	if err := sc.db.Save(&store).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, store)
+	c.StatusCode(http.StatusOK)
+	c.JSON(store)
 }
 
-func (sc *StoreController) DeleteStore(c *gin.Context) {
-	id := c.Param("id")
+func (sc *StoreController) DeleteStore(c iris.Context) {
+	id := c.Params().Get("id")
 	if err := sc.db.Delete(&models.Store{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Store deleted"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "Store deleted"})
 }

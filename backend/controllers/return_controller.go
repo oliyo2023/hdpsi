@@ -9,7 +9,7 @@ import (
 	"hd_psi/backend/services"
 	"hd_psi/backend/utils"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 )
 
 // ReturnController handles API requests for return orders
@@ -34,32 +34,47 @@ func NewReturnController(returnService *services.ReturnService) *ReturnControlle
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /returns [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) CreateReturnOrder(c *gin.Context) {
+func (rc *ReturnController) CreateReturnOrder(c iris.Context) {
 	var input services.CreateReturnOrderInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "请求参数无效: "+err.Error())
+	if err := c.ReadJSON(&input); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "请求参数无效: " + err.Error(),
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 	input.UserID = userID
 	input.UserName = userName
 
 	// Basic validation based on type
-	if input.Type == models.ReturnTypeReturn && (input.ReturnOrderItems == nil || len(input.ReturnOrderItems) == 0) {
-		utils.RespondWithError(c, http.StatusBadRequest, "退货申请必须包含退货商品信息")
+	if input.Type == models.ReturnTypeReturn && len(input.ReturnOrderItems) == 0 {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "退货申请必须包含退货商品信息",
+		})
 		return
 	}
-	if input.Type == models.ReturnTypeExchange && (input.ExchangeOrderItems == nil || len(input.ExchangeOrderItems) == 0) {
-		utils.RespondWithError(c, http.StatusBadRequest, "换货申请必须包含换货商品信息")
+	if input.Type == models.ReturnTypeExchange && len(input.ExchangeOrderItems) == 0 {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "换货申请必须包含换货商品信息",
+		})
 		return
 	}
-	if input.Type == models.ReturnTypeExchange && (input.ReturnOrderItems == nil || len(input.ReturnOrderItems) == 0) {
-		utils.RespondWithError(c, http.StatusBadRequest, "换货申请必须包含原始退回的商品信息")
+	if input.Type == models.ReturnTypeExchange && len(input.ReturnOrderItems) == 0 {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "换货申请必须包含原始退回的商品信息",
+		})
 		return
 	}
 
@@ -67,14 +82,21 @@ func (rc *ReturnController) CreateReturnOrder(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "创建退换货订单失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "创建退换货订单失败: " + err.Error(),
+			})
 		}
 		return
 	}
 
-	c.JSON(http.StatusCreated, returnOrder)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(returnOrder)
 }
 
 // GetReturnOrderList godoc
@@ -97,20 +119,62 @@ func (rc *ReturnController) CreateReturnOrder(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /returns [get]
 // @Security ApiKeyAuth
-func (rc *ReturnController) GetReturnOrderList(c *gin.Context) {
+func (rc *ReturnController) GetReturnOrderList(c iris.Context) {
 	var input services.GetReturnOrderListInput
-	if err := c.ShouldBindQuery(&input); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "查询参数无效: "+err.Error())
-		return
+
+	// Get query parameters manually since iris doesn't have ShouldBindQuery
+	pageStr := c.URLParam("page")
+	if pageStr == "" {
+		pageStr = "1"
 	}
+	pageSizeStr := c.URLParam("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "10"
+	}
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		pageSize = 10
+	}
+
+	// Set default values
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	// Get other query parameters
+	input.Page = page
+	input.PageSize = pageSize
+	input.ReturnNo = c.URLParam("returnNo")
+	input.OrderNo = c.URLParam("orderNo")
+	input.Type = c.URLParam("type")
+	input.Status = c.URLParam("status")
+	input.CustomerName = c.URLParam("customerName")
+	input.CustomerPhone = c.URLParam("customerPhone")
+	input.StartDate = c.URLParam("startDate")
+	input.EndDate = c.URLParam("endDate")
 
 	response, err := rc.ReturnService.GetReturnOrderList(input)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusInternalServerError, "获取退换货列表失败: "+err.Error())
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{
+			"error": "获取退换货列表失败: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.StatusCode(http.StatusOK)
+	c.JSON(response)
 }
 
 // GetReturnOrderByID godoc
@@ -126,11 +190,14 @@ func (rc *ReturnController) GetReturnOrderList(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /returns/{id} [get]
 // @Security ApiKeyAuth
-func (rc *ReturnController) GetReturnOrderByID(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) GetReturnOrderByID(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
@@ -138,14 +205,21 @@ func (rc *ReturnController) GetReturnOrderByID(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "获取退换货详情失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "获取退换货详情失败: " + err.Error(),
+			})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, returnOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(returnOrder)
 }
 
 // UpdateReturnOrderStatus godoc
@@ -162,23 +236,32 @@ func (rc *ReturnController) GetReturnOrderByID(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/status [put]
 // @Security ApiKeyAuth
-func (rc *ReturnController) UpdateReturnOrderStatus(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) UpdateReturnOrderStatus(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	var input services.UpdateReturnOrderStatusInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "请求参数无效: "+err.Error())
+	if err := c.ReadJSON(&input); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "请求参数无效: " + err.Error(),
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 	input.UserID = userID
@@ -188,16 +271,26 @@ func (rc *ReturnController) UpdateReturnOrderStatus(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "更新退换货状态失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "更新退换货状态失败: " + err.Error(),
+			})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // ApproveReturnOrder godoc
@@ -213,17 +306,23 @@ func (rc *ReturnController) UpdateReturnOrderStatus(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/approve [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) ApproveReturnOrder(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) ApproveReturnOrder(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 
@@ -231,15 +330,25 @@ func (rc *ReturnController) ApproveReturnOrder(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "审批退换货订单失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "审批退换货订单失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // RejectReturnOrder godoc
@@ -257,28 +366,37 @@ func (rc *ReturnController) ApproveReturnOrder(c *gin.Context) {
 // @Router /returns/{id}/reject [post]
 // @Security ApiKeyAuth
 
-// RejectPayload defines the structure for the rejection reason
+// RejectPayload defines a structure for rejection reason
 type RejectPayload struct {
 	Reason string `json:"reason" binding:"required"`
 }
 
-func (rc *ReturnController) RejectReturnOrder(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) RejectReturnOrder(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	var payload RejectPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "请求参数无效，必须提供拒绝原因: "+err.Error())
+	if err := c.ReadJSON(&payload); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "请求参数无效，必须提供拒绝原因: " + err.Error(),
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 
@@ -286,15 +404,25 @@ func (rc *ReturnController) RejectReturnOrder(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "拒绝退换货订单失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "拒绝退换货订单失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // DeleteReturnOrder godoc
@@ -310,17 +438,23 @@ func (rc *ReturnController) RejectReturnOrder(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /returns/{id} [delete]
 // @Security ApiKeyAuth
-func (rc *ReturnController) DeleteReturnOrder(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) DeleteReturnOrder(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 
@@ -328,14 +462,20 @@ func (rc *ReturnController) DeleteReturnOrder(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "删除退换货订单失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "删除退换货订单失败: " + err.Error(),
+			})
 		}
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.StatusCode(http.StatusNoContent)
 }
 
 // MarkGoodsReceived godoc
@@ -351,17 +491,23 @@ func (rc *ReturnController) DeleteReturnOrder(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/goods-received [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) MarkGoodsReceived(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) MarkGoodsReceived(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 
@@ -369,15 +515,25 @@ func (rc *ReturnController) MarkGoodsReceived(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "标记已收货失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "标记已收货失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // MarkExchangeShipped godoc
@@ -394,23 +550,32 @@ func (rc *ReturnController) MarkGoodsReceived(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/exchange-shipped [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) MarkExchangeShipped(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) MarkExchangeShipped(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	var input services.MarkExchangeShippedInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "请求参数无效: "+err.Error())
+	if err := c.ReadJSON(&input); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "请求参数无效: " + err.Error(),
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 	input.UserID = userID
@@ -420,15 +585,25 @@ func (rc *ReturnController) MarkExchangeShipped(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "标记换货已发货失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "标记换货已发货失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // ProcessRefund godoc
@@ -445,23 +620,32 @@ func (rc *ReturnController) MarkExchangeShipped(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/process-refund [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) ProcessRefund(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) ProcessRefund(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	var input services.ProcessRefundInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "请求参数无效: "+err.Error())
+	if err := c.ReadJSON(&input); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "请求参数无效: " + err.Error(),
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 	input.UserID = userID
@@ -471,15 +655,25 @@ func (rc *ReturnController) ProcessRefund(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "处理退款失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "处理退款失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }
 
 // CompleteReturnOrder godoc
@@ -495,17 +689,23 @@ func (rc *ReturnController) ProcessRefund(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error or invalid status transition"
 // @Router /returns/{id}/complete [post]
 // @Security ApiKeyAuth
-func (rc *ReturnController) CompleteReturnOrder(c *gin.Context) {
-	idStr := c.Param("id")
+func (rc *ReturnController) CompleteReturnOrder(c iris.Context) {
+	idStr := c.Params().Get("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusBadRequest, "无效的退换货单ID格式")
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{
+			"error": "无效的退换货单ID格式",
+		})
 		return
 	}
 
 	userID, userName, err := middleware.GetUserFromContext(c)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusUnauthorized, "无法获取用户信息")
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{
+			"error": "无法获取用户信息",
+		})
 		return
 	}
 
@@ -513,13 +713,23 @@ func (rc *ReturnController) CompleteReturnOrder(c *gin.Context) {
 	if err != nil {
 		switch e := err.(type) {
 		case *utils.NotFoundError:
-			utils.RespondWithError(c, http.StatusNotFound, e.Error())
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		case *utils.ValidationError:
-			utils.RespondWithError(c, http.StatusBadRequest, e.Error())
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{
+				"error": e.Error(),
+			})
 		default:
-			utils.RespondWithError(c, http.StatusInternalServerError, "完成退换货订单失败: "+err.Error())
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{
+				"error": "完成退换货订单失败: " + err.Error(),
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, updatedOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(updatedOrder)
 }

@@ -317,7 +317,7 @@ const salesColumns = [
 const loadStatistics = async () => {
   try {
     // 从 API 获取统计数据
-    const response = await api.get('/api/dashboard/statistics')
+    const response = await api.get('/api/v1/dashboard/statistics')
     console.log('从后端获取的统计数据:', response)
     if (response) {
       statistics.productCount = response.productCount || 0
@@ -358,7 +358,7 @@ const loadInventoryAlerts = async () => {
 const loadRecentSales = async () => {
   try {
     // 从 API 获取最近销售数据
-    const response = await api.get('/api/sales/recent')
+    const response = await api.get('/api/v1/sales/recent')
     if (response && response.items) {
       recentSales.value = response.items || []
     }

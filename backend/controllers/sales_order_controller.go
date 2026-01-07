@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -40,10 +40,11 @@ type SalesOrdersResponse struct {
 }
 
 // ListSalesOrders 获取销售订单列表
-func (soc *SalesOrderController) ListSalesOrders(c *gin.Context) {
+func (soc *SalesOrderController) ListSalesOrders(c iris.Context) {
 	var query ListSalesOrdersQuery
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadQuery(&query); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -88,57 +89,62 @@ func (soc *SalesOrderController) ListSalesOrders(c *gin.Context) {
 		Offset(offset).Limit(query.PageSize).
 		Order("created_at DESC").
 		Find(&salesOrders).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, SalesOrdersResponse{
+	c.StatusCode(http.StatusOK)
+	c.JSON(SalesOrdersResponse{
 		Total: int(total),
 		Items: salesOrders,
 	})
 }
 
 // GetSalesOrder 获取销售订单详情
-func (soc *SalesOrderController) GetSalesOrder(c *gin.Context) {
-	id := c.Param("id")
+func (soc *SalesOrderController) GetSalesOrder(c iris.Context) {
+	id := c.Params().Get("id")
 	var salesOrder models.SalesOrder
 
-	if err := soc.db.Preload("Store").Preload("Member").
-		Preload("Salesperson").Preload("Cashier").Preload("Creator").
+	if err := soc.db.Preload("Store").Preload("Member").Preload("Salesperson").
+		Preload("Cashier").Preload("Creator").
 		Preload("Items.Product").Preload("Items.ProductVariant").
 		Preload("Payments").Preload("Logs.Operator").
 		First(&salesOrder, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "销售订单不存在"})
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{"error": "销售订单不存在"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, salesOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(salesOrder)
 }
 
 // 创建销售订单请求
 type CreateSalesOrderRequest struct {
-	StoreID         uint                    `json:"store_id" binding:"required"`
+	StoreID         uint                    `json:"store_id"`
 	MemberID        *uint                   `json:"member_id"`
-	CustomerName    string                  `json:"customer_name" binding:"required"`
+	CustomerName    string                  `json:"customer_name"`
 	CustomerPhone   string                  `json:"customer_phone"`
 	CustomerAddress string                  `json:"customer_address"`
-	OrderType       models.SalesOrderType   `json:"order_type" binding:"required"`
+	OrderType       models.SalesOrderType   `json:"order_type"`
 	PaymentMethod   models.PaymentMethod    `json:"payment_method"`
 	FittingRoomID   *uint                   `json:"fitting_room_id"`
 	Note            string                  `json:"note"`
-	Items           []SalesOrderItemRequest `json:"items" binding:"required,min=1"`
+	Items           []SalesOrderItemRequest `json:"items"`
 }
 
 // 销售订单明细请求
 type SalesOrderItemRequest struct {
-	ProductID        uint    `json:"product_id" binding:"required"`
+	ProductID        uint    `json:"product_id"`
 	ProductVariantID *uint   `json:"product_variant_id"`
-	Quantity         int     `json:"quantity" binding:"required,min=1"`
-	UnitPrice        float64 `json:"unit_price" binding:"required,min=0"`
+	Quantity         int     `json:"quantity"`
+	UnitPrice        float64 `json:"unit_price"`
 	DiscountAmount   float64 `json:"discount_amount"`
 	QRCode           string  `json:"qr_code"`
 	BatchNumber      string  `json:"batch_number"`
@@ -149,17 +155,19 @@ type SalesOrderItemRequest struct {
 }
 
 // CreateSalesOrder 创建销售订单
-func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
+func (soc *SalesOrderController) CreateSalesOrder(c iris.Context) {
 	var request CreateSalesOrderRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -191,7 +199,8 @@ func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
 		var product models.Product
 		if err := tx.First(&product, item.ProductID).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("商品ID %d 不存在", item.ProductID)})
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{"error": fmt.Sprintf("商品ID %d 不存在", item.ProductID)})
 			return
 		}
 
@@ -244,7 +253,8 @@ func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
 
 	if err := tx.Create(&salesOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建销售订单失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "创建销售订单失败: " + err.Error()})
 		return
 	}
 
@@ -255,7 +265,8 @@ func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
 
 	if err := tx.Create(&items).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建订单明细失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "创建订单明细失败: " + err.Error()})
 		return
 	}
 
@@ -271,7 +282,8 @@ func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
@@ -281,22 +293,25 @@ func (soc *SalesOrderController) CreateSalesOrder(c *gin.Context) {
 		Preload("Items.Product").Preload("Items.ProductVariant").
 		First(&result, salesOrder.ID)
 
-	c.JSON(http.StatusCreated, result)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(result)
 }
 
 // UpdateSalesOrder 更新销售订单
-func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
-	id := c.Param("id")
+func (soc *SalesOrderController) UpdateSalesOrder(c iris.Context) {
+	id := c.Params().Get("id")
 	var request CreateSalesOrderRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -304,16 +319,19 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 	var salesOrder models.SalesOrder
 	if err := soc.db.Preload("Items").First(&salesOrder, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "销售订单不存在"})
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{"error": "销售订单不存在"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		}
 		return
 	}
 
 	// 检查订单状态是否允许修改
 	if salesOrder.Status != models.SalesDraft && salesOrder.Status != models.SalesPending {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "订单状态不允许修改"})
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "订单状态不允许修改"})
 		return
 	}
 
@@ -323,7 +341,8 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 	// 删除原有明细
 	if err := tx.Where("sales_order_id = ?", salesOrder.ID).Delete(&models.SalesOrderItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除原有明细失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "删除原有明细失败: " + err.Error()})
 		return
 	}
 
@@ -336,7 +355,8 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 		var product models.Product
 		if err := tx.First(&product, item.ProductID).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("商品ID %d 不存在", item.ProductID)})
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{"error": fmt.Sprintf("商品ID %d 不存在", item.ProductID)})
 			return
 		}
 
@@ -382,14 +402,16 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 
 	if err := tx.Save(&salesOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新销售订单失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "更新销售订单失败: " + err.Error()})
 		return
 	}
 
 	// 创建新明细
 	if err := tx.Create(&items).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建新明细失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "创建新明细失败: " + err.Error()})
 		return
 	}
 
@@ -405,7 +427,8 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
@@ -415,27 +438,30 @@ func (soc *SalesOrderController) UpdateSalesOrder(c *gin.Context) {
 		Preload("Items.Product").Preload("Items.ProductVariant").
 		First(&result, salesOrder.ID)
 
-	c.JSON(http.StatusOK, result)
+	c.StatusCode(http.StatusOK)
+	c.JSON(result)
 }
 
 // UpdateSalesOrderStatus 更新销售订单状态
-func (soc *SalesOrderController) UpdateSalesOrderStatus(c *gin.Context) {
-	id := c.Param("id")
+func (soc *SalesOrderController) UpdateSalesOrderStatus(c iris.Context) {
+	id := c.Params().Get("id")
 
 	var request struct {
-		Status models.SalesOrderStatus `json:"status" binding:"required"`
+		Status models.SalesOrderStatus `json:"status"`
 		Note   string                  `json:"note"`
 	}
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -443,9 +469,11 @@ func (soc *SalesOrderController) UpdateSalesOrderStatus(c *gin.Context) {
 	var salesOrder models.SalesOrder
 	if err := soc.db.First(&salesOrder, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "销售订单不存在"})
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{"error": "销售订单不存在"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		}
 		return
 	}
@@ -462,8 +490,8 @@ func (soc *SalesOrderController) UpdateSalesOrderStatus(c *gin.Context) {
 	switch request.Status {
 	case models.SalesPaid:
 		salesOrder.PaymentStatus = "paid"
-		salesOrder.PaymentTime = &time.Time{}
-		*salesOrder.PaymentTime = time.Now()
+		now := time.Now()
+		salesOrder.PaymentTime = &now
 		salesOrder.PaidAmount = salesOrder.TotalAmount
 	case models.SalesCompleted:
 		if salesOrder.CompletedAt == nil {
@@ -479,7 +507,8 @@ func (soc *SalesOrderController) UpdateSalesOrderStatus(c *gin.Context) {
 
 	if err := tx.Save(&salesOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新订单状态失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "更新订单状态失败: " + err.Error()})
 		return
 	}
 
@@ -499,21 +528,24 @@ func (soc *SalesOrderController) UpdateSalesOrderStatus(c *gin.Context) {
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "订单状态更新成功"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "订单状态更新成功"})
 }
 
 // DeleteSalesOrder 删除销售订单
-func (soc *SalesOrderController) DeleteSalesOrder(c *gin.Context) {
-	id := c.Param("id")
+func (soc *SalesOrderController) DeleteSalesOrder(c iris.Context) {
+	id := c.Params().Get("id")
 
 	// 获取当前用户ID
-	_, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -521,16 +553,19 @@ func (soc *SalesOrderController) DeleteSalesOrder(c *gin.Context) {
 	var salesOrder models.SalesOrder
 	if err := soc.db.First(&salesOrder, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "销售订单不存在"})
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{"error": "销售订单不存在"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		}
 		return
 	}
 
 	// 检查订单状态是否允许删除
 	if salesOrder.Status != models.SalesDraft && salesOrder.Status != models.SalesCancelled {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "只能删除草稿或已取消的订单"})
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "只能删除草稿或已取消的订单"})
 		return
 	}
 
@@ -546,39 +581,44 @@ func (soc *SalesOrderController) DeleteSalesOrder(c *gin.Context) {
 	// 删除订单
 	if err := tx.Delete(&salesOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除销售订单失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "删除销售订单失败: " + err.Error()})
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "销售订单删除成功"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "销售订单删除成功"})
 }
 
 // AddPayment 添加支付记录
-func (soc *SalesOrderController) AddPayment(c *gin.Context) {
-	id := c.Param("id")
+func (soc *SalesOrderController) AddPayment(c iris.Context) {
+	id := c.Params().Get("id")
 
 	var request struct {
-		PaymentMethod models.PaymentMethod `json:"payment_method" binding:"required"`
-		Amount        float64              `json:"amount" binding:"required,min=0"`
+		PaymentMethod models.PaymentMethod `json:"payment_method"`
+		Amount        float64              `json:"amount"`
 		TransactionID string               `json:"transaction_id"`
 		Note          string               `json:"note"`
 	}
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -586,16 +626,19 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 	var salesOrder models.SalesOrder
 	if err := soc.db.First(&salesOrder, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "销售订单不存在"})
+			c.StatusCode(http.StatusNotFound)
+			c.JSON(iris.Map{"error": "销售订单不存在"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询销售订单失败: " + err.Error()})
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "查询销售订单失败: " + err.Error()})
 		}
 		return
 	}
 
 	// 检查支付金额
 	if salesOrder.PaidAmount+request.Amount > salesOrder.TotalAmount {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "支付金额超过订单总额"})
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "支付金额超过订单总额"})
 		return
 	}
 
@@ -604,7 +647,7 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 
 	// 创建支付记录
 	payment := models.SalesOrderPayment{
-		SalesOrderID:  salesOrder.ID,
+		SalesOrderID: salesOrder.ID,
 		PaymentMethod: request.PaymentMethod,
 		Amount:        request.Amount,
 		TransactionID: request.TransactionID,
@@ -615,7 +658,8 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 
 	if err := tx.Create(&payment).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建支付记录失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "创建支付记录失败: " + err.Error()})
 		return
 	}
 
@@ -623,7 +667,6 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 	salesOrder.PaidAmount += request.Amount
 	if salesOrder.PaidAmount >= salesOrder.TotalAmount {
 		salesOrder.PaymentStatus = "paid"
-		salesOrder.Status = models.SalesPaid
 		now := time.Now()
 		salesOrder.PaymentTime = &now
 	} else {
@@ -632,7 +675,8 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 
 	if err := tx.Save(&salesOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新订单支付状态失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "更新订单支付状态失败: " + err.Error()})
 		return
 	}
 
@@ -648,15 +692,17 @@ func (soc *SalesOrderController) AddPayment(c *gin.Context) {
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, payment)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(payment)
 }
 
 // GetSalesOrderStatistics 获取销售订单统计
-func (soc *SalesOrderController) GetSalesOrderStatistics(c *gin.Context) {
+func (soc *SalesOrderController) GetSalesOrderStatistics(c iris.Context) {
 	var stats struct {
 		TotalOrders     int64   `json:"total_orders"`
 		TotalAmount     float64 `json:"total_amount"`
@@ -684,11 +730,12 @@ func (soc *SalesOrderController) GetSalesOrderStatistics(c *gin.Context) {
 	soc.db.Model(&models.SalesOrder{}).Where("DATE(order_date) = ?", today).
 		Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TodayAmount)
 
-	c.JSON(http.StatusOK, stats)
+	c.StatusCode(http.StatusOK)
+	c.JSON(stats)
 }
 
 // GetRecentSalesOrders 获取最近的销售订单
-func (soc *SalesOrderController) GetRecentSalesOrders(c *gin.Context) {
+func (soc *SalesOrderController) GetRecentSalesOrders(c iris.Context) {
 	var salesOrders []models.SalesOrder
 
 	// 获取最近10个销售订单
@@ -696,11 +743,13 @@ func (soc *SalesOrderController) GetRecentSalesOrders(c *gin.Context) {
 		Order("created_at DESC").
 		Limit(10).
 		Find(&salesOrders).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询最近销售订单失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "查询最近销售订单失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{
 		"items": salesOrders,
 		"total": len(salesOrders),
 	})

@@ -2,11 +2,10 @@ package controllers
 
 import (
 	"hd_psi/backend/models"
-	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -33,15 +32,16 @@ func NewMemberPointsController(db *gorm.DB) *MemberPointsController {
 }
 
 // GetMemberPoints 获取会员积分
-func (mpc *MemberPointsController) GetMemberPoints(c *gin.Context) {
-	memberID := c.Param("id")
+func (mpc *MemberPointsController) GetMemberPoints(c iris.Context) {
+	memberID := c.Params().Get("id")
 	var member models.Member
 	if err := mpc.db.First(&member, memberID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"member_id": member.ID,
 		"name":      member.Name,
 		"points":    member.Points,
@@ -49,26 +49,39 @@ func (mpc *MemberPointsController) GetMemberPoints(c *gin.Context) {
 }
 
 // ListPointsTransactions 获取会员积分交易记录
-func (mpc *MemberPointsController) ListPointsTransactions(c *gin.Context) {
-	memberID := c.Param("id")
+func (mpc *MemberPointsController) ListPointsTransactions(c iris.Context) {
+	memberID := c.Params().Get("id")
 
 	// 验证会员是否存在
 	var member models.Member
 	if err := mpc.db.First(&member, memberID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
 	// 获取查询参数
-	pageStr := c.DefaultQuery("page", "1")
-	limitStr := c.DefaultQuery("limit", "10")
-	transactionType := c.Query("type")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	pageStr := c.URLParam("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	limitStr := c.URLParam("limit")
+	if limitStr == "" {
+		limitStr = "10"
+	}
+	transactionType := c.URLParam("type")
+	startDate := c.URLParam("startDate")
+	endDate := c.URLParam("endDate")
 
 	// 将字符串转换为整数
-	page, _ := strconv.Atoi(pageStr)
-	limit, _ := strconv.Atoi(limitStr)
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
 
 	// 防止非法值
 	if page < 1 {
@@ -101,12 +114,13 @@ func (mpc *MemberPointsController) ListPointsTransactions(c *gin.Context) {
 	// 分页查询
 	var transactions []PointsTransaction
 	if err := query.Order("created_at DESC").Limit(limit).Offset((page - 1) * limit).Find(&transactions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
 	// 返回结果
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"items":  transactions,
 		"total":  total,
 		"page":   page,
@@ -116,8 +130,8 @@ func (mpc *MemberPointsController) ListPointsTransactions(c *gin.Context) {
 }
 
 // AddPoints 增加会员积分
-func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
-	memberID := c.Param("id")
+func (mpc *MemberPointsController) AddPoints(c iris.Context) {
+	memberID := c.Params().Get("id")
 
 	var input struct {
 		Points        int    `json:"points" binding:"required"`
@@ -129,8 +143,9 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 		Note          string `json:"note"`        // 添加备注字段
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -146,7 +161,8 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 
 	// 验证积分必须为正数
 	if input.Points <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Points must be positive"})
+		c.JSON(iris.Map{"error": "Points must be positive"})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -157,7 +173,8 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 	var member models.Member
 	if err := tx.First(&member, memberID).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
@@ -165,7 +182,8 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 	member.Points += input.Points
 	if err := tx.Save(&member).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update member points"})
+		c.JSON(iris.Map{"error": "Failed to update member points"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
@@ -184,17 +202,19 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create points transaction"})
+		c.JSON(iris.Map{"error": "Failed to create points transaction"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		c.JSON(iris.Map{"error": "Failed to commit transaction"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"member_id":   member.ID,
 		"name":        member.Name,
 		"points":      member.Points,
@@ -203,8 +223,8 @@ func (mpc *MemberPointsController) AddPoints(c *gin.Context) {
 }
 
 // DeductPoints 扣减会员积分
-func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
-	memberID := c.Param("id")
+func (mpc *MemberPointsController) DeductPoints(c iris.Context) {
+	memberID := c.Params().Get("id")
 
 	var input struct {
 		Points        int    `json:"points" binding:"required"`
@@ -216,8 +236,9 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 		Note          string `json:"note"`        // 添加备注字段
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&input); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -233,7 +254,8 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 
 	// 验证积分必须为正数
 	if input.Points <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Points must be positive"})
+		c.JSON(iris.Map{"error": "Points must be positive"})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -244,14 +266,16 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 	var member models.Member
 	if err := tx.First(&member, memberID).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
 	// 检查积分是否足够
 	if member.Points < input.Points {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Insufficient points"})
+		c.JSON(iris.Map{"error": "Insufficient points"})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -259,7 +283,8 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 	member.Points -= input.Points
 	if err := tx.Save(&member).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update member points"})
+		c.JSON(iris.Map{"error": "Failed to update member points"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
@@ -278,17 +303,19 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create points transaction"})
+		c.JSON(iris.Map{"error": "Failed to create points transaction"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		c.JSON(iris.Map{"error": "Failed to commit transaction"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"member_id":   member.ID,
 		"name":        member.Name,
 		"points":      member.Points,
@@ -297,13 +324,14 @@ func (mpc *MemberPointsController) DeductPoints(c *gin.Context) {
 }
 
 // CalculateMemberLevel 计算会员等级
-func (mpc *MemberPointsController) CalculateMemberLevel(c *gin.Context) {
-	memberID := c.Param("id")
+func (mpc *MemberPointsController) CalculateMemberLevel(c iris.Context) {
+	memberID := c.Params().Get("id")
 
 	// 获取会员信息
 	var member models.Member
 	if err := mpc.db.First(&member, memberID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
@@ -327,12 +355,13 @@ func (mpc *MemberPointsController) CalculateMemberLevel(c *gin.Context) {
 	if member.Level != newLevel {
 		member.Level = newLevel
 		if err := mpc.db.Save(&member).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update member level"})
+			c.JSON(iris.Map{"error": "Failed to update member level"})
+			c.StatusCode(iris.StatusInternalServerError)
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"member_id":   member.ID,
 		"name":        member.Name,
 		"level":       member.Level,
