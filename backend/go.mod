@@ -7,7 +7,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/spf13/viper v1.20.1
-	github.com/swaggo/files v1.0.1
 	github.com/swaggo/swag v1.16.4
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
