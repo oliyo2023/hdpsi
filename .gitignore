@@ -4,3 +4,5 @@
 *.db
 hd_psi
 hdpsi
+backend
+*.db
