@@ -6,7 +6,7 @@ import (
 	"hd_psi/backend/utils/logger"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -22,14 +22,14 @@ func NewSystemSettingController(db *gorm.DB) *SystemSettingController {
 
 // GetSettings 获取系统设置
 // 参数：
-//   - c: Gin上下文对象
-func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
+//   - c: Iris上下文对象
+func (ssc *SystemSettingController) GetSettings(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 
 	// 获取查询参数
-	group := c.Query("group")
-	userID := c.Query("user_id")
+	group := c.URLParam("group")
+	userID := c.URLParam("user_id")
 
 	log.Info("获取系统设置",
 		logger.F("group", group),
@@ -54,11 +54,8 @@ func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 	var settings []models.SystemSetting
 	if err := query.Find(&settings).Error; err != nil {
 		log.Error("获取系统设置失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseQuery).
-			WithDetails("获取系统设置失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "获取系统设置失败"})
 		return
 	}
 
@@ -69,31 +66,29 @@ func (ssc *SystemSettingController) GetSettings(c *gin.Context) {
 	}
 
 	log.Info("获取系统设置成功", logger.F("settings_count", len(settings)))
-	c.JSON(http.StatusOK, settingsMap)
+	c.StatusCode(http.StatusOK)
+	c.JSON(settingsMap)
 }
 
 // UpdateSettings 更新系统设置
 // 参数：
-//   - c: Gin上下文对象
-func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
+//   - c: Iris上下文对象
+func (ssc *SystemSettingController) UpdateSettings(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("更新系统设置")
 
 	// 获取请求参数
 	var input struct {
-		Group    string            `json:"group" binding:"required"`
+		Group    string            `json:"group"`
 		UserID   *uint             `json:"user_id"`
-		Settings map[string]string `json:"settings" binding:"required"`
+		Settings map[string]string `json:"settings"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := c.ReadJSON(&input); err != nil {
 		log.Warn("更新系统设置请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的系统设置信息").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "请提供有效的系统设置信息"})
 		return
 	}
 
@@ -127,11 +122,8 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 				log.Error("创建设置失败",
 					logger.F("key", key),
 					logger.F("error", err.Error()))
-				appErr := errors.New(errors.ErrDatabaseInsert).
-					WithDetails("创建设置失败").
-					WithError(err).
-					WithRequestID(c.GetString("request_id"))
-				c.Error(appErr)
+				c.StatusCode(http.StatusInternalServerError)
+				c.JSON(iris.Map{"error": "创建设置失败"})
 				return
 			}
 			log.Info("创建设置", logger.F("key", key), logger.F("value", value))
@@ -144,11 +136,8 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 				log.Error("更新设置失败",
 					logger.F("key", key),
 					logger.F("error", err.Error()))
-				appErr := errors.New(errors.ErrDatabaseUpdate).
-					WithDetails("更新设置失败").
-					WithError(err).
-					WithRequestID(c.GetString("request_id"))
-				c.Error(appErr)
+				c.StatusCode(http.StatusInternalServerError)
+				c.JSON(iris.Map{"error": "更新设置失败"})
 				return
 			}
 			log.Info("更新设置",
@@ -161,16 +150,14 @@ func (ssc *SystemSettingController) UpdateSettings(c *gin.Context) {
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		log.Error("提交事务失败", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrDatabaseUpdate).
-			WithDetails("保存设置失败").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "保存设置失败"})
 		return
 	}
 
 	log.Info("更新系统设置成功")
-	c.JSON(http.StatusOK, gin.H{"message": "设置已更新"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "设置已更新"})
 }
 
 // InitDefaultSettings 初始化默认系统设置
@@ -249,21 +236,21 @@ func (ssc *SystemSettingController) InitDefaultSettings() error {
 
 // GetUserTheme 获取用户主题设置
 // 参数：
-//   - c: Gin上下文对象
-func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
+//   - c: Iris上下文对象
+func (ssc *SystemSettingController) GetUserTheme(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("获取用户主题设置")
 
 	// 从上下文中获取用户ID
-	userID, exists := c.Get("userID")
+	userID := c.Values().Get("userID")
 
 	// 查询用户主题设置
 	var themeSetting models.SystemSetting
 	var result *gorm.DB
 
 	// 如果用户已登录，尝试获取用户特定设置
-	if exists {
+	if userID != nil {
 		log = log.WithField("user_id", userID)
 		result = ssc.db.Where("`key` = ? AND `group` = ? AND `user_id` = ?",
 			models.SettingTheme, models.SettingGroupTheme, userID).First(&themeSetting)
@@ -277,30 +264,30 @@ func (ssc *SystemSettingController) GetUserTheme(c *gin.Context) {
 	// 如果设置不存在，则返回默认主题
 	if result.Error != nil {
 		log.Info("主题设置不存在，使用默认主题")
-		c.JSON(http.StatusOK, gin.H{"theme": "light"})
+		c.StatusCode(http.StatusOK)
+		c.JSON(iris.Map{"theme": "light"})
 		return
 	}
 
 	log.Info("获取用户主题设置成功", logger.F("theme", themeSetting.Value))
-	c.JSON(http.StatusOK, gin.H{"theme": themeSetting.Value})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"theme": themeSetting.Value})
 }
 
 // UpdateUserTheme 更新用户主题设置
 // 参数：
-//   - c: Gin上下文对象
-func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
+//   - c: Iris上下文对象
+func (ssc *SystemSettingController) UpdateUserTheme(c iris.Context) {
 	// 创建请求日志
 	log := logger.WithContext(c)
 	log.Info("更新用户主题设置")
 
 	// 从上下文中获取用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID := c.Values().Get("userID")
+	if userID == nil {
 		log.Warn("未授权的主题设置更新请求")
-		appErr := errors.New(errors.ErrUnauthorized).
-			WithDetails("请先登录").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusUnauthorized)
+		c.JSON(iris.Map{"error": "请先登录"})
 		return
 	}
 
@@ -308,16 +295,13 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 
 	// 获取请求参数
 	var input struct {
-		Theme string `json:"theme" binding:"required"`
+		Theme string `json:"theme"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := c.ReadJSON(&input); err != nil {
 		log.Warn("更新主题设置请求参数无效", logger.F("error", err.Error()))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("请提供有效的主题设置").
-			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "请提供有效的主题设置"})
 		return
 	}
 
@@ -326,10 +310,8 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 	// 验证主题值
 	if input.Theme != "light" && input.Theme != "dark" {
 		log.Warn("无效的主题值", logger.F("theme", input.Theme))
-		appErr := errors.New(errors.ErrInvalidInput).
-			WithDetails("无效的主题值，必须是 'light' 或 'dark'").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "无效的主题值，必须是 'light' 或 'dark'"})
 		return
 	}
 
@@ -349,11 +331,8 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 		}
 		if err := ssc.db.Create(&themeSetting).Error; err != nil {
 			log.Error("创建主题设置失败", logger.F("error", err.Error()))
-			appErr := errors.New(errors.ErrDatabaseInsert).
-				WithDetails("创建主题设置失败").
-				WithError(err).
-				WithRequestID(c.GetString("request_id"))
-			c.Error(appErr)
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "创建主题设置失败"})
 			return
 		}
 	} else {
@@ -362,11 +341,8 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 		themeSetting.Value = input.Theme
 		if err := ssc.db.Save(&themeSetting).Error; err != nil {
 			log.Error("更新主题设置失败", logger.F("error", err.Error()))
-			appErr := errors.New(errors.ErrDatabaseUpdate).
-				WithDetails("更新主题设置失败").
-				WithError(err).
-				WithRequestID(c.GetString("request_id"))
-			c.Error(appErr)
+			c.StatusCode(http.StatusInternalServerError)
+			c.JSON(iris.Map{"error": "更新主题设置失败"})
 			return
 		}
 		log.Info("更新用户主题设置",
@@ -375,5 +351,6 @@ func (ssc *SystemSettingController) UpdateUserTheme(c *gin.Context) {
 	}
 
 	log.Info("更新用户主题设置成功")
-	c.JSON(http.StatusOK, gin.H{"message": "主题设置已更新", "theme": input.Theme})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "主题设置已更新", "theme": input.Theme})
 }

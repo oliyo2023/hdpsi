@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
-import 'app_dimensions.dart';
-import 'text_themes.dart';
+import 'package:hd_psi_mobile/theme/app_colors.dart';
+import 'package:hd_psi_mobile/theme/app_dimensions.dart';
+import 'package:hd_psi_mobile/theme/text_themes.dart';
 
 /// 暗色主题配置
 class DarkTheme {
@@ -40,8 +40,8 @@ class DarkTheme {
   }
 
   // 卡片主题
-  static CardTheme _buildCardTheme() {
-    return CardTheme(
+  static CardThemeData _buildCardTheme() {
+    return CardThemeData(
       color: AppColors.darkSurface,
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -136,7 +136,10 @@ class DarkTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-        borderSide: const BorderSide(color: AppColors.primaryLightColor, width: 2),
+        borderSide: const BorderSide(
+          color: AppColors.primaryLightColor,
+          width: 2,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
@@ -161,8 +164,8 @@ class DarkTheme {
   }
 
   // 标签栏主题
-  static TabBarTheme _buildTabBarTheme() {
-    return TabBarTheme(
+  static TabBarThemeData _buildTabBarTheme() {
+    return TabBarThemeData(
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white.withAlpha(179),
       indicator: BoxDecoration(
@@ -194,9 +197,7 @@ class DarkTheme {
 
   // 进度指示器主题
   static ProgressIndicatorThemeData _buildProgressIndicatorTheme() {
-    return const ProgressIndicatorThemeData(
-      color: AppColors.primaryLightColor,
-    );
+    return const ProgressIndicatorThemeData(color: AppColors.primaryLightColor);
   }
 
   // 复选框主题

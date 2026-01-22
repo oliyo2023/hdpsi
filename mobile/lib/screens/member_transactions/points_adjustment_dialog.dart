@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/transaction_provider.dart';
-import '../../providers/member_provider.dart';
+import 'package:get/get.dart';
+import '../../controllers/transaction_controller.dart';
 
 class PointsAdjustmentDialog extends StatefulWidget {
   final int memberId;
   final Function({
-    required TransactionProvider provider,
+    required TransactionController controller,
     required int memberId,
     required int points,
     required String note,
     required bool isPositive,
-    required MemberProvider memberProvider,
-  }) onAdjustPoints;
+  })
+  onAdjustPoints;
 
   const PointsAdjustmentDialog({
     super.key,
@@ -30,6 +29,14 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
   String note = '';
   bool isPositive = true;
 
+  late final TransactionController _transactionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionController = Get.find<TransactionController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -40,33 +47,25 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // 积分调整方向
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('增加'),
-                    value: true,
-                    groupValue: isPositive,
-                    onChanged: (value) {
-                      setState(() {
-                        isPositive = value!;
-                      });
-                    },
-                  ),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment<bool>(
+                  value: true,
+                  label: Text('增加'),
+                  icon: Icon(Icons.add),
                 ),
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('减少'),
-                    value: false,
-                    groupValue: isPositive,
-                    onChanged: (value) {
-                      setState(() {
-                        isPositive = value!;
-                      });
-                    },
-                  ),
+                ButtonSegment<bool>(
+                  value: false,
+                  label: Text('减少'),
+                  icon: Icon(Icons.remove),
                 ),
               ],
+              selected: {isPositive},
+              onSelectionChanged: (Set<bool> newSelection) {
+                setState(() {
+                  isPositive = newSelection.first;
+                });
+              },
             ),
 
             // 积分数量
@@ -112,12 +111,12 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
           },
           child: const Text('取消'),
         ),
-        Consumer<TransactionProvider>(
-          builder: (context, provider, _) {
-            return ElevatedButton(
-              onPressed: provider.isLoading
-                  ? null
-                  : () {
+        Obx(() {
+          return ElevatedButton(
+            onPressed:
+                _transactionController.isLoading
+                    ? null
+                    : () {
                       if (formKey.currentState!.validate()) {
                         formKey.currentState!.save();
 
@@ -128,36 +127,29 @@ class _PointsAdjustmentDialogState extends State<PointsAdjustmentDialog> {
                         final bool currentIsPositive = isPositive;
                         final int currentMemberId = widget.memberId;
 
-                        // 获取需要的provider
-                        final memberProvider = Provider.of<MemberProvider>(
-                          context,
-                          listen: false,
-                        );
-
                         // 使用回调处理异步操作
                         widget.onAdjustPoints(
-                          provider: provider,
+                          controller: _transactionController,
                           memberId: currentMemberId,
                           points: adjustedPoints,
                           note: note,
                           isPositive: currentIsPositive,
-                          memberProvider: memberProvider,
                         );
 
                         // 立即关闭对话框
                         Navigator.of(context).pop();
                       }
                     },
-              child: provider.isLoading
-                  ? const SizedBox(
+            child:
+                _transactionController.isLoading
+                    ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('确认'),
-            );
-          },
-        ),
+                    : const Text('确认'),
+          );
+        }),
       ],
     );
   }

@@ -4,7 +4,7 @@ import (
 	"hd_psi/backend/models"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -50,10 +50,11 @@ type SuppliersResponse struct {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /suppliers [get]
 // @Security BearerAuth
-func (sc *SupplierController) ListSuppliers(c *gin.Context) {
+func (sc *SupplierController) ListSuppliers(c iris.Context) {
 	var query ListSuppliersQuery
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadQuery(&query); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -86,11 +87,13 @@ func (sc *SupplierController) ListSuppliers(c *gin.Context) {
 	if err := db.Offset(offset).Limit(query.Limit).
 		Order("created_at DESC").
 		Find(&suppliers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, SuppliersResponse{
+	c.StatusCode(http.StatusOK)
+	c.JSON(SuppliersResponse{
 		Total: int(total),
 		Items: suppliers,
 	})
@@ -109,23 +112,25 @@ func (sc *SupplierController) ListSuppliers(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /suppliers/{id} [get]
 // @Security BearerAuth
-func (sc *SupplierController) GetSupplier(c *gin.Context) {
-	id := c.Param("id")
+func (sc *SupplierController) GetSupplier(c iris.Context) {
+	id := c.Params().Get("id")
 	var supplier models.Supplier
 
 	if err := sc.db.First(&supplier, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "供应商不存在"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "供应商不存在"})
 		return
 	}
 
-	c.JSON(http.StatusOK, supplier)
+	c.StatusCode(http.StatusOK)
+	c.JSON(supplier)
 }
 
 // 创建供应商请求
 type CreateSupplierRequest struct {
-	Name          string                `json:"name" binding:"required"`
-	Code          string                `json:"code" binding:"required"`
-	Type          models.SupplierType   `json:"type" binding:"required"`
+	Name          string                `json:"name"`
+	Code          string                `json:"code"`
+	Type          models.SupplierType   `json:"type"`
 	ContactPerson string                `json:"contact_person"`
 	ContactPhone  string                `json:"contact_phone"`
 	Email         string                `json:"email"`
@@ -170,17 +175,19 @@ type CreateSupplierRequest struct {
 //	  "status": true,
 //	  "note": "优质供应商"
 //	}
-func (sc *SupplierController) CreateSupplier(c *gin.Context) {
+func (sc *SupplierController) CreateSupplier(c iris.Context) {
 	var request CreateSupplierRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 检查供应商编码是否已存在
 	var existingSupplier models.Supplier
 	if err := sc.db.Where("code = ?", request.Code).First(&existingSupplier).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "供应商编码已存在"})
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "供应商编码已存在"})
 		return
 	}
 
@@ -203,11 +210,13 @@ func (sc *SupplierController) CreateSupplier(c *gin.Context) {
 	}
 
 	if err := sc.db.Create(&supplier).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建供应商失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "创建供应商失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, supplier)
+	c.StatusCode(http.StatusCreated)
+	c.JSON(supplier)
 }
 
 // UpdateSupplier 更新供应商
@@ -243,19 +252,21 @@ func (sc *SupplierController) CreateSupplier(c *gin.Context) {
 //	  "status": true,
 //	  "note": "长期合作伙伴"
 //	}
-func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
-	id := c.Param("id")
+func (sc *SupplierController) UpdateSupplier(c iris.Context) {
+	id := c.Params().Get("id")
 	var supplier models.Supplier
 
 	// 查询供应商
 	if err := sc.db.First(&supplier, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "供应商不存在"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "供应商不存在"})
 		return
 	}
 
 	var request CreateSupplierRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -263,7 +274,8 @@ func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
 	if request.Code != supplier.Code {
 		var existingSupplier models.Supplier
 		if err := sc.db.Where("code = ? AND id != ?", request.Code, id).First(&existingSupplier).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "供应商编码已被其他供应商使用"})
+			c.StatusCode(http.StatusBadRequest)
+			c.JSON(iris.Map{"error": "供应商编码已被其他供应商使用"})
 			return
 		}
 	}
@@ -285,11 +297,13 @@ func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
 	supplier.Note = request.Note
 
 	if err := sc.db.Save(&supplier).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新供应商失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "更新供应商失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, supplier)
+	c.StatusCode(http.StatusOK)
+	c.JSON(supplier)
 }
 
 // DeleteSupplier 删除供应商
@@ -306,13 +320,14 @@ func (sc *SupplierController) UpdateSupplier(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /suppliers/{id} [delete]
 // @Security BearerAuth
-func (sc *SupplierController) DeleteSupplier(c *gin.Context) {
-	id := c.Param("id")
+func (sc *SupplierController) DeleteSupplier(c iris.Context) {
+	id := c.Params().Get("id")
 
 	// 检查供应商是否存在
 	var supplier models.Supplier
 	if err := sc.db.First(&supplier, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "供应商不存在"})
+		c.StatusCode(http.StatusNotFound)
+		c.JSON(iris.Map{"error": "供应商不存在"})
 		return
 	}
 
@@ -320,15 +335,18 @@ func (sc *SupplierController) DeleteSupplier(c *gin.Context) {
 	var count int64
 	sc.db.Model(&models.PurchaseOrder{}).Where("supplier_id = ?", id).Count(&count)
 	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "供应商已被采购单引用，无法删除"})
+		c.StatusCode(http.StatusBadRequest)
+		c.JSON(iris.Map{"error": "供应商已被采购单引用，无法删除"})
 		return
 	}
 
 	// 删除供应商
 	if err := sc.db.Delete(&supplier).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除供应商失败: " + err.Error()})
+		c.StatusCode(http.StatusInternalServerError)
+		c.JSON(iris.Map{"error": "删除供应商失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "供应商删除成功"})
+	c.StatusCode(http.StatusOK)
+	c.JSON(iris.Map{"message": "供应商删除成功"})
 }

@@ -8,16 +8,19 @@ import (
 	"hd_psi/backend/middleware"
 	"hd_psi/backend/models"
 	"hd_psi/backend/routes"
+	"hd_psi/backend/services"
 	"hd_psi/backend/utils/logger"
-	"net/http"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/kataras/iris/v12"
+	irisLogger "github.com/kataras/iris/v12/middleware/logger"
+	"github.com/kataras/iris/v12/middleware/recover"
 	"gorm.io/driver/mysql"
+
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -28,25 +31,49 @@ func main() {
 	// 初始化日志系统
 	logDir := config.AppConfig.Log.Directory
 	logLevel := config.AppConfig.Log.Level
+	logFile := filepath.Join(logDir, config.AppConfig.Log.Filename)
 
 	// 创建日志实例
 	log := &logger.Logger{
 		Fields: make(map[string]interface{}),
 	}
-	log.Info("日志系统初始化成功", logger.F("level", logLevel), logger.F("directory", logDir))
+	log.SetLogFile(logFile)
+	log.Info("日志系统初始化成功", logger.F("level", logLevel), logger.F("directory", logDir), logger.F("file", logFile))
 
-	// 设置Gin模式
-	gin.SetMode(config.GetServerMode())
-	log.Info("Gin模式设置为", logger.F("mode", config.GetServerMode()))
+	// 设置Iris模式
+	irisMode := config.GetServerMode()
+	log.Info("Iris模式设置为", logger.F("mode", irisMode))
 
 	// 初始化数据库连接
-	// 确保在DSN中设置parseTime=true以正确处理datetime类型
-	dsn := config.GetDBConfig()
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		NowFunc: func() time.Time {
-			return time.Now().Local() // 使用本地时间
-		},
-	})
+	dbType, dsn := config.GetDBConfig()
+	log.Info("数据库配置", logger.F("type", dbType), logger.F("dsn", dsn))
+
+	var db *gorm.DB
+	var err error
+
+	// 根据数据库类型选择驱动
+	switch dbType {
+	case "sqlite":
+		// 确保数据目录存在
+		if err := os.MkdirAll("./data", 0755); err != nil {
+			log.Error("创建数据目录失败", logger.F("error", err.Error()))
+		}
+		log.Info("使用SQLite数据库")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{
+			NowFunc: func() time.Time {
+				return time.Now().Local() // 使用本地时间
+			},
+		})
+	case "mysql":
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			NowFunc: func() time.Time {
+				return time.Now().Local() // 使用本地时间
+			},
+		})
+	default:
+		log.Error("不支持的数据库类型", logger.F("type", dbType))
+		panic("Unsupported database type: " + dbType)
+	}
 	if err != nil {
 		log.Error("数据库连接失败", logger.F("error", err.Error()))
 		panic("Database connection failed: " + err.Error())
@@ -76,9 +103,13 @@ func main() {
 	log.Info("自动迁移设置", logger.F("auto_migrate", autoMigrate))
 
 	if autoMigrate {
-		// 禁用外键约束检查
-		db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 		log.Info("开始自动迁移数据模型")
+
+		// 只对MySQL禁用外键约束检查
+		if dbType == "mysql" {
+			db.Exec("SET FOREIGN_KEY_CHECKS = 0")
+		}
+
 		db.AutoMigrate(
 			&models.User{},
 			&models.Dictionary{},
@@ -99,11 +130,23 @@ func main() {
 			&models.InventoryCheck{},
 			&models.InventoryCheckItem{},
 			&models.InventoryCheckAdjustment{},
-			&controllers.PointsTransaction{},
 			&models.SystemSetting{},
+			&models.ReturnOrder{},
+			&models.ReturnOrderItem{},
+			&models.ExchangeOrderItem{},
+			&models.ReturnOrderLog{},
+			&models.SalesOrder{},
+			&models.SalesOrderItem{},
+			&models.SalesOrderPayment{},
+			&models.SalesOrderLog{},
+			&models.NegotiationLog{},
 		)
-		// 重新启用外键约束检查
-		db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+
+		// 只对MySQL重新启用外键约束检查
+		if dbType == "mysql" {
+			db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+		}
+
 		log.Info("数据模型自动迁移完成")
 	} else {
 		log.Info("自动迁移已禁用，跳过数据模型迁移")
@@ -111,59 +154,62 @@ func main() {
 
 	// 初始化Casbin服务
 
-	// 初始化Gin引擎
-	r := gin.New() // 使用New()而不是Default()，因为我们将自定义中间件
+	// 初始化Iris引擎
+	app := iris.New()
+
+	// 配置Iris
+	app.Configure(iris.WithConfiguration(iris.Configuration{
+		DisableStartupLog: false,
+		Charset:           "UTF-8",
+		TimeFormat:        "Mon, 02 Jan 2006 15:04:05 GMT",
+	}))
+
+	// 设置日志级别
+	if irisMode == "release" {
+		app.Logger().SetLevel("info")
+	} else {
+		app.Logger().SetLevel("debug")
+	}
 
 	// 添加中间件
-	r.Use(gin.Logger())                            // 使用Gin的默认日志中间件
-	r.Use(gin.Recovery())                          // 使用Gin的默认恢复中间件
-	r.Use(middleware.CORSMiddleware())             // CORS中间件
-	r.Use(middleware.APIVersionMiddleware())       // API版本中间件
-	r.Use(middleware.APIVersionHeaderMiddleware()) // API版本响应头中间件
+	app.Use(irisLogger.New())
+	app.Use(recover.New())
 
-	// 设置404和405处理器
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "路由不存在"})
-	})
-	r.NoMethod(func(c *gin.Context) {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "方法不允许"})
-	})
+	app.Use(middleware.APIVersionMiddleware())
+	app.Use(middleware.APIVersionHeaderMiddleware())
 
-	// 注册Swagger路由
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	log.Info("Swagger文档已启用，访问地址: /swagger/index.html")
-
-	// 注册路由
-	routes.RegisterRoutes(r, db)
-	log.Info("路由注册完成")
-
-	// 静态文件服务
-	// 检查是否存在物理文件目录
-	if _, err := os.Stat("./public/assets"); os.IsNotExist(err) {
-		// 如果物理目录不存在，使用嵌入的静态文件
-		log.Info("使用嵌入的静态文件")
-		r.StaticFS("/assets", embed.GetPublicFS())
-	} else {
-		// 如果物理目录存在，使用物理文件
-		log.Info("使用物理静态文件目录")
-		r.Static("/assets", "./public/assets")
-	}
-
-	// 创建上传目录
-	uploadDirs := []string{"./public/uploads/images", "./public/uploads/editor"}
-	for _, dir := range uploadDirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Error("创建上传目录失败", logger.F("dir", dir), logger.F("error", err.Error()))
+	app.OnErrorCode(iris.StatusMethodNotAllowed, func(ctx iris.Context) {
+		// 对于OPTIONS预检请求，返回204
+		if ctx.Method() == "OPTIONS" {
+			ctx.Header("Access-Control-Allow-Origin", "*")
+			ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+			ctx.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			ctx.Header("Access-Control-Max-Age", "86400")
+			ctx.Header("Access-Control-Allow-Credentials", "true")
+			ctx.StatusCode(204)
+			return
 		}
-	}
-	// 静态文件服务 - 上传文件
-	r.Static("/uploads", "./public/uploads")
 
-	// 所有前端路由都返回首页，由前端路由处理
-	r.NoRoute(func(c *gin.Context) {
+		ctx.StatusCode(iris.StatusMethodNotAllowed)
+		ctx.JSON(map[string]interface{}{"error": "方法不允许"})
+	})
+
+	app.OnErrorCode(iris.StatusNotFound, func(ctx iris.Context) {
+		// 对于OPTIONS预检请求，返回204
+		if ctx.Method() == "OPTIONS" {
+			ctx.Header("Access-Control-Allow-Origin", "*")
+			ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+			ctx.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			ctx.Header("Access-Control-Max-Age", "86400")
+			ctx.Header("Access-Control-Allow-Credentials", "true")
+			ctx.StatusCode(204)
+			return
+		}
+
 		// 如果是API请求，返回404
-		if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "路由不存在"})
+		if len(ctx.Path()) >= 4 && ctx.Path()[:4] == "/api" {
+			ctx.StatusCode(iris.StatusNotFound)
+			ctx.JSON(map[string]interface{}{"error": "路由不存在"})
 			return
 		}
 
@@ -171,12 +217,37 @@ func main() {
 		indexPath := filepath.Join("./public", "index.html")
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			// 如果物理文件不存在，使用嵌入的index.html
-			c.FileFromFS("index.html", embed.GetPublicFS())
+			file, err := embed.GetPublicFS().Open("index.html")
+			if err == nil {
+				defer file.Close()
+				data, err := io.ReadAll(file)
+				if err == nil {
+					ctx.ContentType("text/html")
+					ctx.Write(data)
+				} else {
+					ctx.StatusCode(iris.StatusInternalServerError)
+					ctx.WriteString("Error reading file")
+				}
+			} else {
+				ctx.StatusCode(iris.StatusNotFound)
+				ctx.WriteString("File not found")
+			}
 		} else {
 			// 如果物理文件存在，使用物理文件
-			c.File(indexPath)
+			ctx.ServeFile(indexPath)
 		}
 	})
+
+	// 注册路由
+	routes.RegisterRoutes(app, db)
+
+	// 初始化默认用户
+	userInitService := services.NewUserInitService(db)
+	if err := userInitService.InitDefaultUsers(); err != nil {
+		log.Error("初始化默认用户失败", logger.F("error", err.Error()))
+	} else {
+		log.Info("默认用户初始化成功")
+	}
 
 	// 初始化字典数据
 	dictionaryController := controllers.NewDictionaryController(db)
@@ -197,7 +268,7 @@ func main() {
 	// 启动服务
 	serverPort := config.GetServerPort()
 	log.Info("服务启动", logger.F("port", serverPort), logger.F("mode", config.GetServerMode()))
-	if err := r.Run(serverPort); err != nil {
+	if err := app.Listen(serverPort); err != nil {
 		log.Error("服务启动失败", logger.F("error", err.Error()))
 		panic("Server start failed: " + err.Error())
 	}

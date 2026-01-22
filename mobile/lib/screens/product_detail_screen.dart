@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../models/product.dart';
-import '../providers/product_provider.dart';
+import '../controllers/product_controller.dart';
 import '../utils/formatters.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
@@ -18,18 +18,17 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final ProductController _productController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _productController = Get.find<ProductController>();
 
     // 加载商品详情
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      ).getProduct(widget.productId);
+      _productController.getProduct(widget.productId);
     });
   }
 
@@ -48,9 +47,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              Navigator.of(
-                context,
-              ).pushNamed('/products/edit', arguments: widget.productId);
+              Get.toNamed('/products/edit', arguments: widget.productId);
             },
           ),
           PopupMenuButton<String>(
@@ -73,39 +70,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           tabs: const [Tab(text: '基本信息'), Tab(text: '变体'), Tab(text: '图片')],
         ),
       ),
-      body: Consumer<ProductProvider>(
-        builder: (context, productProvider, child) {
-          if (productProvider.isLoading) {
-            return const LoadingIndicator(message: '加载商品详情中...');
-          }
+      body: Obx(() {
+        if (_productController.isLoading) {
+          return const LoadingIndicator(message: '加载商品详情中...');
+        }
 
-          if (productProvider.error != null) {
-            return ErrorDisplay(
-              error: productProvider.error!,
-              onRetry: () => productProvider.getProduct(widget.productId),
-            );
-          }
-
-          final product = productProvider.selectedProduct;
-          if (product == null) {
-            return const Center(child: Text('商品不存在或已被删除'));
-          }
-
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              // 基本信息
-              _buildBasicInfoTab(product),
-
-              // 变体
-              _buildVariantsTab(product),
-
-              // 图片
-              _buildImagesTab(product),
-            ],
+        if (_productController.hasError) {
+          return ErrorDisplay(
+            error: _productController.error,
+            onRetry: () => _productController.getProduct(widget.productId),
           );
-        },
-      ),
+        }
+
+        final product = _productController.selectedProduct;
+        if (product == null) {
+          return const Center(child: Text('商品不存在或已被删除'));
+        }
+
+        return TabBarView(
+          controller: _tabController,
+          children: [
+            // 基本信息
+            _buildBasicInfoTab(product),
+
+            // 变体
+            _buildVariantsTab(product),
+
+            // 图片
+            _buildImagesTab(product),
+          ],
+        );
+      }),
     );
   }
 
@@ -463,7 +458,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 child: IconButton(
                   icon: const Icon(Icons.close, color: Colors.white, size: 30),
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Get.back();
                   },
                 ),
               ),
@@ -484,25 +479,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Get.back();
               },
               child: const Text('取消'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
-                // 先获取需要的对象和值，然后关闭对话框
-                final productProvider = Provider.of<ProductProvider>(
-                  context,
-                  listen: false,
-                );
                 final productId = widget.productId;
 
                 // 关闭确认对话框
-                Navigator.of(context).pop();
+                Get.back();
 
                 // 执行删除操作
-                _deleteProduct(productProvider, productId);
+                _deleteProduct(productId);
               },
               child: const Text('删除'),
             ),
@@ -513,15 +503,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   // 处理商品删除的异步方法
-  Future<void> _deleteProduct(ProductProvider provider, int productId) async {
-    final success = await provider.deleteProduct(productId);
+  Future<void> _deleteProduct(int productId) async {
+    final success = await _productController.deleteProduct(productId);
 
     // 检查组件是否仍然挂载
     if (success && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('商品已删除')));
-      Navigator.of(context).pop(); // 返回上一页
+      Get.snackbar('成功', '商品已删除');
+      Get.back(); // 返回上一页
     }
   }
 }

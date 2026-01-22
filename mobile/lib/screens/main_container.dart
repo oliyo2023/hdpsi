@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../widgets/custom_bottom_navigation.dart';
 import 'home_screen.dart';
 import 'product_list_screen.dart';
@@ -17,13 +18,21 @@ class _MainContainerState extends State<MainContainer> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const ProductListScreen(),
-    const ScanCheckoutScreen(),
-    const MemberListScreen(),
-    const ProfileScreen(),
-  ];
+  // 延迟初始化页面，避免重复创建
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    // 在initState中初始化页面，确保只创建一次
+    _pages = [
+      const HomeScreen(),
+      const ProductListScreen(),
+      const ScanCheckoutScreen(),
+      const MemberListScreen(),
+      const ProfileScreen(),
+    ];
+  }
 
   @override
   void dispose() {
@@ -40,7 +49,7 @@ class _MainContainerState extends State<MainContainer> {
   void _onNavTap(int index) {
     // 特殊处理扫码页面，直接打开扫码界面
     if (index == 2) {
-      Navigator.of(context).pushNamed('/scan-checkout');
+      Get.toNamed('/scan-checkout');
       return;
     }
 
@@ -71,14 +80,13 @@ class _MainContainerState extends State<MainContainer> {
         onTap: _onNavTap,
       ),
       floatingActionButton:
-          _currentIndex == 1 ||
-                  _currentIndex == 3
+          _currentIndex == 1 || _currentIndex == 3
               ? FloatingActionButton(
                 onPressed: () {
                   if (_currentIndex == 1) {
-                    Navigator.of(context).pushNamed('/products/add');
+                    Get.toNamed('/products/add');
                   } else if (_currentIndex == 3) {
-                    Navigator.of(context).pushNamed('/members/add');
+                    Get.toNamed('/members/add');
                   }
                 },
                 child: const Icon(Icons.add),

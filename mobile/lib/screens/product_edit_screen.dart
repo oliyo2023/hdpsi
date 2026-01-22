@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hd_psi_mobile/utils/logger.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../models/product.dart';
-import '../providers/product_provider.dart';
+import '../controllers/product_controller.dart';
 import '../utils/validators.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
@@ -28,10 +29,12 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   bool _isPricingExpanded = false;
   bool _isVariantsExpanded = false;
   bool _isImagesExpanded = false;
+  late final ProductController _productController;
 
   @override
   void initState() {
     super.initState();
+    _productController = Get.find<ProductController>();
 
     // 加载商品详情
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,13 +43,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   }
 
   Future<void> _loadProductDetails() async {
-    final productProvider = Provider.of<ProductProvider>(
-      context,
-      listen: false,
-    );
-    await productProvider.getProduct(widget.productId);
+    await _productController.getProduct(widget.productId);
 
-    final product = productProvider.selectedProduct;
+    final product = _productController.selectedProduct;
     if (product != null && mounted) {
       Logger.d('ProductEdit', 'Product object after fromJson: $product');
       // 初始化变体列表
@@ -82,389 +81,383 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('编辑商品')),
-      body: Consumer<ProductProvider>(
-        builder: (context, productProvider, child) {
-          if (productProvider.isLoading) {
-            return const LoadingIndicator(message: '加载商品详情中...');
-          }
+      body: Obx(() {
+        if (_productController.isLoading) {
+          return const LoadingIndicator(message: '加载商品详情中...');
+        }
 
-          if (productProvider.error != null) {
-            return ErrorDisplay(
-              error: productProvider.error!,
-              onRetry: _loadProductDetails,
-            );
-          }
-
-          final product = productProvider.selectedProduct;
-          if (product == null) {
-            return const Center(child: Text('商品不存在或已被删除'));
-          }
-
-          // Data is loaded, build the form
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: FormBuilder(
-              key: _formKey,
-              initialValue: {
-                'name': product.name,
-                'sku': product.sku,
-                'categoryId': product.categoryId,
-                'brandId': product.brandId,
-                'description': product.description,
-                'costPrice': product.costPrice.toString(),
-                'retailPrice': product.retailPrice.toString(),
-                'status': product.status,
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 基本信息
-                  _buildExpandableSection(
-                    title: '基本信息',
-                    isExpanded: _isBasicInfoExpanded,
-                    onExpansionChanged: (value) {
-                      setState(() {
-                        _isBasicInfoExpanded = value;
-                      });
-                    },
-                    children: [
-                      // 商品名称
-                      FormBuilderTextField(
-                        name: 'name',
-                        decoration: const InputDecoration(
-                          labelText: '商品名称',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(errorText: '请输入商品名称'),
-                        ]),
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // SKU
-                      FormBuilderTextField(
-                        name: 'sku',
-                        decoration: const InputDecoration(
-                          labelText: 'SKU',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(errorText: '请输入SKU'),
-                        ]),
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // 商品分类
-                      FormBuilderDropdown<int>(
-                        name: 'categoryId',
-                        decoration: const InputDecoration(
-                          labelText: '商品分类',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 1, child: Text('上衣')),
-                          DropdownMenuItem(value: 2, child: Text('裤子')),
-                          DropdownMenuItem(value: 3, child: Text('裙子')),
-                          DropdownMenuItem(value: 4, child: Text('外套')),
-                          DropdownMenuItem(value: 5, child: Text('鞋子')),
-                          DropdownMenuItem(value: 6, child: Text('配饰')),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // 品牌
-                      FormBuilderDropdown<int>(
-                        name: 'brandId',
-                        decoration: const InputDecoration(
-                          labelText: '品牌',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 1, child: Text('品牌A')),
-                          DropdownMenuItem(value: 2, child: Text('品牌B')),
-                          DropdownMenuItem(value: 3, child: Text('品牌C')),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // 商品描述
-                      FormBuilderTextField(
-                        name: 'description',
-                        decoration: const InputDecoration(
-                          labelText: '商品描述',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // 商品状态
-                      FormBuilderSwitch(
-                        name: 'status',
-                        title: const Text('商品状态（开启/关闭）'),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-
-                  // 价格信息
-                  _buildExpandableSection(
-                    title: '价格信息',
-                    isExpanded: _isPricingExpanded,
-                    onExpansionChanged: (value) {
-                      setState(() {
-                        _isPricingExpanded = value;
-                      });
-                    },
-                    children: [
-                      // 成本价
-                      FormBuilderTextField(
-                        name: 'costPrice',
-                        decoration: const InputDecoration(
-                          labelText: '成本价',
-                          border: OutlineInputBorder(),
-                          prefixText: '¥',
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator:
-                            (value) => Validators.validatePrice(value, '成本价'),
-                      ),
-                      const SizedBox(height: 16.0),
-
-                      // 零售价
-                      FormBuilderTextField(
-                        name: 'retailPrice',
-                        decoration: const InputDecoration(
-                          labelText: '零售价',
-                          border: OutlineInputBorder(),
-                          prefixText: '¥',
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator:
-                            (value) => Validators.validatePrice(value, '零售价'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-
-                  // 商品图片
-                  _buildExpandableSection(
-                    title: '商品图片',
-                    isExpanded: _isImagesExpanded,
-                    onExpansionChanged: (value) {
-                      setState(() {
-                        _isImagesExpanded = value;
-                      });
-                    },
-                    children: [
-                      // 现有图片预览
-                      if (product.images.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '现有图片:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8.0),
-                            SizedBox(
-                              height: 120,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: product.images.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: Image.network(
-                                      product.images[index],
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return Container(
-                                          width: 100,
-                                          height: 100,
-                                          color: Colors.grey[200],
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 16.0),
-                          ],
-                        ),
-
-                      // 新图片预览
-                      if (_newImages.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '新添加图片:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8.0),
-                            SizedBox(
-                              height: 120,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _newImages.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: Stack(
-                                      children: [
-                                        Image.file(
-                                          _newImages[index],
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _newImages.removeAt(index);
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(2),
-                                              decoration: const BoxDecoration(
-                                                color: Colors.red,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.close,
-                                                size: 16,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 16.0),
-                          ],
-                        ),
-
-                      // 添加图片按钮
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _pickImage,
-                              icon: const Icon(Icons.photo_library),
-                              label: const Text('从相册选择'),
-                            ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _takePhoto,
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('拍照'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-
-                  // 商品变体
-                  _buildExpandableSection(
-                    title: '商品变体',
-                    isExpanded: _isVariantsExpanded,
-                    onExpansionChanged: (value) {
-                      setState(() {
-                        _isVariantsExpanded = value;
-                      });
-                    },
-                    children: [
-                      // 变体列表
-                      ..._buildVariantsList(),
-                      const SizedBox(height: 16.0),
-
-                      // 添加变体按钮
-                      ElevatedButton.icon(
-                        onPressed: _showAddVariantDialog,
-                        icon: const Icon(Icons.add),
-                        label: const Text('添加变体'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24.0),
-
-                  // 错误信息
-                  if (productProvider.error != null) // Removed _isLoaded check
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text(
-                        productProvider.error!,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-
-                  // 提交按钮
-                  SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed:
-                          productProvider.isLoading
-                              ? null
-                              : () => _submitForm(
-                                product,
-                              ), // product is guaranteed non-null here
-                      child:
-                          productProvider.isLoading
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                              : const Text(
-                                '保存修改',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        if (_productController.hasError) {
+          return ErrorDisplay(
+            error: _productController.error,
+            onRetry: _loadProductDetails,
           );
-        },
-      ),
+        }
+
+        final product = _productController.selectedProduct;
+        if (product == null) {
+          return const Center(child: Text('商品不存在或已被删除'));
+        }
+
+        // Data is loaded, build the form
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: FormBuilder(
+            key: _formKey,
+            initialValue: {
+              'name': product.name,
+              'sku': product.sku,
+              'categoryId': product.categoryId,
+              'brandId': product.brandId,
+              'description': product.description,
+              'costPrice': product.costPrice.toString(),
+              'retailPrice': product.retailPrice.toString(),
+              'status': product.status,
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 基本信息
+                _buildExpandableSection(
+                  title: '基本信息',
+                  isExpanded: _isBasicInfoExpanded,
+                  onExpansionChanged: (value) {
+                    setState(() {
+                      _isBasicInfoExpanded = value;
+                    });
+                  },
+                  children: [
+                    // 商品名称
+                    FormBuilderTextField(
+                      name: 'name',
+                      decoration: const InputDecoration(
+                        labelText: '商品名称',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(errorText: '请输入商品名称'),
+                      ]),
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // SKU
+                    FormBuilderTextField(
+                      name: 'sku',
+                      decoration: const InputDecoration(
+                        labelText: 'SKU',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(errorText: '请输入SKU'),
+                      ]),
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // 商品分类
+                    FormBuilderDropdown<int>(
+                      name: 'categoryId',
+                      decoration: const InputDecoration(
+                        labelText: '商品分类',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 1, child: Text('上衣')),
+                        DropdownMenuItem(value: 2, child: Text('裤子')),
+                        DropdownMenuItem(value: 3, child: Text('裙子')),
+                        DropdownMenuItem(value: 4, child: Text('外套')),
+                        DropdownMenuItem(value: 5, child: Text('鞋子')),
+                        DropdownMenuItem(value: 6, child: Text('配饰')),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // 品牌
+                    FormBuilderDropdown<int>(
+                      name: 'brandId',
+                      decoration: const InputDecoration(
+                        labelText: '品牌',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 1, child: Text('品牌A')),
+                        DropdownMenuItem(value: 2, child: Text('品牌B')),
+                        DropdownMenuItem(value: 3, child: Text('品牌C')),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // 商品描述
+                    FormBuilderTextField(
+                      name: 'description',
+                      decoration: const InputDecoration(
+                        labelText: '商品描述',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 5,
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // 商品状态
+                    FormBuilderSwitch(
+                      name: 'status',
+                      title: const Text('商品状态（开启/关闭）'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+
+                // 价格信息
+                _buildExpandableSection(
+                  title: '价格信息',
+                  isExpanded: _isPricingExpanded,
+                  onExpansionChanged: (value) {
+                    setState(() {
+                      _isPricingExpanded = value;
+                    });
+                  },
+                  children: [
+                    // 成本价
+                    FormBuilderTextField(
+                      name: 'costPrice',
+                      decoration: const InputDecoration(
+                        labelText: '成本价',
+                        border: OutlineInputBorder(),
+                        prefixText: '¥',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator:
+                          (value) => Validators.validatePrice(value, '成本价'),
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // 零售价
+                    FormBuilderTextField(
+                      name: 'retailPrice',
+                      decoration: const InputDecoration(
+                        labelText: '零售价',
+                        border: OutlineInputBorder(),
+                        prefixText: '¥',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator:
+                          (value) => Validators.validatePrice(value, '零售价'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+
+                // 商品图片
+                _buildExpandableSection(
+                  title: '商品图片',
+                  isExpanded: _isImagesExpanded,
+                  onExpansionChanged: (value) {
+                    setState(() {
+                      _isImagesExpanded = value;
+                    });
+                  },
+                  children: [
+                    // 现有图片预览
+                    if (product.images.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '现有图片:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8.0),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: product.images.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: Image.network(
+                                    product.images[index],
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 100,
+                                        height: 100,
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16.0),
+                        ],
+                      ),
+
+                    // 新图片预览
+                    if (_newImages.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '新添加图片:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8.0),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _newImages.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: Stack(
+                                    children: [
+                                      Image.file(
+                                        _newImages[index],
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _newImages.removeAt(index);
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close,
+                                              size: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16.0),
+                        ],
+                      ),
+
+                    // 添加图片按钮
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('从相册选择'),
+                          ),
+                        ),
+                        const SizedBox(width: 16.0),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _takePhoto,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('拍照'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+
+                // 商品变体
+                _buildExpandableSection(
+                  title: '商品变体',
+                  isExpanded: _isVariantsExpanded,
+                  onExpansionChanged: (value) {
+                    setState(() {
+                      _isVariantsExpanded = value;
+                    });
+                  },
+                  children: [
+                    // 变体列表
+                    ..._buildVariantsList(),
+                    const SizedBox(height: 16.0),
+
+                    // 添加变体按钮
+                    ElevatedButton.icon(
+                      onPressed: _showAddVariantDialog,
+                      icon: const Icon(Icons.add),
+                      label: const Text('添加变体'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24.0),
+
+                // 错误信息
+                if (_productController.hasError) // Removed _isLoaded check
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      _productController.error,
+                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                // 提交按钮
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed:
+                        _productController.isLoading
+                            ? null
+                            : () => _submitForm(
+                              product,
+                            ), // product is guaranteed non-null here
+                    child:
+                        _productController.isLoading
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text(
+                              '保存修改',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -713,7 +706,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Get.back();
               },
               child: const Text('取消'),
             ),
@@ -753,7 +746,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                     });
                   });
 
-                  Navigator.of(context).pop();
+                  Get.back();
                 }
               },
               child: const Text('添加'),
@@ -804,7 +797,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         retailPrice: retailPrice,
         status: formData['status'] ?? true,
         createdAt: product.createdAt,
-        updatedAt: DateTime.now().toUtc().toIso8601String(),
+        updatedAt: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       );
 
       // 创建变体列表
@@ -825,21 +818,15 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
           }).toList();
 
       // 提交商品更新
-      final success = await Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      ).updateProduct(
-        product.id,
+      final success = await _productController.updateProduct(
         updatedProduct,
         variants,
         newImages: _newImages,
       );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('商品更新成功')));
-        Navigator.of(context).pop();
+        Get.snackbar('成功', '商品更新成功');
+        Get.back();
       }
     }
   }

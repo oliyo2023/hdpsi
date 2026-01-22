@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 )
 
 // 日志级别
@@ -29,6 +30,13 @@ type Logger struct {
 	Username string
 	// 其他字段
 	Fields map[string]interface{}
+	// 日志文件路径
+	logFile string
+}
+
+// SetLogFile 设置日志文件路径
+func (l *Logger) SetLogFile(filePath string) {
+	l.logFile = filePath
 }
 
 // F 创建一个日志字段
@@ -36,27 +44,34 @@ func F(key string, value interface{}) map[string]interface{} {
 	return map[string]interface{}{key: value}
 }
 
-// WithContext 从Gin上下文创建一个新的日志记录器
-func WithContext(c *gin.Context) *Logger {
+// WithContext 从上下文创建一个新的日志记录器
+func WithContext(ctx interface{}) *Logger {
 	logger := &Logger{
-		RequestID: c.GetString("request_id"),
-		Fields:    make(map[string]interface{}),
+		Fields: make(map[string]interface{}),
 	}
 
-	// 尝试获取用户ID
-	if userID, exists := c.Get("userID"); exists {
-		if id, ok := userID.(uint); ok {
-			logger.UserID = id
+	// 处理 Iris Context
+	if irisCtx, ok := ctx.(iris.Context); ok {
+		logger.RequestID = irisCtx.Values().GetString("request_id")
+
+		// 尝试获取用户ID
+		if userID := irisCtx.Values().Get("userID"); userID != nil {
+			if id, ok := userID.(uint); ok {
+				logger.UserID = id
+			}
 		}
-	}
 
-	// 尝试获取用户名
-	if username, exists := c.Get("username"); exists {
-		if name, ok := username.(string); ok {
-			logger.Username = name
+		// 尝试获取用户名
+		if username := irisCtx.Values().Get("username"); username != nil {
+			if name, ok := username.(string); ok {
+				logger.Username = name
+			}
 		}
+
+		return logger
 	}
 
+	// 如果不是Iris，返回一个空的日志记录器
 	return logger
 }
 
@@ -150,13 +165,46 @@ func (l *Logger) log(level, message string, fields ...map[string]interface{}) {
 		logEntry += "}"
 	}
 
-	// 输出日志
-	log.Println(logEntry)
+	logEntry += "\n"
+
+	// 输出到控制台
+	log.Print(logEntry)
+
+	// 输出到文件（如果配置了日志文件）
+	if l.logFile != "" {
+		if err := l.writeToFile(logEntry); err != nil {
+			// 如果文件写入失败，至少输出到控制台
+			log.Printf("写入日志文件失败: %v", err)
+		}
+	}
 
 	// 如果是致命错误，退出程序
 	if level == LevelFatal {
 		os.Exit(1)
 	}
+}
+
+// writeToFile 将日志写入文件
+func (l *Logger) writeToFile(logEntry string) error {
+	// 确保日志目录存在
+	dir := filepath.Dir(l.logFile)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建日志目录失败: %v", err)
+	}
+
+	// 打开文件（追加模式）
+	file, err := os.OpenFile(l.logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return fmt.Errorf("打开日志文件失败: %v", err)
+	}
+	defer file.Close()
+
+	// 写入日志
+	if _, err := file.WriteString(logEntry); err != nil {
+		return fmt.Errorf("写入日志文件失败: %v", err)
+	}
+
+	return nil
 }
 
 // Debug 记录调试级别日志

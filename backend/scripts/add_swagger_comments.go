@@ -14,7 +14,7 @@ import (
 )
 
 // 控制器方法的正则表达式
-var funcRegex = regexp.MustCompile(`func \(\w+ \*(\w+)\) (\w+)\(c \*gin\.Context\)`)
+var funcRegex = regexp.MustCompile(`func \(\w+ \*(\w+)\) (\w+)\(c iris\.Context\)`)
 
 // 路由路径映射
 var routePathMap = map[string]string{

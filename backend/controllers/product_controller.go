@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -37,18 +37,18 @@ func NewProductController(db *gorm.DB) *ProductController {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /products [get]
 // @Security BearerAuth
-func (pc *ProductController) ListProducts(c *gin.Context) {
+func (pc *ProductController) ListProducts(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 	log.Info("获取商品列表")
 
 	// 获取查询参数
-	name := c.Query("name")
-	sku := c.Query("sku")
-	category := c.Query("category")
-	categoryID := c.Query("category_id") // 添加对category_id参数的支持
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	name := ctx.URLParam("name")
+	sku := ctx.URLParam("sku")
+	category := ctx.URLParam("category")
+	categoryID := ctx.URLParam("category_id") // 添加对category_id参数的支持
+	page, _ := strconv.Atoi(ctx.URLParamDefault("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.URLParamDefault("pageSize", "10"))
 
 	// 记录查询参数
 	log = log.WithFields(
@@ -84,8 +84,9 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取商品总数失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -98,8 +99,9 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取商品列表失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -117,11 +119,12 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		var categoryItems []models.DictionaryItem
 		pc.db.Where("dictionary_code = ?", models.DictCategory).Find(&categoryItems)
 		for _, item := range categoryItems {
-			if item.Code == "shirt" {
+			switch item.Code {
+			case "shirt":
 				categoryShirt = item.ID
-			} else if item.Code == "pants" {
+			case "pants":
 				categoryPants = item.ID
-			} else if item.Code == "tshirt" {
+			case "tshirt":
 				categoryTshirt = item.ID
 			}
 		}
@@ -130,11 +133,12 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		var colorItems []models.DictionaryItem
 		pc.db.Where("dictionary_code = ?", models.DictColor).Find(&colorItems)
 		for _, item := range colorItems {
-			if item.Code == "white" {
+			switch item.Code {
+			case "white":
 				colorWhite = item.ID
-			} else if item.Code == "blue" {
+			case "blue":
 				colorBlue = item.ID
-			} else if item.Code == "black" {
+			case "black":
 				colorBlack = item.ID
 			}
 		}
@@ -143,11 +147,12 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		var sizeItems []models.DictionaryItem
 		pc.db.Where("dictionary_code = ?", models.DictSize).Find(&sizeItems)
 		for _, item := range sizeItems {
-			if item.Code == "l" {
+			switch item.Code {
+			case "l":
 				sizeL = item.ID
-			} else if item.Code == "m" {
+			case "m":
 				sizeM = item.ID
-			} else if item.Code == "xl" {
+			case "xl":
 				sizeXL = item.ID
 			}
 		}
@@ -156,9 +161,10 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		var seasonItems []models.DictionaryItem
 		pc.db.Where("dictionary_code = ?", models.DictSeason).Find(&seasonItems)
 		for _, item := range seasonItems {
-			if item.Code == "spring" {
+			switch item.Code {
+			case "spring":
 				seasonSpring = item.ID
-			} else if item.Code == "summer" {
+			case "summer":
 				seasonSummer = item.ID
 			}
 		}
@@ -290,7 +296,8 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		logger.F("total", total),
 		logger.F("count", len(products)))
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{
 		"items":    products,
 		"total":    total,
 		"page":     page,
@@ -311,11 +318,11 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /products/{id} [get]
 // @Security BearerAuth
-func (pc *ProductController) GetProduct(c *gin.Context) {
+func (pc *ProductController) GetProduct(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 
-	id := c.Param("id")
+	id := ctx.Params().Get("id")
 	log.Info("获取商品详情", logger.F("product_id", id))
 
 	var product models.Product
@@ -325,8 +332,9 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrNotFound).
 			WithDetails("商品不存在或已被删除").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -364,7 +372,8 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 		logger.F("sku", product.SKU),
 		logger.F("variants_count", len(product.Variants)))
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{
 		"product":  product,
 		"variants": product.Variants,
 	})
@@ -416,9 +425,9 @@ func (pc *ProductController) GetProduct(c *gin.Context) {
 //	    }
 //	  ]
 //	}
-func (pc *ProductController) CreateProduct(c *gin.Context) {
+func (pc *ProductController) CreateProduct(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 	log.Info("创建商品")
 
 	var input struct {
@@ -426,13 +435,14 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		Variants []models.ProductVariant `json:"variants"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := ctx.ReadJSON(&input); err != nil {
 		log.Warn("创建商品请求参数无效", logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrInvalidInput).
 			WithDetails("请提供有效的商品信息").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -448,8 +458,9 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		log.Warn("SKU已存在", logger.F("sku", input.Product.SKU))
 		appErr := errors.New(errors.ErrConflict).
 			WithDetails("商品SKU已存在，请使用其他SKU").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusConflict)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -467,8 +478,9 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseInsert).
 			WithDetails("创建商品失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -488,8 +500,9 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 			appErr := errors.New(errors.ErrDatabaseInsert).
 				WithDetails("创建商品变体失败").
 				WithError(err).
-				WithRequestID(c.GetString("request_id"))
-			c.Error(appErr)
+				WithRequestID(ctx.Values().GetString("request_id"))
+			ctx.StatusCode(http.StatusInternalServerError)
+			ctx.JSON(iris.Map{"error": appErr.Error()})
 			return
 		}
 	}
@@ -500,8 +513,9 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseInsert).
 			WithDetails("提交事务失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -510,7 +524,8 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		logger.F("sku", input.Product.SKU),
 		logger.F("variants_count", len(input.Variants)))
 
-	c.JSON(http.StatusCreated, gin.H{
+	ctx.StatusCode(http.StatusCreated)
+	ctx.JSON(iris.Map{
 		"product":  input.Product,
 		"variants": input.Variants,
 	})
@@ -575,11 +590,11 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 //	    }
 //	  ]
 //	}
-func (pc *ProductController) UpdateProduct(c *gin.Context) {
+func (pc *ProductController) UpdateProduct(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 
-	id := c.Param("id")
+	id := ctx.Params().Get("id")
 	log.Info("更新商品", logger.F("product_id", id))
 
 	var product models.Product
@@ -588,8 +603,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrNotFound).
 			WithDetails("商品不存在或已被删除").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -598,13 +614,14 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		Variants []models.ProductVariant `json:"variants"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := ctx.ReadJSON(&input); err != nil {
 		log.Warn("更新商品请求参数无效", logger.F("error", err.Error()))
 		appErr := errors.New(errors.ErrInvalidInput).
 			WithDetails("请提供有效的商品信息").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -622,8 +639,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 			logger.F("existing_product_id", existingProduct.ID))
 		appErr := errors.New(errors.ErrConflict).
 			WithDetails("商品SKU已被其他商品使用，请使用其他SKU").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusConflict)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -641,8 +659,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取当前商品信息失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -678,8 +697,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseUpdate).
 			WithDetails("更新商品失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -691,8 +711,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取更新后的商品信息失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -713,8 +734,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取现有变体失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -756,8 +778,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 					appErr := errors.New(errors.ErrDatabaseUpdate).
 						WithDetails("更新商品变体失败").
 						WithError(err).
-						WithRequestID(c.GetString("request_id"))
-					c.Error(appErr)
+						WithRequestID(ctx.Values().GetString("request_id"))
+					ctx.StatusCode(http.StatusInternalServerError)
+					ctx.JSON(iris.Map{"error": appErr.Error()})
 					return
 				}
 				incomingVariantIDs[variant.ID] = true // Mark as processed
@@ -774,8 +797,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 					appErr := errors.New(errors.ErrDatabaseInsert).
 						WithDetails("创建商品变体失败").
 						WithError(err).
-						WithRequestID(c.GetString("request_id"))
-					c.Error(appErr)
+						WithRequestID(ctx.Values().GetString("request_id"))
+					ctx.StatusCode(http.StatusInternalServerError)
+					ctx.JSON(iris.Map{"error": appErr.Error()})
 					return
 				}
 				incomingVariantIDs[variant.ID] = true // Mark as processed with new ID
@@ -791,8 +815,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 				appErr := errors.New(errors.ErrDatabaseInsert).
 					WithDetails("创建商品变体失败").
 					WithError(err).
-					WithRequestID(c.GetString("request_id"))
-				c.Error(appErr)
+					WithRequestID(ctx.Values().GetString("request_id"))
+				ctx.StatusCode(http.StatusInternalServerError)
+				ctx.JSON(iris.Map{"error": appErr.Error()})
 				return
 			}
 			incomingVariantIDs[variant.ID] = true // Mark as processed with new ID
@@ -812,8 +837,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 				appErr := errors.New(errors.ErrDatabaseDelete).
 					WithDetails("删除商品变体失败").
 					WithError(err).
-					WithRequestID(c.GetString("request_id"))
-				c.Error(appErr)
+					WithRequestID(ctx.Values().GetString("request_id"))
+				ctx.StatusCode(http.StatusInternalServerError)
+				ctx.JSON(iris.Map{"error": appErr.Error()})
 				return
 			}
 		}
@@ -825,8 +851,9 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseUpdate).
 			WithDetails("提交事务失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -835,17 +862,18 @@ func (pc *ProductController) UpdateProduct(c *gin.Context) {
 		logger.F("sku", input.Product.SKU),
 		logger.F("variants_count", len(input.Variants)))
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{
 		"product":  input.Product,
 		"variants": input.Variants,
 	})
 }
 
-func (pc *ProductController) DeleteProduct(c *gin.Context) {
+func (pc *ProductController) DeleteProduct(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 
-	id := c.Param("id")
+	id := ctx.Params().Get("id")
 	log.Info("删除商品", logger.F("product_id", id))
 
 	// 检查商品是否存在
@@ -855,8 +883,9 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrNotFound).
 			WithDetails("商品不存在或已被删除").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -872,8 +901,9 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseDelete).
 			WithDetails("删除商品变体失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -886,8 +916,9 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseDelete).
 			WithDetails("删除商品失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -897,8 +928,9 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseDelete).
 			WithDetails("提交事务失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -906,22 +938,23 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		logger.F("product_id", id),
 		logger.F("sku", product.SKU))
 
-	c.JSON(http.StatusOK, gin.H{"message": "商品删除成功"})
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{"message": "商品删除成功"})
 }
 
 // ListDeletedProducts 获取已删除的商品列表
-func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
+func (pc *ProductController) ListDeletedProducts(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 	log.Info("获取已删除商品列表")
 
 	// 获取查询参数
-	name := c.Query("name")
-	sku := c.Query("sku")
-	category := c.Query("category")
-	categoryID := c.Query("category_id") // 添加对category_id参数的支持
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	name := ctx.URLParam("name")
+	sku := ctx.URLParam("sku")
+	category := ctx.URLParam("category")
+	categoryID := ctx.URLParam("category_id") // 添加对category_id参数的支持
+	page, _ := strconv.Atoi(ctx.URLParamDefault("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.URLParamDefault("pageSize", "10"))
 
 	// 记录查询参数
 	log = log.WithFields(
@@ -957,8 +990,9 @@ func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取已删除商品总数失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -971,8 +1005,9 @@ func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseQuery).
 			WithDetails("获取已删除商品列表失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -980,7 +1015,8 @@ func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
 		logger.F("total", total),
 		logger.F("count", len(products)))
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{
 		"items":    products,
 		"total":    total,
 		"page":     page,
@@ -989,11 +1025,11 @@ func (pc *ProductController) ListDeletedProducts(c *gin.Context) {
 }
 
 // RestoreProduct 恢复已删除的商品
-func (pc *ProductController) RestoreProduct(c *gin.Context) {
+func (pc *ProductController) RestoreProduct(ctx iris.Context) {
 	// 创建请求日志
-	log := logger.WithContext(c)
+	log := logger.WithContext(ctx)
 
-	id := c.Param("id")
+	id := ctx.Params().Get("id")
 	log.Info("恢复已删除商品", logger.F("product_id", id))
 
 	// 检查商品是否存在且已被删除
@@ -1003,8 +1039,9 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrNotFound).
 			WithDetails("已删除商品不存在").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -1016,8 +1053,9 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 			logger.F("existing_product_id", existingProduct.ID))
 		appErr := errors.New(errors.ErrConflict).
 			WithDetails("商品SKU已被其他商品使用，无法恢复").
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusConflict)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -1033,8 +1071,9 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseUpdate).
 			WithDetails("恢复商品失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -1047,8 +1086,9 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseUpdate).
 			WithDetails("恢复商品变体失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -1058,8 +1098,9 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 		appErr := errors.New(errors.ErrDatabaseUpdate).
 			WithDetails("提交事务失败").
 			WithError(err).
-			WithRequestID(c.GetString("request_id"))
-		c.Error(appErr)
+			WithRequestID(ctx.Values().GetString("request_id"))
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": appErr.Error()})
 		return
 	}
 
@@ -1067,5 +1108,6 @@ func (pc *ProductController) RestoreProduct(c *gin.Context) {
 		logger.F("product_id", id),
 		logger.F("sku", product.SKU))
 
-	c.JSON(http.StatusOK, gin.H{"message": "商品恢复成功"})
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(iris.Map{"message": "商品恢复成功"})
 }

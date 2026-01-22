@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  backend:
+    image: yinqiyun-docker.pkg.coding.net/hd_psi/backend/hd_psi_backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hd_psi_backend
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - HD_PSI_SERVER_PORT=8081
+      - HD_PSI_SERVER_MODE=release
+      - HD_PSI_DATABASE_HOST=mysql
+      - HD_PSI_DATABASE_PORT=3306
+      - HD_PSI_DATABASE_USER=root
+      - HD_PSI_DATABASE_PASSWORD=gemini4094
+      - HD_PSI_DATABASE_NAME=hd_psi_dev
+      - HD_PSI_DATABASE_CHARSET=utf8mb4
+      - HD_PSI_DATABASE_PARSE_TIME=true
+      - HD_PSI_DATABASE_LOC=Local
+      - HD_PSI_DATABASE_MAX_IDLE_CONNS=10
+      - HD_PSI_DATABASE_MAX_OPEN_CONNS=100
+      - HD_PSI_DATABASE_CONN_MAX_LIFETIME=3600
+      - HD_PSI_DATABASE_AUTO_MIGRATE=true
+      - HD_PSI_JWT_SECRET=hd_psi_secret_key
+      - HD_PSI_LOG_LEVEL=info
+      - HD_PSI_LOG_FORMAT=text
+      - HD_PSI_LOG_OUTPUT=file
+    volumes:
+      - ./backend/config:/app/config
+      - ./backend/logs:/app/logs
+      - ./backend/public:/app/public
+    depends_on:
+      - mysql
+    networks:
+      - hd_psi_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: hd_psi_mysql
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=gemini4094
+      - MYSQL_DATABASE=hd_psi_dev
+      - MYSQL_USER=hd_psi
+      - MYSQL_PASSWORD=hd_psi_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mysql/conf:/etc/mysql/conf.d
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - hd_psi_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  hd_psi_network:
+    driver: bridge

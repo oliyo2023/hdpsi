@@ -1,4 +1,5 @@
 import 'package:hd_psi_mobile/api_client/generated/lib/api.dart' as api;
+import 'package:intl/intl.dart';
 import '../models/supplier.dart';
 
 /// 模型转换器
@@ -49,8 +50,8 @@ class ModelConverter {
       deliveryTerms: appSupplier.deliveryTerms,
       status: appSupplier.status,
       note: appSupplier.note,
-      createdAt: appSupplier.createdAt.toIso8601String(),
-      updatedAt: appSupplier.updatedAt.toIso8601String(),
+      createdAt: DateFormat('yyyy-MM-dd').format(appSupplier.createdAt),
+      updatedAt: DateFormat('yyyy-MM-dd').format(appSupplier.updatedAt),
     );
   }
 

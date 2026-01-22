@@ -8,9 +8,9 @@
 // - theme/app_theme.dart - 主题入口点
 
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart' as new_theme;
-import '../theme/app_colors.dart';
-import '../theme/app_dimensions.dart';
+import 'package:hd_psi_mobile/theme/app_theme.dart' as new_theme;
+import 'package:hd_psi_mobile/theme/app_colors.dart';
+import 'package:hd_psi_mobile/theme/app_dimensions.dart';
 
 // 为了向后兼容，保留原有的静态方法
 class AppTheme {

@@ -28,6 +28,9 @@ import Profile from '../views/Profile.vue'
 import Settings from '../views/Settings.vue'
 import PermissionManagement from '../views/permission/index.vue'
 import NotFound from '../views/NotFound.vue'
+import SalesOrderList from '../views/SalesOrderList.vue'
+import SalesOrderForm from '../views/SalesOrderForm.vue'
+import SalesOrderDetail from '../views/SalesOrderDetail.vue'
 import ReturnList from '../views/sales/ReturnList.vue'
 import ReturnCreate from '../views/sales/ReturnCreate.vue'
 import ReturnDetail from '../views/sales/ReturnDetail.vue'
@@ -193,6 +196,30 @@ const routes = [
     name: 'PermissionManagement',
     component: PermissionManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/sales',
+    name: 'SalesOrderList',
+    component: SalesOrderList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sales/create',
+    name: 'SalesOrderCreate',
+    component: SalesOrderForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sales/edit/:id',
+    name: 'SalesOrderEdit',
+    component: SalesOrderForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sales/:id',
+    name: 'SalesOrderDetail',
+    component: SalesOrderDetail,
+    meta: { requiresAuth: true }
   },
   {
     path: '/sales/returns',

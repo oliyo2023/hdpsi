@@ -23,9 +23,9 @@ type Config struct {
 
 // APIConfig API配置
 type APIConfig struct {
-	Version             string // API版本，如 v1
-	Prefix              string // API前缀，如 /api
-	EnableVersionPrefix bool   // 是否启用版本前缀，如 /api/v1
+	Version             string `yaml:"version"`               // API版本，如 v1
+	Prefix              string `yaml:"prefix"`                // API前缀，如 /api
+	EnableVersionPrefix bool   `yaml:"enable_version_prefix"` // 是否启用版本前缀，如 /api/v1
 }
 
 // WechatOfficialAccountConfig 微信公众号配置 (修改结构体名称和字段)
@@ -46,18 +46,20 @@ type ServerConfig struct {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
-	Host            string
-	Port            string
-	User            string
-	Password        string
-	Name            string
-	Charset         string
-	ParseTime       bool
-	Loc             string
-	MaxIdleConns    int
-	MaxOpenConns    int
-	ConnMaxLifetime int
-	AutoMigrate     bool // 是否自动迁移数据库模型
+	Type            string `mapstructure:"type"`              // 数据库类型：mysql, sqlite
+	SQLitePath      string `mapstructure:"sqlite_path"`       // SQLite数据库文件路径
+	Host            string `mapstructure:"host"`              // MySQL主机地址
+	Port            string `mapstructure:"port"`              // MySQL端口
+	User            string `mapstructure:"user"`              // MySQL用户名
+	Password        string `mapstructure:"password"`          // MySQL密码
+	Name            string `mapstructure:"name"`              // MySQL数据库名
+	Charset         string `mapstructure:"charset"`           // MySQL字符集
+	ParseTime       bool   `mapstructure:"parse_time"`        // MySQL是否解析时间
+	Loc             string `mapstructure:"loc"`               // MySQL时区
+	MaxIdleConns    int    `mapstructure:"max_idle_conns"`    // 最大空闲连接数
+	MaxOpenConns    int    `mapstructure:"max_open_conns"`    // 最大打开连接数
+	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"` // 连接最大生命周期
+	AutoMigrate     bool   `mapstructure:"auto_migrate"`      // 是否自动迁移数据库模型
 }
 
 // JWTConfig JWT配置
@@ -147,6 +149,9 @@ func InitConfig() {
 		log.Fatalf("解析配置文件失败: %v", err)
 	}
 
+	// 手动设置API配置
+	AppConfig.API.EnableVersionPrefix = viper.GetBool("api.enable_version_prefix")
+
 	// 确保数据库自动迁移设置被正确读取
 	AppConfig.Database.AutoMigrate = viper.GetBool("database.auto_migrate")
 	log.Printf("数据库自动迁移设置: %v\n", AppConfig.Database.AutoMigrate)
@@ -165,6 +170,8 @@ func setDefaultConfig() {
 	viper.SetDefault("api.enable_version_prefix", true)
 
 	// 数据库配置
+	viper.SetDefault("database.type", "sqlite")
+	viper.SetDefault("database.sqlite_path", "./data/hd_psi.db")
 	viper.SetDefault("database.host", "192.168.1.5")
 	viper.SetDefault("database.port", "3306")
 	viper.SetDefault("database.user", "root")
@@ -176,7 +183,7 @@ func setDefaultConfig() {
 	viper.SetDefault("database.max_idle_conns", 10)
 	viper.SetDefault("database.max_open_conns", 100)
 	viper.SetDefault("database.conn_max_lifetime", 3600)
-	viper.SetDefault("database.auto_migrate", false) // 默认不自动迁移
+	viper.SetDefault("database.auto_migrate", true) // SQLite默认自动迁移
 
 	// JWT配置
 	viper.SetDefault("jwt.secret", "hd_psi_secret_key")
@@ -213,24 +220,36 @@ func setDefaultConfig() {
 }
 
 // GetDBConfig 获取数据库连接配置
-func GetDBConfig() string {
+func GetDBConfig() (string, string) {
 	// 如果配置未初始化，则初始化配置
-	if AppConfig.Database.Host == "" {
+	if AppConfig.Database.Type == "" {
 		InitConfig()
 	}
 
-	// 构建DSN连接字符串
-	// 确保parseTime=true以正确处理datetime类型
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true&loc=%s",
-		AppConfig.Database.User,
-		AppConfig.Database.Password,
-		AppConfig.Database.Host,
-		AppConfig.Database.Port,
-		AppConfig.Database.Name,
-		AppConfig.Database.Charset,
-		AppConfig.Database.Loc)
+	dbType := AppConfig.Database.Type
+	var dsn string
 
-	return dsn
+	switch dbType {
+	case "sqlite":
+		dsn = AppConfig.Database.SQLitePath
+	case "mysql":
+		// 构建MySQL DSN连接字符串
+		// 确保parseTime=true以正确处理datetime类型
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true&loc=%s",
+			AppConfig.Database.User,
+			AppConfig.Database.Password,
+			AppConfig.Database.Host,
+			AppConfig.Database.Port,
+			AppConfig.Database.Name,
+			AppConfig.Database.Charset,
+			AppConfig.Database.Loc)
+	default:
+		// 默认使用SQLite
+		dbType = "sqlite"
+		dsn = "./data/hd_psi.db"
+	}
+
+	return dbType, dsn
 }
 
 // GetJWTSecret 获取JWT密钥

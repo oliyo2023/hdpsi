@@ -1,6 +1,9 @@
 # Builder stage
 FROM golang:1.24.2-alpine as builder
 
+# 设置GOPROXY加速依赖下载
+ENV GOPROXY=https://goproxy.cn,direct
+
 WORKDIR /app
 
 # Copy go.mod and go.sum and download dependencies
@@ -15,20 +18,15 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /backend-app ./main.go
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.19
 
 WORKDIR /app
 
 # Copy the built executable from the builder stage
 COPY --from=builder /backend-app .
 
-# Copy configuration files (assuming they are in backend/config/)
-# Adjust this if your config files are located elsewhere or named differently
-COPY backend/config/ ./config/
-
-# Expose the port the application listens on (assuming 8080)
-# Update this if your application listens on a different port
-EXPOSE 8080
+# Expose the port the application listens on
+EXPOSE 8081
 
 # Command to run the executable
 ENTRYPOINT ["/app/backend-app"]

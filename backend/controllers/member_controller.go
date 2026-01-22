@@ -2,11 +2,10 @@ package controllers
 
 import (
 	"hd_psi/backend/models"
-	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -35,13 +34,28 @@ func NewMemberController(db *gorm.DB) *MemberController {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /members [get]
 // @Security BearerAuth
-func (mc *MemberController) ListMembers(c *gin.Context) {
+func (mc *MemberController) ListMembers(c iris.Context) {
 	// 获取查询参数
-	name := c.Query("name")
-	phone := c.Query("phone")
-	level := c.Query("level")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	name := c.URLParam("name")
+	phone := c.URLParam("phone")
+	level := c.URLParam("level")
+	pageStr := c.URLParam("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	pageSizeStr := c.URLParam("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "10"
+	}
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		pageSize = 10
+	}
 
 	// 构建查询
 	query := mc.db.Model(&models.Member{})
@@ -60,7 +74,8 @@ func (mc *MemberController) ListMembers(c *gin.Context) {
 	// 计算总数
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取会员总数失败"})
+		c.JSON(iris.Map{"error": "获取会员总数失败"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
@@ -68,11 +83,12 @@ func (mc *MemberController) ListMembers(c *gin.Context) {
 	offset := (page - 1) * pageSize
 	var members []models.Member
 	if err := query.Offset(offset).Limit(pageSize).Find(&members).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取会员列表失败"})
+		c.JSON(iris.Map{"error": "获取会员列表失败"})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(iris.Map{
 		"items":    members,
 		"total":    total,
 		"page":     page,
@@ -93,14 +109,15 @@ func (mc *MemberController) ListMembers(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /members/{id} [get]
 // @Security BearerAuth
-func (mc *MemberController) GetMember(c *gin.Context) {
-	id := c.Param("id")
+func (mc *MemberController) GetMember(c iris.Context) {
+	id := c.Params().Get("id")
 	var member models.Member
 	if err := mc.db.First(&member, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
-	c.JSON(http.StatusOK, member)
+	c.JSON(member)
 }
 
 // CreateMember godoc
@@ -131,10 +148,11 @@ func (mc *MemberController) GetMember(c *gin.Context) {
 //	  "consumption_level": "medium",
 //	  "note": "重要客户"
 //	}
-func (mc *MemberController) CreateMember(c *gin.Context) {
+func (mc *MemberController) CreateMember(c iris.Context) {
 	var member models.Member
-	if err := c.ShouldBindJSON(&member); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&member); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
@@ -142,7 +160,8 @@ func (mc *MemberController) CreateMember(c *gin.Context) {
 	var existingMember models.Member
 	if member.Phone != "" {
 		if err := mc.db.Where("phone = ?", member.Phone).First(&existingMember).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "手机号已被注册"})
+			c.JSON(iris.Map{"error": "手机号已被注册"})
+			c.StatusCode(iris.StatusBadRequest)
 			return
 		}
 	}
@@ -158,11 +177,13 @@ func (mc *MemberController) CreateMember(c *gin.Context) {
 
 	// 创建会员
 	if err := mc.db.Create(&member).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建会员失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "创建会员失败: " + err.Error()})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.StatusCode(iris.StatusCreated)
+	c.JSON(iris.Map{
 		"message": "会员创建成功",
 		"member":  member,
 	})
@@ -198,24 +219,27 @@ func (mc *MemberController) CreateMember(c *gin.Context) {
 //	  "consumption_level": "high",
 //	  "note": "VIP客户"
 //	}
-func (mc *MemberController) UpdateMember(c *gin.Context) {
-	id := c.Param("id")
+func (mc *MemberController) UpdateMember(c iris.Context) {
+	id := c.Params().Get("id")
 	var member models.Member
 	if err := mc.db.First(&member, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Member not found"})
+		c.JSON(iris.Map{"error": "Member not found"})
+		c.StatusCode(iris.StatusNotFound)
 		return
 	}
 
-	if err := c.ShouldBindJSON(&member); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&member); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusBadRequest)
 		return
 	}
 
 	if err := mc.db.Save(&member).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
-	c.JSON(http.StatusOK, member)
+	c.JSON(member)
 }
 
 // DeleteMember godoc
@@ -231,11 +255,12 @@ func (mc *MemberController) UpdateMember(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
 // @Router /members/{id} [delete]
 // @Security BearerAuth
-func (mc *MemberController) DeleteMember(c *gin.Context) {
-	id := c.Param("id")
+func (mc *MemberController) DeleteMember(c iris.Context) {
+	id := c.Params().Get("id")
 	if err := mc.db.Delete(&models.Member{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(iris.Map{"error": err.Error()})
+		c.StatusCode(iris.StatusInternalServerError)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Member deleted"})
+	c.JSON(iris.Map{"message": "Member deleted"})
 }

@@ -3,11 +3,12 @@ package controllers
 import (
 	"fmt"
 	"hd_psi/backend/models"
+	"hd_psi/backend/utils/response"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -37,10 +38,10 @@ type PurchaseOrdersResponse struct {
 }
 
 // ListPurchaseOrders 获取采购单列表
-func (pc *PurchaseController) ListPurchaseOrders(c *gin.Context) {
+func (pc *PurchaseController) ListPurchaseOrders(c iris.Context) {
 	var query ListPurchaseOrdersQuery
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadForm(&query); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -76,28 +77,30 @@ func (pc *PurchaseController) ListPurchaseOrders(c *gin.Context) {
 		Offset(offset).Limit(query.PageSize).
 		Order("created_at DESC").
 		Find(&purchaseOrders).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	response.InternalError(c, err.Error())
+	return
+}
 
-	c.JSON(http.StatusOK, PurchaseOrdersResponse{
-		Total: int(total),
-		Items: purchaseOrders,
-	})
+c.StatusCode(http.StatusOK)
+c.JSON(PurchaseOrdersResponse{
+	Total: int(total),
+	Items: purchaseOrders,
+})
 }
 
 // GetPurchaseOrder 获取采购单详情
-func (pc *PurchaseController) GetPurchaseOrder(c *gin.Context) {
-	id := c.Param("id")
+func (pc *PurchaseController) GetPurchaseOrder(c iris.Context) {
+	id := c.Params().Get("id")
 	var purchaseOrder models.PurchaseOrder
 
 	if err := pc.db.Preload("Items.Product").Preload("Supplier").Preload("Store").
 		First(&purchaseOrder, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购单不存在"})
+		response.NotFound(c, "采购单不存在")
 		return
 	}
 
-	c.JSON(http.StatusOK, purchaseOrder)
+	c.StatusCode(http.StatusOK)
+	c.JSON(purchaseOrder)
 }
 
 // 创建采购单请求
@@ -118,17 +121,17 @@ type PurchaseOrderItemRequest struct {
 }
 
 // CreatePurchaseOrder 创建采购单
-func (pc *PurchaseController) CreatePurchaseOrder(c *gin.Context) {
+func (pc *PurchaseController) CreatePurchaseOrder(c iris.Context) {
 	var request CreatePurchaseOrderRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		response.Unauthorized(c, "未授权")
 		return
 	}
 
@@ -174,7 +177,7 @@ func (pc *PurchaseController) CreatePurchaseOrder(c *gin.Context) {
 		date, err := time.Parse("2006-01-02", request.ExpectedDate)
 		if err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": "预计到货日期格式错误，应为YYYY-MM-DD"})
+			response.BadRequest(c, "预计到货日期格式错误，应为YYYY-MM-DD")
 			return
 		}
 		expectedDate = &date
@@ -194,7 +197,7 @@ func (pc *PurchaseController) CreatePurchaseOrder(c *gin.Context) {
 
 	if err := tx.Create(&purchaseOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建采购单失败: " + err.Error()})
+		response.InternalError(c, "创建采购单失败: "+err.Error())
 		return
 	}
 
@@ -205,13 +208,13 @@ func (pc *PurchaseController) CreatePurchaseOrder(c *gin.Context) {
 
 	if err := tx.Create(&items).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建采购单明细失败: " + err.Error()})
+		response.InternalError(c, "创建采购单明细失败: "+err.Error())
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		response.InternalError(c, "提交事务失败: "+err.Error())
 		return
 	}
 
@@ -220,7 +223,7 @@ func (pc *PurchaseController) CreatePurchaseOrder(c *gin.Context) {
 	pc.db.Preload("Items.Product").Preload("Supplier").Preload("Store").
 		First(&result, purchaseOrder.ID)
 
-	c.JSON(http.StatusCreated, result)
+	response.Created(c, result)
 }
 
 // 更新采购单请求
@@ -233,25 +236,25 @@ type UpdatePurchaseOrderRequest struct {
 }
 
 // UpdatePurchaseOrder 更新采购单
-func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
-	id := c.Param("id")
+func (pc *PurchaseController) UpdatePurchaseOrder(c iris.Context) {
+	id := c.Params().Get("id")
 	var purchaseOrder models.PurchaseOrder
 
 	// 查询采购单
 	if err := pc.db.Preload("Items").First(&purchaseOrder, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购单不存在"})
+		response.NotFound(c, "采购单不存在")
 		return
 	}
 
 	// 只有草稿状态的采购单可以修改
 	if purchaseOrder.Status != models.PurchaseDraft {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "只有草稿状态的采购单可以修改"})
+		response.BadRequest(c, "只有草稿状态的采购单可以修改")
 		return
 	}
 
 	var request UpdatePurchaseOrderRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -269,7 +272,7 @@ func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
 		date, err := time.Parse("2006-01-02", request.ExpectedDate)
 		if err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": "预计到货日期格式错误，应为YYYY-MM-DD"})
+			response.BadRequest(c, "预计到货日期格式错误，应为YYYY-MM-DD")
 			return
 		}
 		purchaseOrder.ExpectedDate = &date
@@ -283,7 +286,7 @@ func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
 		// 删除原有明细
 		if err := tx.Where("purchase_order_id = ?", purchaseOrder.ID).Delete(&models.PurchaseOrderItem{}).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "删除原有明细失败: " + err.Error()})
+			response.InternalError(c, "删除原有明细失败: "+err.Error())
 			return
 		}
 
@@ -310,7 +313,7 @@ func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
 		// 创建新明细
 		if err := tx.Create(&items).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建新明细失败: " + err.Error()})
+			response.InternalError(c, "创建新明细失败: "+err.Error())
 			return
 		}
 	}
@@ -318,13 +321,13 @@ func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
 	// 保存采购单
 	if err := tx.Save(&purchaseOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单失败: " + err.Error()})
+		response.InternalError(c, "更新采购单失败: "+err.Error())
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		response.InternalError(c, "提交事务失败: "+err.Error())
 		return
 	}
 
@@ -333,7 +336,7 @@ func (pc *PurchaseController) UpdatePurchaseOrder(c *gin.Context) {
 	pc.db.Preload("Items.Product").Preload("Supplier").Preload("Store").
 		First(&result, purchaseOrder.ID)
 
-	c.JSON(http.StatusOK, result)
+	response.Success(c, result)
 }
 
 // 采购单状态更新请求
@@ -343,32 +346,32 @@ type UpdatePurchaseOrderStatusRequest struct {
 }
 
 // UpdatePurchaseOrderStatus 更新采购单状态
-func (pc *PurchaseController) UpdatePurchaseOrderStatus(c *gin.Context) {
-	id := c.Param("id")
+func (pc *PurchaseController) UpdatePurchaseOrderStatus(c iris.Context) {
+	id := c.Params().Get("id")
 	var purchaseOrder models.PurchaseOrder
 
 	// 查询采购单
 	if err := pc.db.First(&purchaseOrder, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购单不存在"})
+		response.NotFound(c, "采购单不存在")
 		return
 	}
 
 	var request UpdatePurchaseOrderStatusRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		response.Unauthorized(c, "未授权")
 		return
 	}
 
 	// 验证状态转换的合法性
 	if !isValidStatusTransition(purchaseOrder.Status, models.PurchaseOrderStatus(request.Status)) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的状态转换"})
+		response.BadRequest(c, "无效的状态转换")
 		return
 	}
 
@@ -392,11 +395,11 @@ func (pc *PurchaseController) UpdatePurchaseOrderStatus(c *gin.Context) {
 
 	// 保存采购单
 	if err := pc.db.Save(&purchaseOrder).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单状态失败: " + err.Error()})
+		response.InternalError(c, "更新采购单状态失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, purchaseOrder)
+	response.Success(c, purchaseOrder)
 }
 
 // 验证采购单状态转换是否合法
@@ -424,19 +427,19 @@ func isValidStatusTransition(currentStatus, newStatus models.PurchaseOrderStatus
 }
 
 // DeletePurchaseOrder 删除采购单
-func (pc *PurchaseController) DeletePurchaseOrder(c *gin.Context) {
-	id := c.Param("id")
+func (pc *PurchaseController) DeletePurchaseOrder(c iris.Context) {
+	id := c.Params().Get("id")
 	var purchaseOrder models.PurchaseOrder
 
 	// 查询采购单
 	if err := pc.db.First(&purchaseOrder, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购单不存在"})
+		response.NotFound(c, "采购单不存在")
 		return
 	}
 
 	// 只有草稿状态的采购单可以删除
 	if purchaseOrder.Status != models.PurchaseDraft {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "只有草稿状态的采购单可以删除"})
+		response.BadRequest(c, "只有草稿状态的采购单可以删除")
 		return
 	}
 
@@ -446,22 +449,22 @@ func (pc *PurchaseController) DeletePurchaseOrder(c *gin.Context) {
 	// 删除采购单明细
 	if err := tx.Where("purchase_order_id = ?", id).Delete(&models.PurchaseOrderItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除采购单明细失败: " + err.Error()})
+		response.InternalError(c, "删除采购单明细失败: "+err.Error())
 		return
 	}
 
 	// 删除采购单
 	if err := tx.Delete(&purchaseOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除采购单失败: " + err.Error()})
+		response.InternalError(c, "删除采购单失败: "+err.Error())
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		response.InternalError(c, "提交事务失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "采购单删除成功"})
+	response.Success(c, map[string]string{"message": "采购单删除成功"})
 }

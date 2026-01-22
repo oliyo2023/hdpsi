@@ -11,7 +11,7 @@ const InventoryCheckService = {
    * @returns {Promise} 盘点单列表
    */
   getChecks(params = {}) {
-    return axios.get(`${API_URL}/api/inventory-checks`, { params })
+    return axios.get(`${API_URL}/api/v1/inventory-checks`, { params })
   },
 
   /**
@@ -20,7 +20,7 @@ const InventoryCheckService = {
    * @returns {Promise} 盘点单详情
    */
   getCheck(id) {
-    return axios.get(`${API_URL}/api/inventory-checks/${id}`)
+    return axios.get(`${API_URL}/api/v1/inventory-checks/${id}`)
   },
 
   /**
@@ -29,7 +29,7 @@ const InventoryCheckService = {
    * @returns {Promise} 创建结果
    */
   createCheck(data) {
-    return axios.post(`${API_URL}/api/inventory-checks`, data)
+    return axios.post(`${API_URL}/api/v1/inventory-checks`, data)
   },
 
   /**
@@ -38,7 +38,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   startCheck(id) {
-    return axios.put(`${API_URL}/api/inventory-checks/${id}/start`)
+    return axios.put(`${API_URL}/api/v1/inventory-checks/${id}/start`)
   },
 
   /**
@@ -47,7 +47,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   completeCheck(id) {
-    return axios.put(`${API_URL}/api/inventory-checks/${id}/complete`)
+    return axios.put(`${API_URL}/api/v1/inventory-checks/${id}/complete`)
   },
 
   /**
@@ -56,7 +56,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   cancelCheck(id) {
-    return axios.put(`${API_URL}/api/inventory-checks/${id}/cancel`)
+    return axios.put(`${API_URL}/api/v1/inventory-checks/${id}/cancel`)
   },
 
   /**
@@ -67,7 +67,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   updateCheckItem(checkId, itemId, data) {
-    return axios.put(`${API_URL}/api/inventory-checks/${checkId}/items/${itemId}`, data)
+    return axios.put(`${API_URL}/api/v1/inventory-checks/${checkId}/items/${itemId}`, data)
   },
 
   /**
@@ -77,7 +77,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   createAdjustment(checkId, data) {
-    return axios.post(`${API_URL}/api/inventory-checks/${checkId}/adjustments`, data)
+    return axios.post(`${API_URL}/api/v1/inventory-checks/${checkId}/adjustments`, data)
   },
 
   /**
@@ -87,7 +87,7 @@ const InventoryCheckService = {
    * @returns {Promise} 操作结果
    */
   approveAdjustment(adjustmentId, data) {
-    return axios.put(`${API_URL}/api/inventory-checks/adjustments/${adjustmentId}/approve`, data)
+    return axios.put(`${API_URL}/api/v1/inventory-checks/adjustments/${adjustmentId}/approve`, data)
   }
 }
 

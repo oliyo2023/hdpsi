@@ -14,6 +14,10 @@ api:
 
 # 数据库配置
 database:
+  type: sqlite             # 数据库类型：mysql, sqlite
+  # SQLite配置
+  sqlite_path: ./data/hd_psi.db  # SQLite数据库文件路径
+  # MySQL配置（当type为mysql时使用）
   host: 192.168.1.5
   port: 3306
   user: root
@@ -25,7 +29,7 @@ database:
   max_idle_conns: 10
   max_open_conns: 100
   conn_max_lifetime: 3600  # 连接最大生命周期（秒）
-  auto_migrate: false      # 是否自动迁移数据库模型
+  auto_migrate: true       # 是否自动迁移数据库模型（SQLite建议开启）
 
 # JWT配置
 jwt:
@@ -38,8 +42,8 @@ jwt:
 
 # 微信公众号配置
 wechat_official_account:
-  appid: your_appid
-  appsecret: your_appsecret
+  appid: wx75a27ed91c4912cb
+  appsecret: effd7f0be2b07bb21d5532c385cdc3bd
   redirect_uri: "http://your_backend_domain/api/v1/auth/wechat_callback" # 授权回调地址，需要与公众号后台配置一致
   scope: "snsapi_userinfo" # 获取用户基本信息
   verify_token: your_wechat_verify_token # 新增：用于公众号服务器配置的Token，需要与公众号后台配置一致
@@ -48,8 +52,9 @@ wechat_official_account:
 log:
   level: info  # debug, info, warn, error
   format: text # text, json
-  output: file  # stdout, file
-  file_path: ./logs/hd_psi.log  # 日志文件路径（当output为file时有效）
+  output: both  # stdout, file, both
+  directory: ./logs  # 日志目录
+  filename: hd_psi.log  # 日志文件名
   max_size: 100  # 单个日志文件最大大小（MB）
   max_age: 30    # 日志文件保留天数
   max_backups: 10  # 最大备份数量

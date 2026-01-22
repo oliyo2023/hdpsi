@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'light_theme.dart';
-import 'dark_theme.dart';
+import 'package:hd_psi_mobile/theme/light_theme.dart';
+import 'package:hd_psi_mobile/theme/dark_theme.dart';
 
 /// 应用主题管理
 class AppTheme {

@@ -1,0 +1,86 @@
+# HD-PSI 服装进销存系统配置文件 - SQLite版本
+
+# 服务器配置
+server:
+  port: 8081
+  mode: debug  # debug, release, test
+  timeout: 30  # 请求超时时间（秒）
+
+# API配置
+api:
+  version: v1  # 当前API版本
+  prefix: /api  # API前缀
+  enable_version_prefix: true  # 是否启用版本前缀，如 /api/v1
+
+# 数据库配置
+database:
+  type: sqlite             # 数据库类型：mysql, sqlite
+  # SQLite配置
+  sqlite_path: ./data/hd_psi.db  # SQLite数据库文件路径
+  # MySQL配置（当type为mysql时使用）
+  host: 192.168.1.5
+  port: 3306
+  user: root
+  password: gemini4094
+  name: hd_psi_dev
+  charset: utf8mb4
+  parse_time: true
+  loc: Local
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600  # 连接最大生命周期（秒）
+  auto_migrate: true       # 是否自动迁移数据库模型（SQLite建议开启）
+
+# JWT配置
+jwt:
+  secret: hd_psi_secret_key
+  expiration:
+    standard: 86400     # 标准令牌过期时间（秒）- 24小时
+    remember_me: 604800 # 记住我令牌过期时间（秒）- 7天
+    refresh: 2592000    # 刷新令牌过期时间（秒）- 30天
+    reset: 3600         # 密码重置令牌过期时间（秒）- 1小时
+
+# 微信公众号配置
+wechat_official_account:
+  appid: wx75a27ed91c4912cb
+  appsecret: effd7f0be2b07bb21d5532c385cdc3bd
+  redirect_uri: "http://your_backend_domain/api/v1/auth/wechat_callback" # 授权回调地址，需要与公众号后台配置一致
+  scope: "snsapi_userinfo" # 获取用户基本信息
+  verify_token: your_wechat_verify_token # 新增：用于公众号服务器配置的Token，需要与公众号后台配置一致
+
+# 日志配置
+log:
+  level: debug  # debug, info, warn, error
+  format: text # text, json
+  output: both  # stdout, file, both
+  directory: ./logs  # 日志目录
+  filename: hd_psi.log  # 日志文件名
+  max_size: 100  # 单个日志文件最大大小（MB）
+  max_age: 30    # 日志文件保留天数
+  max_backups: 10  # 最大备份数量
+  compress: true   # 是否压缩
+
+# CORS配置
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    - "http://127.0.0.1:3000"
+    - "http://127.0.0.1:5173"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Accept"
+    - "Authorization"
+    - "X-Requested-With"
+    - "X-API-Version"
+  exposed_headers:
+    - "X-API-Version"
+  allow_credentials: true
+  max_age: 86400

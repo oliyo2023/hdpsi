@@ -4,7 +4,7 @@ import (
 	"hd_psi/backend/models"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -19,61 +19,71 @@ func NewDictionaryController(db *gorm.DB) *DictionaryController {
 }
 
 // ListDictionaries 获取字典类型列表
-func (dc *DictionaryController) ListDictionaries(c *gin.Context) {
+func (dc *DictionaryController) ListDictionaries(ctx iris.Context) {
 	var dictionaries []models.Dictionary
 	if err := dc.db.Find(&dictionaries).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取字典类型列表失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "获取字典类型列表失败: " + err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, dictionaries)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": dictionaries})
 }
 
 // GetDictionary 获取字典类型详情
-func (dc *DictionaryController) GetDictionary(c *gin.Context) {
-	code := c.Param("code")
+func (dc *DictionaryController) GetDictionary(ctx iris.Context) {
+	code := ctx.Params().Get("code")
 	var dictionary models.Dictionary
 	if err := dc.db.Where("code = ?", code).First(&dictionary).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典类型不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典类型不存在"})
 		return
 	}
-	c.JSON(http.StatusOK, dictionary)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": dictionary})
 }
 
 // CreateDictionary 创建字典类型
-func (dc *DictionaryController) CreateDictionary(c *gin.Context) {
+func (dc *DictionaryController) CreateDictionary(ctx iris.Context) {
 	var dictionary models.Dictionary
-	if err := c.ShouldBindJSON(&dictionary); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求数据无效: " + err.Error()})
+	if err := ctx.ReadJSON(&dictionary); err != nil {
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "请求数据无效: " + err.Error()})
 		return
 	}
 
 	// 检查编码是否已存在
 	var existingDict models.Dictionary
 	if err := dc.db.Where("code = ?", dictionary.Code).First(&existingDict).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "字典类型编码已存在"})
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "字典类型编码已存在"})
 		return
 	}
 
 	if err := dc.db.Create(&dictionary).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建字典类型失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "创建字典类型失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, dictionary)
+	ctx.StatusCode(http.StatusCreated)
+	ctx.JSON(map[string]interface{}{"data": dictionary})
 }
 
 // UpdateDictionary 更新字典类型
-func (dc *DictionaryController) UpdateDictionary(c *gin.Context) {
-	code := c.Param("code")
+func (dc *DictionaryController) UpdateDictionary(ctx iris.Context) {
+	code := ctx.Params().Get("code")
 	var dictionary models.Dictionary
 	if err := dc.db.Where("code = ?", code).First(&dictionary).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典类型不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典类型不存在"})
 		return
 	}
 
 	var updateData models.Dictionary
-	if err := c.ShouldBindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求数据无效: " + err.Error()})
+	if err := ctx.ReadJSON(&updateData); err != nil {
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "请求数据无效: " + err.Error()})
 		return
 	}
 
@@ -81,85 +91,98 @@ func (dc *DictionaryController) UpdateDictionary(c *gin.Context) {
 	updateData.Code = dictionary.Code
 
 	if err := dc.db.Model(&dictionary).Updates(updateData).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新字典类型失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "更新字典类型失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, dictionary)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": dictionary})
 }
 
 // DeleteDictionary 删除字典类型
-func (dc *DictionaryController) DeleteDictionary(c *gin.Context) {
-	code := c.Param("code")
-	
+func (dc *DictionaryController) DeleteDictionary(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+
 	// 检查是否有关联的字典项
 	var count int64
 	if err := dc.db.Model(&models.DictionaryItem{}).Where("dictionary_code = ?", code).Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "检查字典项失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "检查字典项失败: " + err.Error()})
 		return
 	}
 
 	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "该字典类型下有字典项，无法删除"})
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "该字典类型下有字典项，无法删除"})
 		return
 	}
 
 	if err := dc.db.Where("code = ?", code).Delete(&models.Dictionary{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除字典类型失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "删除字典类型失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "字典类型删除成功"})
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"message": "字典类型删除成功"})
 }
 
 // ListDictionaryItems 获取字典项列表
-func (dc *DictionaryController) ListDictionaryItems(c *gin.Context) {
-	code := c.Param("code")
-	
+func (dc *DictionaryController) ListDictionaryItems(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+
 	// 检查字典类型是否存在
 	var dictionary models.Dictionary
 	if err := dc.db.Where("code = ?", code).First(&dictionary).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典类型不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典类型不存在"})
 		return
 	}
 
 	var items []models.DictionaryItem
 	if err := dc.db.Where("dictionary_code = ?", code).Order("sort").Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取字典项列表失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "获取字典项列表失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, items)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": items})
 }
 
 // GetDictionaryItem 获取字典项详情
-func (dc *DictionaryController) GetDictionaryItem(c *gin.Context) {
-	code := c.Param("code")
-	itemID := c.Param("itemId")
+func (dc *DictionaryController) GetDictionaryItem(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+	itemID := ctx.Params().Get("itemId")
 
 	var item models.DictionaryItem
 	if err := dc.db.Where("dictionary_code = ? AND id = ?", code, itemID).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典项不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典项不存在"})
 		return
 	}
 
-	c.JSON(http.StatusOK, item)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": item})
 }
 
 // CreateDictionaryItem 创建字典项
-func (dc *DictionaryController) CreateDictionaryItem(c *gin.Context) {
-	code := c.Param("code")
-	
+func (dc *DictionaryController) CreateDictionaryItem(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+
 	// 检查字典类型是否存在
 	var dictionary models.Dictionary
 	if err := dc.db.Where("code = ?", code).First(&dictionary).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典类型不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典类型不存在"})
 		return
 	}
 
 	var item models.DictionaryItem
-	if err := c.ShouldBindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求数据无效: " + err.Error()})
+	if err := ctx.ReadJSON(&item); err != nil {
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "请求数据无效: " + err.Error()})
 		return
 	}
 
@@ -169,32 +192,37 @@ func (dc *DictionaryController) CreateDictionaryItem(c *gin.Context) {
 	// 检查编码是否已存在
 	var existingItem models.DictionaryItem
 	if err := dc.db.Where("dictionary_code = ? AND code = ?", code, item.Code).First(&existingItem).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "字典项编码已存在"})
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "字典项编码已存在"})
 		return
 	}
 
 	if err := dc.db.Create(&item).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建字典项失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "创建字典项失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, item)
+	ctx.StatusCode(http.StatusCreated)
+	ctx.JSON(map[string]interface{}{"data": item})
 }
 
 // UpdateDictionaryItem 更新字典项
-func (dc *DictionaryController) UpdateDictionaryItem(c *gin.Context) {
-	code := c.Param("code")
-	itemID := c.Param("itemId")
+func (dc *DictionaryController) UpdateDictionaryItem(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+	itemID := ctx.Params().Get("itemId")
 
 	var item models.DictionaryItem
 	if err := dc.db.Where("dictionary_code = ? AND id = ?", code, itemID).First(&item).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "字典项不存在"})
+		ctx.StatusCode(http.StatusNotFound)
+		ctx.JSON(map[string]interface{}{"error": "字典项不存在"})
 		return
 	}
 
 	var updateData models.DictionaryItem
-	if err := c.ShouldBindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求数据无效: " + err.Error()})
+	if err := ctx.ReadJSON(&updateData); err != nil {
+		ctx.StatusCode(http.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{"error": "请求数据无效: " + err.Error()})
 		return
 	}
 
@@ -205,33 +233,38 @@ func (dc *DictionaryController) UpdateDictionaryItem(c *gin.Context) {
 	if updateData.Code != item.Code {
 		var existingItem models.DictionaryItem
 		if err := dc.db.Where("dictionary_code = ? AND code = ? AND id != ?", code, updateData.Code, itemID).First(&existingItem).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "字典项编码已存在"})
+			ctx.StatusCode(http.StatusBadRequest)
+			ctx.JSON(map[string]interface{}{"error": "字典项编码已存在"})
 			return
 		}
 	}
 
 	if err := dc.db.Model(&item).Updates(updateData).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新字典项失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "更新字典项失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, item)
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"data": item})
 }
 
 // DeleteDictionaryItem 删除字典项
-func (dc *DictionaryController) DeleteDictionaryItem(c *gin.Context) {
-	code := c.Param("code")
-	itemID := c.Param("itemId")
+func (dc *DictionaryController) DeleteDictionaryItem(ctx iris.Context) {
+	code := ctx.Params().Get("code")
+	itemID := ctx.Params().Get("itemId")
 
 	// 检查是否有关联的数据
 	// TODO: 根据实际情况检查是否有关联数据
 
 	if err := dc.db.Where("dictionary_code = ? AND id = ?", code, itemID).Delete(&models.DictionaryItem{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除字典项失败: " + err.Error()})
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(map[string]interface{}{"error": "删除字典项失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "字典项删除成功"})
+	ctx.StatusCode(http.StatusOK)
+	ctx.JSON(map[string]interface{}{"message": "字典项删除成功"})
 }
 
 // InitDefaultDictionaries 初始化默认字典数据

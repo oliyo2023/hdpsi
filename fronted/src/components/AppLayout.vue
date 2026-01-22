@@ -262,7 +262,7 @@ const menuOptions = computed(() => {
         {
           label: '销售订单',
           key: 'sales-orders',
-          path: '/sales/orders'
+          path: '/sales'
         },
         {
           label: '退换货管理',
@@ -384,7 +384,7 @@ const getPageTitle = () => {
     '/members': '会员管理',
     '/purchases': '采购管理',
     '/suppliers': '供应商管理',
-    '/sales/orders': '销售订单',
+    '/sales': '销售订单',
     '/sales/returns': '退换货管理',
     '/sales/returns/create': '创建退换货申请',
     '/profile': '个人信息',

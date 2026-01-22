@@ -6,7 +6,7 @@ import api from '@/services/api'
  */
 export function fetchUsers() {
   return api({
-    url: '/api/users',
+    url: '/api/v1/users',
     method: 'get'
   })
 }
@@ -18,7 +18,7 @@ export function fetchUsers() {
  */
 export function fetchUserDetail(id) {
   return api({
-    url: `/api/users/${id}`,
+    url: `/api/v1/v1/users/${id}`,
     method: 'get'
   })
 }
@@ -31,7 +31,7 @@ export function fetchUserDetail(id) {
  */
 export function updateUser(id, data) {
   return api({
-    url: `/api/users/${id}`,
+    url: `/api/v1/v1/users/${id}`,
     method: 'put',
     data
   })
@@ -44,7 +44,7 @@ export function updateUser(id, data) {
  */
 export function updatePassword(data) {
   return api({
-    url: '/api/users/password',
+    url: '/api/v1/users/password',
     method: 'put',
     data
   })
@@ -57,7 +57,7 @@ export function updatePassword(data) {
  */
 export function createUser(data) {
   return api({
-    url: '/api/users',
+    url: '/api/v1/users',
     method: 'post',
     data
   })
@@ -70,7 +70,7 @@ export function createUser(data) {
  */
 export function deleteUser(id) {
   return api({
-    url: `/api/users/${id}`,
+    url: `/api/v1/v1/users/${id}`,
     method: 'delete'
   })
 }

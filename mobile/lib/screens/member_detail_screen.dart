@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../models/member.dart';
-import '../providers/member_provider.dart';
+import '../controllers/member_controller.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/loading_indicator.dart';
@@ -17,15 +17,15 @@ class MemberDetailScreen extends StatefulWidget {
 }
 
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
+  // 使用GetX获取控制器
+  final MemberController _memberController = Get.find<MemberController>();
+
   @override
   void initState() {
     super.initState();
     // 加载会员详情
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MemberProvider>(
-        context,
-        listen: false,
-      ).getMember(widget.memberId);
+      _memberController.getMember(widget.memberId);
     });
   }
 
@@ -46,45 +46,43 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           ),
         ],
       ),
-      body: Consumer<MemberProvider>(
-        builder: (context, memberProvider, child) {
-          if (memberProvider.isLoading) {
-            return const LoadingIndicator(message: '加载会员信息...');
-          }
+      body: Obx(() {
+        if (_memberController.isLoading) {
+          return const LoadingIndicator(message: '加载会员信息...');
+        }
 
-          if (memberProvider.error != null) {
-            return ErrorDisplay(
-              error: memberProvider.error!,
-              onRetry: () => memberProvider.getMember(widget.memberId),
-            );
-          }
-
-          final member = memberProvider.selectedMember;
-          if (member == null) {
-            return const Center(child: Text('未找到会员信息'));
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMemberHeader(member),
-                const SizedBox(height: 24.0),
-                _buildInfoSection('基本信息', _buildBasicInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('体型数据', _buildBodyInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('偏好信息', _buildPreferenceInfo(member)),
-                const SizedBox(height: 16.0),
-                _buildInfoSection('备注', _buildNoteInfo(member)),
-                const SizedBox(height: 24.0),
-                _buildActionButtons(context, member),
-              ],
-            ),
+        if (_memberController.error != null) {
+          return ErrorDisplay(
+            error: _memberController.error!,
+            onRetry: () => _memberController.getMember(widget.memberId),
           );
-        },
-      ),
+        }
+
+        final member = _memberController.selectedMember;
+        if (member == null) {
+          return const Center(child: Text('未找到会员信息'));
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildMemberHeader(member),
+              const SizedBox(height: 24.0),
+              _buildInfoSection('基本信息', _buildBasicInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('体型数据', _buildBodyInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('偏好信息', _buildPreferenceInfo(member)),
+              const SizedBox(height: 16.0),
+              _buildInfoSection('备注', _buildNoteInfo(member)),
+              const SizedBox(height: 24.0),
+              _buildActionButtons(context, member),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -329,11 +327,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
         ElevatedButton.icon(
           icon: const Icon(Icons.add_shopping_cart),
           label: const Text('添加消费'),
-          onPressed: () {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('添加消费功能即将推出')));
-          },
+          onPressed: () => _showAddConsumptionDialog(context, member),
         ),
         ElevatedButton.icon(
           icon: const Icon(Icons.history),
@@ -373,6 +367,138 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
         return Colors.purple;
       default:
         return Colors.blue;
+    }
+  }
+
+  // 显示添加消费记录对话框
+  void _showAddConsumptionDialog(BuildContext context, Member member) {
+    final TextEditingController amountController = TextEditingController();
+    final TextEditingController noteController = TextEditingController();
+    String selectedType = 'purchase'; // 默认为购买类型
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('添加消费记录'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 消费金额
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: '消费金额',
+                        prefixText: '¥',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 消费类型
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedType,
+                      decoration: const InputDecoration(
+                        labelText: '消费类型',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'purchase',
+                          child: Text('购买商品'),
+                        ),
+                        DropdownMenuItem(value: 'service', child: Text('服务消费')),
+                        DropdownMenuItem(value: 'other', child: Text('其他消费')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedType = value!;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 备注
+                    TextField(
+                      controller: noteController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: '备注',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      () => _addConsumptionRecord(
+                        context,
+                        member,
+                        amountController.text,
+                        selectedType,
+                        noteController.text,
+                      ),
+                  child: const Text('确认'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 添加消费记录
+  void _addConsumptionRecord(
+    BuildContext context,
+    Member member,
+    String amount,
+    String type,
+    String note,
+  ) async {
+    if (amount.isEmpty) {
+      Get.snackbar('错误', '请输入消费金额');
+      return;
+    }
+
+    try {
+      final double consumptionAmount = double.parse(amount);
+      if (consumptionAmount <= 0) {
+        Get.snackbar('错误', '消费金额必须大于0');
+        return;
+      }
+
+      // 计算积分（假设每消费1元获得1积分）
+      final int earnedPoints = consumptionAmount.round();
+
+      // 调用正确的积分添加API - 使用 /api/members/{id}/points/add 路由
+      final success = await _memberController.addMemberPoints(
+        member.id,
+        earnedPoints,
+        type,
+        note.isEmpty ? '消费获得积分' : note,
+      );
+
+      Get.back(); // 关闭对话框
+
+      if (success) {
+        Get.snackbar('成功', '消费记录添加成功，获得 $earnedPoints 积分');
+      } else {
+        Get.snackbar('失败', '添加消费记录失败: ${_memberController.error}');
+      }
+    } catch (e) {
+      Get.back(); // 关闭对话框
+      Get.snackbar('错误', '添加消费记录失败: $e');
     }
   }
 }

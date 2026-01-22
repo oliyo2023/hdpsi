@@ -80,7 +80,14 @@
             </n-form-item-gi>
 
             <n-form-item-gi :span="24" label="商品图片" path="image">
-              <n-input v-model:value="formData.image" placeholder="请输入商品图片URL" />
+              <ProductImageUpload 
+                :product-id="productSN" 
+                @images-updated="handleImagesUpdated"
+                :disabled="!productSN"
+              />
+              <n-text depth="3" style="font-size: 12px; margin-top: 8px; display: block;">
+                提示: 商品SN已自动生成，可直接上传图片
+              </n-text>
             </n-form-item-gi>
 
             <n-form-item-gi :span="24" label="商品描述" path="description">
@@ -219,6 +226,8 @@ import {
 import productService from '../services/product'
 import dictionaryService from '../services/dictionary'
 import { generateSKU as genSKU, generateVariantSKU as genVariantSKU } from '../utils/skuGenerator'
+import { generateProductSN } from '../utils/productSNGenerator'
+import ProductImageUpload from '../components/ProductImageUpload.vue'
 
 // 路由
 const router = useRouter()
@@ -233,6 +242,9 @@ const saving = ref(false)
 const savingVariant = ref(false)
 const showVariantModal = ref(false)
 
+// 商品SN（用于图片上传）
+const productSN = ref('')
+
 // 表单数据
 const formData = reactive({
   sku: '',
@@ -245,6 +257,9 @@ const formData = reactive({
   image: '',
   status: true
 })
+
+// 商品图片列表
+const productImages = ref([])
 
 // 变体数据
 const variants = ref([])
@@ -616,8 +631,22 @@ const handleSave = () => {
   })
 }
 
+// 处理图片更新
+const handleImagesUpdated = (images) => {
+  productImages.value = images
+  // 如果有图片，将第一张图片设置为主图
+  if (images.length > 0) {
+    formData.image = images[0].url
+  } else {
+    formData.image = ''
+  }
+}
+
 // 生命周期钩子
 onMounted(async () => {
+  // 生成商品SN
+  productSN.value = generateProductSN()
+  
   // 加载字典数据
   await Promise.all([
     loadDictionaryItems('category', categoryOptions),

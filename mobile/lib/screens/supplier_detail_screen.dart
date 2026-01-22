@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/supplier_provider.dart';
+import 'package:get/get.dart';
+import '../controllers/supplier_controller.dart';
 import '../models/supplier.dart';
-import '../services/supplier_service.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import 'supplier_edit_screen.dart';
@@ -17,80 +16,49 @@ class SupplierDetailScreen extends StatefulWidget {
 }
 
 class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
-  final SupplierService _supplierService = SupplierService();
-  Supplier? _supplier;
-  bool _isLoading = true;
-  String? _error;
+  late final SupplierController _supplierController;
 
   @override
   void initState() {
     super.initState();
-    _fetchSupplierDetails();
+    // 获取SupplierController实例
+    _supplierController = Get.find<SupplierController>();
+    // 使用addPostFrameCallback确保在构建完成后再加载数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSupplierDetails();
+    });
   }
 
   // 获取供应商详情
   Future<void> _fetchSupplierDetails() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final supplier = await _supplierService.getSupplier(widget.supplierId);
-      setState(() {
-        _supplier = supplier;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = '获取供应商详情失败: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
+    await _supplierController.getSupplier(widget.supplierId);
   }
 
   // 删除供应商
   Future<void> _deleteSupplier() async {
-    // 获取供应商提供者，避免在异步间隙使用BuildContext
-    final supplierProvider = Provider.of<SupplierProvider>(
-      context,
-      listen: false,
-    );
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('确认删除'),
-            content: const Text('确定要删除这个供应商吗？此操作不可撤销。'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('取消'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('删除'),
-              ),
-            ],
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除这个供应商吗？此操作不可撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('取消'),
           ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
     );
 
-    if (confirmed == true && mounted) {
-      try {
-        await supplierProvider.deleteSupplier(widget.supplierId);
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('供应商已删除')));
-          Navigator.of(context).pop(); // 返回上一页
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('删除失败: ${e.toString()}')));
-        }
+    if (confirmed == true) {
+      final success = await _supplierController.deleteSupplier(
+        widget.supplierId,
+      );
+      if (success) {
+        Get.back(); // 返回上一页
       }
     }
   }
@@ -101,44 +69,56 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
       appBar: AppBar(
         title: const Text('供应商详情'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed:
-                _supplier == null
-                    ? null
-                    : () async {
-                      final result = await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  SupplierEditScreen(supplier: _supplier),
-                        ),
-                      );
-                      if (result == true && mounted) {
-                        _fetchSupplierDetails(); // 刷新数据
-                      }
-                    },
+          Obx(
+            () => IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed:
+                  _supplierController.currentSupplier == null
+                      ? null
+                      : () async {
+                        final result = await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SupplierEditScreen(
+                                  supplier: _supplierController.currentSupplier,
+                                ),
+                          ),
+                        );
+                        if (result == true && mounted) {
+                          _fetchSupplierDetails(); // 刷新数据
+                        }
+                      },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _supplier == null ? null : _deleteSupplier,
+          Obx(
+            () => IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed:
+                  _supplierController.currentSupplier == null
+                      ? null
+                      : _deleteSupplier,
+            ),
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Obx(() => _buildBody()),
     );
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
+    if (_supplierController.isLoading) {
       return const LoadingIndicator(message: '加载供应商详情...');
     }
 
-    if (_error != null) {
-      return ErrorDisplay(error: _error!, onRetry: _fetchSupplierDetails);
+    if (_supplierController.hasError) {
+      return ErrorDisplay(
+        error: _supplierController.error,
+        onRetry: _fetchSupplierDetails,
+      );
     }
 
-    if (_supplier == null) {
+    final supplier = _supplierController.currentSupplier;
+    if (supplier == null) {
       return const Center(child: Text('未找到供应商信息'));
     }
 
@@ -147,17 +127,17 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoCard(),
+          _buildInfoCard(supplier),
           const SizedBox(height: 16),
-          _buildContactCard(),
+          _buildContactCard(supplier),
           const SizedBox(height: 16),
-          _buildBusinessCard(),
+          _buildBusinessCard(supplier),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(Supplier supplier) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -169,13 +149,13 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Divider(),
-            _buildInfoRow('供应商名称', _supplier!.name),
-            _buildInfoRow('供应商编码', _supplier!.code),
-            _buildInfoRow('供应商类型', _getSupplierTypeText(_supplier!.type)),
-            _buildInfoRow('状态', _supplier!.status ? '启用' : '禁用'),
+            _buildInfoRow('供应商名称', supplier.name),
+            _buildInfoRow('供应商编码', supplier.code),
+            _buildInfoRow('供应商类型', _getSupplierTypeText(supplier.type)),
+            _buildInfoRow('状态', supplier.status ? '启用' : '禁用'),
             _buildInfoRow(
               '评级',
-              _supplier!.rating?.toString().split('.').last ?? '无',
+              supplier.rating?.toString().split('.').last ?? '无',
             ),
           ],
         ),
@@ -183,7 +163,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
     );
   }
 
-  Widget _buildContactCard() {
+  Widget _buildContactCard(Supplier supplier) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -195,18 +175,18 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Divider(),
-            _buildInfoRow('联系人', _supplier!.contactPerson ?? '无'),
-            _buildInfoRow('联系电话', _supplier!.contactPhone ?? '无'),
-            _buildInfoRow('电子邮箱', _supplier!.email ?? '无'),
-            _buildInfoRow('地址', _supplier!.address ?? '无'),
-            _buildInfoRow('城市', _supplier!.city ?? '无'),
+            _buildInfoRow('联系人', supplier.contactPerson ?? '无'),
+            _buildInfoRow('联系电话', supplier.contactPhone ?? '无'),
+            _buildInfoRow('电子邮箱', supplier.email ?? '无'),
+            _buildInfoRow('地址', supplier.address ?? '无'),
+            _buildInfoRow('城市', supplier.city ?? '无'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBusinessCard() {
+  Widget _buildBusinessCard(Supplier supplier) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -218,12 +198,12 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Divider(),
-            _buildInfoRow('资质', _supplier!.qualification ?? '无'),
-            _buildInfoRow('付款条款', _supplier!.paymentTerms ?? '无'),
-            _buildInfoRow('交货条款', _supplier!.deliveryTerms ?? '无'),
-            _buildInfoRow('备注', _supplier!.note ?? '无'),
-            _buildInfoRow('创建时间', _formatDateTime(_supplier!.createdAt)),
-            _buildInfoRow('更新时间', _formatDateTime(_supplier!.updatedAt)),
+            _buildInfoRow('资质', supplier.qualification ?? '无'),
+            _buildInfoRow('付款条款', supplier.paymentTerms ?? '无'),
+            _buildInfoRow('交货条款', supplier.deliveryTerms ?? '无'),
+            _buildInfoRow('备注', supplier.note ?? '无'),
+            _buildInfoRow('创建时间', _formatDateTime(supplier.createdAt)),
+            _buildInfoRow('更新时间', _formatDateTime(supplier.updatedAt)),
           ],
         ),
       ),

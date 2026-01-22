@@ -1,5 +1,5 @@
 // API 基础 URL
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/'
 
 // 其他全局配置
 export const APP_NAME = '服装进销存系统 (HD-PSI)'

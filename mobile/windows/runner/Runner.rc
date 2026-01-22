@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "hd_psi_mobile" "\0"
+            VALUE "FileDescription", "宏店" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "hd_psi_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "hd_psi_mobile.exe" "\0"
-            VALUE "ProductName", "hd_psi_mobile" "\0"
+            VALUE "InternalName", "宏店" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 宏达服装有限公司. All rights reserved." "\0"
+            VALUE "OriginalFilename", "宏店.exe" "\0"
+            VALUE "ProductName", "宏店" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -3,11 +3,10 @@ package controllers
 import (
 	"fmt"
 	"hd_psi/backend/models"
-	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kataras/iris/v12"
 	"gorm.io/gorm"
 )
 
@@ -36,10 +35,10 @@ type PurchaseReceivingsResponse struct {
 }
 
 // ListPurchaseReceivings 获取采购入库列表
-func (prc *PurchaseReceivingController) ListPurchaseReceivings(c *gin.Context) {
+func (prc *PurchaseReceivingController) ListPurchaseReceivings(c iris.Context) {
 	var query ListPurchaseReceivingsQuery
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadQuery(&query); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -72,28 +71,28 @@ func (prc *PurchaseReceivingController) ListPurchaseReceivings(c *gin.Context) {
 		Offset(offset).Limit(query.PageSize).
 		Order("created_at DESC").
 		Find(&receivings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, PurchaseReceivingsResponse{
+	c.JSON(PurchaseReceivingsResponse{
 		Total: int(total),
 		Items: receivings,
 	})
 }
 
 // GetPurchaseReceiving 获取采购入库详情
-func (prc *PurchaseReceivingController) GetPurchaseReceiving(c *gin.Context) {
-	id := c.Param("id")
+func (prc *PurchaseReceivingController) GetPurchaseReceiving(c iris.Context) {
+	id := c.Params().Get("id")
 	var receiving models.PurchaseReceiving
 
 	if err := prc.db.Preload("Items.Product").Preload("PurchaseOrder").Preload("Store").
 		First(&receiving, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购入库单不存在"})
+		c.JSON(iris.Map{"error": "采购入库单不存在"})
 		return
 	}
 
-	c.JSON(http.StatusOK, receiving)
+	c.JSON(receiving)
 }
 
 // 采购入库明细请求
@@ -118,29 +117,29 @@ type CreatePurchaseReceivingRequest struct {
 }
 
 // CreatePurchaseReceiving 创建采购入库
-func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) {
+func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c iris.Context) {
 	var request CreatePurchaseReceivingRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ReadJSON(&request); err != nil {
+		c.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
 	// 检查采购单是否存在且状态是否为已下单或待入库
 	var purchaseOrder models.PurchaseOrder
 	if err := prc.db.First(&purchaseOrder, request.PurchaseOrderID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购单不存在"})
+		c.JSON(iris.Map{"error": "采购单不存在"})
 		return
 	}
 
 	if purchaseOrder.Status != models.PurchaseOrdered && purchaseOrder.Status != models.PurchaseInReceiving {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "只有已下单或待入库状态的采购单可以创建入库单"})
+		c.JSON(iris.Map{"error": "只有已下单或待入库状态的采购单可以创建入库单"})
 		return
 	}
 
@@ -163,7 +162,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 	// 解析入库日期
 	receivingDate, err := time.Parse("2006-01-02", request.ReceivingDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "入库日期格式错误，应为YYYY-MM-DD"})
+		c.JSON(iris.Map{"error": "入库日期格式错误，应为YYYY-MM-DD"})
 		return
 	}
 
@@ -182,7 +181,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 
 	if err := tx.Create(&receiving).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建入库单失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "创建入库单失败: " + err.Error()})
 		return
 	}
 
@@ -208,14 +207,14 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 		var orderItem models.PurchaseOrderItem
 		if err := tx.First(&orderItem, item.PurchaseOrderItemID).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusNotFound, gin.H{"error": "采购单明细不存在"})
+			c.JSON(iris.Map{"error": "采购单明细不存在"})
 			return
 		}
 
 		orderItem.ReceivedQty += item.ActualQuantity
 		if err := tx.Save(&orderItem).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单明细失败: " + err.Error()})
+			c.JSON(iris.Map{"error": "更新采购单明细失败: " + err.Error()})
 			return
 		}
 
@@ -236,7 +235,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 				}
 				if err := tx.Create(&inventory).Error; err != nil {
 					tx.Rollback()
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "创建库存记录失败: " + err.Error()})
+					c.JSON(iris.Map{"error": "创建库存记录失败: " + err.Error()})
 					return
 				}
 			} else {
@@ -244,7 +243,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 				inventory.Quantity += item.ActualQuantity
 				if err := tx.Save(&inventory).Error; err != nil {
 					tx.Rollback()
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "更新库存失败: " + err.Error()})
+					c.JSON(iris.Map{"error": "更新库存失败: " + err.Error()})
 					return
 				}
 			}
@@ -266,7 +265,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 
 			if err := tx.Create(&transaction).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建库存交易记录失败: " + err.Error()})
+				c.JSON(iris.Map{"error": "创建库存交易记录失败: " + err.Error()})
 				return
 			}
 		}
@@ -275,7 +274,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 	// 创建入库明细
 	if err := tx.Create(&items).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建入库明细失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "创建入库明细失败: " + err.Error()})
 		return
 	}
 
@@ -285,7 +284,7 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 		var orderItems []models.PurchaseOrderItem
 		if err := tx.Where("purchase_order_id = ?", request.PurchaseOrderID).Find(&orderItems).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询采购单明细失败: " + err.Error()})
+			c.JSON(iris.Map{"error": "查询采购单明细失败: " + err.Error()})
 			return
 		}
 
@@ -308,14 +307,14 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 
 		if err := tx.Save(&purchaseOrder).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单状态失败: " + err.Error()})
+			c.JSON(iris.Map{"error": "更新采购单状态失败: " + err.Error()})
 			return
 		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
@@ -324,17 +323,17 @@ func (prc *PurchaseReceivingController) CreatePurchaseReceiving(c *gin.Context) 
 	prc.db.Preload("Items.Product").Preload("PurchaseOrder").Preload("Store").
 		First(&result, receiving.ID)
 
-	c.JSON(http.StatusCreated, result)
+	c.JSON(result)
 }
 
 // DeletePurchaseReceiving 删除采购入库
-func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) {
-	id := c.Param("id")
+func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c iris.Context) {
+	id := c.Params().Get("id")
 
 	// 获取当前用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	userID := c.Values().Get("userID")
+	if userID == nil {
+		c.JSON(iris.Map{"error": "未授权"})
 		return
 	}
 
@@ -342,7 +341,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 	// 查询入库单
 	if err := prc.db.Preload("Items").First(&receiving, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "采购入库单不存在"})
+		c.JSON(iris.Map{"error": "采购入库单不存在"})
 		return
 	}
 
@@ -354,7 +353,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 		var orderItem models.PurchaseOrderItem
 		if err := tx.First(&orderItem, item.PurchaseOrderItemID).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询采购单明细失败: " + err.Error()})
+			c.JSON(iris.Map{"error": "查询采购单明细失败: " + err.Error()})
 			return
 		}
 
@@ -365,7 +364,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 		if err := tx.Save(&orderItem).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单明细失败: " + err.Error()})
+			c.JSON(iris.Map{"error": "更新采购单明细失败: " + err.Error()})
 			return
 		}
 
@@ -375,7 +374,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 			var inventory models.Inventory
 			if err := tx.Where("product_variant_id = ? AND store_id = ?", item.ProductVariantID, receiving.StoreID).First(&inventory).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "查询库存记录失败: " + err.Error()})
+				c.JSON(iris.Map{"error": "查询库存记录失败: " + err.Error()})
 				return
 			}
 
@@ -387,7 +386,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 			if err := tx.Save(&inventory).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "更新库存失败: " + err.Error()})
+				c.JSON(iris.Map{"error": "更新库存失败: " + err.Error()})
 				return
 			}
 
@@ -408,7 +407,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 			if err := tx.Create(&transaction).Error; err != nil {
 				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建库存交易记录失败: " + err.Error()})
+				c.JSON(iris.Map{"error": "创建库存交易记录失败: " + err.Error()})
 				return
 			}
 		}
@@ -418,7 +417,7 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 	var purchaseOrder models.PurchaseOrder
 	if err := tx.First(&purchaseOrder, receiving.PurchaseOrderID).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询采购单失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "查询采购单失败: " + err.Error()})
 		return
 	}
 
@@ -436,29 +435,29 @@ func (prc *PurchaseReceivingController) DeletePurchaseReceiving(c *gin.Context) 
 
 	if err := tx.Save(&purchaseOrder).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新采购单状态失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "更新采购单状态失败: " + err.Error()})
 		return
 	}
 
 	// 删除入库明细
 	if err := tx.Where("purchase_receiving_id = ?", id).Delete(&models.PurchaseReceivingItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除入库明细失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "删除入库明细失败: " + err.Error()})
 		return
 	}
 
 	// 删除入库单
 	if err := tx.Delete(&receiving).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除入库单失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "删除入库单失败: " + err.Error()})
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败: " + err.Error()})
+		c.JSON(iris.Map{"error": "提交事务失败: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "采购入库单删除成功"})
+	c.JSON(iris.Map{"message": "采购入库单删除成功"})
 }

@@ -257,8 +257,32 @@ const handleLogin = (e) => {
         if (error.response && error.response.data) {
           const errorData = error.response.data
 
-          // 显示错误信息
-          if (errorData.error) {
+          // 处理新的统一响应格式
+          if (errorData.code !== undefined && errorData.message) {
+            let errorMessage = errorData.message
+
+            // 如果有错误信息，添加到消息中
+            if (errorData.error) {
+              errorMessage += ': ' + errorData.error
+            }
+
+            // 如果有数据字段，检查是否包含额外信息
+            if (errorData.data) {
+              // 如果有剩余尝试次数，显示剩余次数
+              if (errorData.data.remaining_attempts !== undefined) {
+                errorMessage += ` (剩余尝试次数: ${errorData.data.remaining_attempts})`
+              }
+
+              // 如果账户被锁定，显示锁定时间
+              if (errorData.data.wait_minutes) {
+                errorMessage += ` (请等待 ${errorData.data.wait_minutes} 分钟后再试)`
+              }
+            }
+
+            message.error(errorMessage)
+          }
+          // 处理旧的响应格式
+          else if (errorData.error) {
             let errorMessage = errorData.error
 
             // 如果有详细错误信息，显示详细信息

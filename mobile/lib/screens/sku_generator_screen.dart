@@ -176,7 +176,7 @@ class _SkuGeneratorScreenState extends State<SkuGeneratorScreen> {
                           labelText: '年份',
                           hintText: '选择年份',
                         ),
-                        value: _year,
+                        initialValue: _year,
                         items: List.generate(5, (index) {
                           final year = DateTime.now().year - 2 + index;
                           return DropdownMenuItem(
@@ -204,7 +204,7 @@ class _SkuGeneratorScreenState extends State<SkuGeneratorScreen> {
                           labelText: '季节',
                           hintText: '选择季节',
                         ),
-                        value: _season,
+                        initialValue: _season,
                         items:
                             _seasonOptions.map((option) {
                               return DropdownMenuItem(
